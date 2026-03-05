@@ -85,9 +85,9 @@ function createVisualBars(container) {
         // Random height for visual effect
         const randomHeight = Math.random() * 60 + 40; // 40-100%
         
-        bar.style.width = '4px';
+        bar.style.width = '5px';
         bar.style.height = randomHeight + '%';
-        bar.style.backgroundColor = 'rgba(100, 100, 100, 0.5)';
+        bar.style.backgroundColor = 'rgba(150, 150, 150, 0.9)'; // Mehr sichtbar!
         bar.style.borderRadius = '3px';
         bar.style.transition = 'all 0.3s ease';
         
@@ -109,12 +109,12 @@ function startAnimation() {
             const barProgress = index / bars.length;
             
             if(barProgress <= progress) {
-                // Played part - Purple/Pink
+                // Played part - STARKES LILA!
                 bar.style.backgroundColor = '#ff00ff';
-                bar.style.boxShadow = '0 0 10px rgba(255, 0, 255, 0.5)';
+                bar.style.boxShadow = '0 0 15px rgba(255, 0, 255, 0.8)';
             } else {
-                // Not played - Gray
-                bar.style.backgroundColor = 'rgba(100, 100, 100, 0.5)';
+                // Not played - Hellgrau
+                bar.style.backgroundColor = 'rgba(150, 150, 150, 0.9)';
                 bar.style.boxShadow = 'none';
             }
             
@@ -152,10 +152,12 @@ function updateProgress() {
         const barProgress = index / bars.length;
         
         if(barProgress <= progress) {
+            // GESPIELT - STARKES LILA mit GLOW!
             bar.style.backgroundColor = '#ff00ff';
-            bar.style.boxShadow = '0 0 10px rgba(255, 0, 255, 0.5)';
+            bar.style.boxShadow = '0 0 15px rgba(255, 0, 255, 0.8)';
         } else {
-            bar.style.backgroundColor = 'rgba(100, 100, 100, 0.5)';
+            // NICHT GESPIELT - Hellgrau
+            bar.style.backgroundColor = 'rgba(150, 150, 150, 0.9)';
             bar.style.boxShadow = 'none';
         }
     });
