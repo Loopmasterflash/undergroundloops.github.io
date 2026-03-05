@@ -28,13 +28,14 @@ function initPlayer() {
         height: 120,
         barGap: 2,
         responsive: true,
-        normalize: true,
-        backend: 'WebAudio'
+        normalize: true
     });
     
-    // Load demo audio (using a demo URL - replace with your own)
-    // For now, we'll use a placeholder
-    wavesurfer.load('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
+    // Load demo audio - using a reliable source
+    wavesurfer.load('https://cdn.freesound.org/previews/412/412017_7337381-lq.mp3');
+    
+    // Alternative: You can also use an empty peaks array for visual demo
+    // wavesurfer.load('', [0.1, 0.3, 0.5, 0.7, 0.9, 0.7, 0.5, 0.3, 0.1]);
     
     // ============================================
     // PLAYER CONTROLS
@@ -68,6 +69,7 @@ function initPlayer() {
     wavesurfer.on('ready', function() {
         const duration = wavesurfer.getDuration();
         totalTimeEl.textContent = formatTime(duration);
+        console.log('WaveSurfer ready! Duration:', duration);
     });
     
     wavesurfer.on('audioprocess', function() {
@@ -78,6 +80,10 @@ function initPlayer() {
     wavesurfer.on('finish', function() {
         playBtn.textContent = '▶';
         isPlaying = false;
+    });
+    
+    wavesurfer.on('error', function(e) {
+        console.error('WaveSurfer error:', e);
     });
 }
 
