@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNDERGROUNDLOOPS - Underground Techno & Electronic Loops</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Cyberpunk Background -->
+    <div class="cyberpunk-bg"></div>
+    
+    <!-- Main Container -->
+    <div class="container">
+        
+        <!-- Logo -->
+        <div class="logo-container">
+            <h1 class="neon-logo">UNDERGROUNDLOOPS</h1>
+        </div>
+        
+        <!-- Genre Buttons -->
+        <div class="genre-buttons">
+            <button class="genre-btn active" data-genre="all">All</button>
+            <button class="genre-btn" data-genre="techno">Techno</button>
+            <button class="genre-btn" data-genre="minimal">Minimal</button>
+            <button class="genre-btn" data-genre="industrial">Industrial</button>
+            <button class="genre-btn" data-genre="goa">Goa</button>
+            <button class="genre-btn" data-genre="psytrance">Psytrance</button>
+        </div>
+        
+        <!-- Demo Audio Player -->
+        <div class="player-container">
+            <div class="track-info">
+                <h3 class="track-title">Demo Track - Dark Matter 303</h3>
+                <p class="track-genre">Techno • 138 BPM</p>
+            </div>
+            
+            <!-- Waveform Container -->
+            <div id="waveform"></div>
+            
+            <!-- Player Controls -->
+            <div class="player-controls">
+                <button id="playBtn" class="play-btn">▶</button>
+                <div class="time-display">
+                    <span id="currentTime">0:00</span>
+                    <span>/</span>
+                    <span id="totalTime">0:00</span>
+                </div>
+                <div class="volume-control">
+                    <span class="volume-icon">🔊</span>
+                    <input type="range" id="volumeSlider" min="0" max="100" value="80">
+                </div>
+                <button class="download-btn">⬇ Download</button>
+            </div>
+        </div>
+        
+    </div>
+    
+    <!-- WaveSurfer.js Library -->
+    <script src="https://unpkg.com/wavesurfer.js@7"></script>
+    <script src="script.js"></script>
+</body>
+</html>
