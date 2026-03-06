@@ -8,10 +8,21 @@ let allTracks = [];
 let filteredTracks = [];
 let currentGenre = 'all';
 
-// Initialize when page loads
+// Wait for DOM to be ready
 document.addEventListener('DOMContentLoaded', function() {
-    loadTracksFromFirestore();
-    initGenreButtons();
+    console.log('DOM loaded, checking Firebase...');
+    
+    // Wait a bit for Firebase to fully initialize
+    setTimeout(function() {
+        if(typeof db !== 'undefined') {
+            console.log('Firebase ready, loading tracks...');
+            loadTracksFromFirestore();
+            initGenreButtons();
+        } else {
+            console.error('Firebase not loaded!');
+            showError('Firebase connection failed. Please refresh the page.');
+        }
+    }, 1000);
 });
 
 // ============================================
@@ -20,6 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function loadTracksFromFirestore() {
     try {
+        console.log('Fetching tracks from Firestore...');
         const snapshot = await db.collection('tracks').orderBy('uploadedAt', 'desc').get();
         
         allTracks = [];
@@ -30,20 +42,30 @@ async function loadTracksFromFirestore() {
             });
         });
         
-        console.log('Loaded tracks:', allTracks.length);
+        console.log('✅ Loaded tracks:', allTracks.length);
         
         filteredTracks = allTracks;
         renderTracks();
         
     } catch(error) {
-        console.error('Error loading tracks:', error);
-        document.getElementById('trackListContainer').innerHTML = `
-            <div style="text-align: center; color: #ff0000; padding: 40px;">
-                <p>❌ Error loading tracks from database</p>
-                <p style="font-size: 0.8rem; margin-top: 10px;">${error.message}</p>
-            </div>
-        `;
+        console.error('❌ Error loading tracks:', error);
+        showError('Error loading tracks: ' + error.message);
     }
+}
+
+// ============================================
+// SHOW ERROR MESSAGE
+// ============================================
+
+function showError(message) {
+    document.getElementById('trackListContainer').innerHTML = `
+        <div style="text-align: center; color: #ff0000; padding: 40px;">
+            <p style="font-size: 1.5rem;">❌ ${message}</p>
+            <button onclick="location.reload()" style="margin-top: 20px; padding: 10px 20px; background: rgba(255,0,255,0.3); border: 2px solid #ff00ff; color: #fff; border-radius: 8px; cursor: pointer;">
+                Reload Page
+            </button>
+        </div>
+    `;
 }
 
 // ============================================
@@ -57,7 +79,9 @@ function renderTracks() {
         container.innerHTML = `
             <div style="text-align: center; color: #00ffff; padding: 40px;">
                 <p style="font-size: 1.5rem;">🎵 No tracks found</p>
-                <p style="margin-top: 10px;">Upload your first track in the admin panel!</p>
+                <p style="margin-top: 10px; font-size: 0.9rem;">
+                    ${currentGenre === 'all' ? 'Upload your first track in the admin panel!' : 'No tracks in this genre yet.'}
+                </p>
             </div>
         `;
         return;
@@ -81,16 +105,17 @@ function createTrackCard(track) {
     card.setAttribute('data-track-id', track.id);
     
     const bpmText = track.bpm ? ` • ${track.bpm} BPM` : '';
+    const genreText = track.genre ? track.genre.toUpperCase() : 'UNKNOWN';
     
     card.innerHTML = `
         <div class="track-header">
             <div class="cover-container">
                 <img src="${track.coverImage}" alt="${track.title}" class="track-cover" 
-                     onerror="this.src='https://via.placeholder.com/120/ff00ff/ffffff?text=No+Cover'">
+                     onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22%3E%3Crect fill=%22%23ff00ff%22 width=%22120%22 height=%22120%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22white%22 font-size=%2214%22%3ENo Cover%3C/text%3E%3C/svg%3E'">
             </div>
             <div class="track-info">
                 <h3 class="track-title">${track.title}</h3>
-                <p class="track-genre">${track.artist} • ${track.genre.toUpperCase()}${bpmText}</p>
+                <p class="track-genre">${track.artist} • ${genreText}${bpmText}</p>
             </div>
         </div>
         
@@ -122,7 +147,7 @@ function createTrackCard(track) {
 function togglePlay(trackId, audioFile) {
     const playBtn = document.querySelector(`[data-track-id="${trackId}"] .play-btn`);
     
-    // If clicking on a different track, stop current
+    // Stop current track if different
     if(currentAudio && currentTrackId !== trackId) {
         currentAudio.pause();
         const oldBtn = document.querySelector(`[data-track-id="${currentTrackId}"] .play-btn`);
@@ -130,7 +155,7 @@ function togglePlay(trackId, audioFile) {
         stopWaveformAnimation(currentTrackId);
     }
     
-    // If same track, toggle play/pause
+    // Toggle play/pause
     if(currentTrackId === trackId && currentAudio) {
         if(currentAudio.paused) {
             currentAudio.play();
@@ -201,6 +226,7 @@ function createWaveformBars(trackId) {
         }
     });
     
+    // Create bars
     for(let i = 0; i < 80; i++) {
         const bar = document.createElement('div');
         bar.className = 'audio-bar';
@@ -297,7 +323,9 @@ function filterTracksByGenre(genre) {
     if(genre === 'all') {
         filteredTracks = allTracks;
     } else {
-        filteredTracks = allTracks.filter(track => track.genre.toLowerCase() === genre.toLowerCase());
+        filteredTracks = allTracks.filter(track => 
+            track.genre && track.genre.toLowerCase() === genre.toLowerCase()
+        );
     }
     
     // Stop current playback
@@ -320,4 +348,3 @@ function formatTime(seconds) {
     const secs = Math.floor(seconds % 60);
     return minutes + ':' + (secs < 10 ? '0' : '') + secs;
 }
-

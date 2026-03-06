@@ -28,11 +28,10 @@
             <button class="genre-btn" data-genre="psytrance">Psytrance</button>
         </div>
         
-        <!-- Track List Container -->
+        <!-- Track List Container (dynamically filled) -->
         <div id="trackListContainer">
-            <!-- Loading message -->
             <div class="loading-message">
-                <p style="text-align: center; color: #00ffff; font-size: 1.2rem;">
+                <p style="text-align: center; color: #00ffff; font-size: 1.2rem; padding: 40px;">
                     🎵 Loading tracks from database...
                 </p>
             </div>
@@ -40,29 +39,14 @@
         
     </div>
     
-    <!-- Firebase SDK - Fixed Version -->
+    <!-- Firebase SDK v8 (Stable) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     
-    <!-- Firebase Config -->
-    <script>
-    // Firebase Configuration
-    const firebaseConfig = {
-      apiKey: "AIzaSyC1MF9Yk34ojsILyfmJHKyJmjkVOKEEL40",
-      authDomain: "undergroundloops.firebaseapp.com",
-      projectId: "undergroundloops",
-      storageBucket: "undergroundloops.firebasestorage.app",
-      messagingSenderId: "971209771891",
-      appId: "1:971209771891:web:ac3e793cac51386f7f9306"
-    };
+    <!-- Firebase Config (MUST load after Firebase SDK) -->
+    <script src="firebase-config.js"></script>
     
-    // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-    console.log('Firebase initialized!');
-    </script>
-    
-    <!-- Main Script -->
+    <!-- Main Application Script (MUST load after Firebase) -->
     <script src="script.js"></script>
 </body>
 </html>
