@@ -30,6 +30,22 @@ function initSimplePlayer() {
     // Create Visual Bars
     createVisualBars(waveformContainer);
     
+    // Make waveform clickable for seeking
+    waveformContainer.addEventListener('click', function(e) {
+        const rect = waveformContainer.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const percentage = clickX / rect.width;
+        const seekTime = audio.duration * percentage;
+        
+        if(!isNaN(seekTime)) {
+            audio.currentTime = seekTime;
+            updateProgress();
+        }
+    });
+    
+    // Change cursor on hover
+    waveformContainer.style.cursor = 'pointer';
+    
     // Play/Pause Button
     playBtn.addEventListener('click', function() {
         if(isPlaying) {
