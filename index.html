@@ -28,43 +28,24 @@
             <button class="genre-btn" data-genre="psytrance">Psytrance</button>
         </div>
         
-        <!-- Demo Audio Player -->
-        <div class="player-container">
-            <div class="track-header">
-                <!-- Cover Image -->
-                <div class="cover-container">
-                    <img src="cover-01.jpg" alt="Track Cover" class="track-cover">
-                </div>
-                
-                <!-- Track Info -->
-                <div class="track-info">
-                    <h3 class="track-title">Dein Track</h3>
-                    <p class="track-genre">Genre • BPM</p>
-                </div>
-            </div>
-            
-            <!-- Waveform Container -->
-            <div id="waveform"></div>
-            
-            <!-- Player Controls -->
-            <div class="player-controls">
-                <button id="playBtn" class="play-btn">▶</button>
-                <div class="time-display">
-                    <span id="currentTime">0:00</span>
-                    <span>/</span>
-                    <span id="totalTime">0:00</span>
-                </div>
-                <div class="volume-control">
-                    <span class="volume-icon">🔊</span>
-                    <input type="range" id="volumeSlider" min="0" max="100" value="80">
-                </div>
-                <button class="download-btn">⬇ Download</button>
+        <!-- Track List Container -->
+        <div id="trackListContainer">
+            <!-- Loading message -->
+            <div class="loading-message">
+                <p style="text-align: center; color: #00ffff; font-size: 1.2rem;">
+                    🎵 Loading tracks from database...
+                </p>
             </div>
         </div>
         
     </div>
     
-    <!-- Simple Audio Player Script (No external libraries needed!) -->
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    
+    <!-- Simple Audio Player Script -->
     <script src="script.js"></script>
 </body>
 </html>
