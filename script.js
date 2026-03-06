@@ -17,8 +17,8 @@ document.addEventListener('DOMContentLoaded', function() {
 // ============================================
 
 function initSimplePlayer() {
-    // Create Audio Element
-    audio = new Audio('https://cdn.freesound.org/previews/412/412017_7337381-lq.mp3');
+    // Create Audio Element - DEINE EIGENE MP3! 🎵
+    audio = new Audio('tracksdein-track.mp3');
     audio.volume = 0.8;
     
     const playBtn = document.getElementById('playBtn');
