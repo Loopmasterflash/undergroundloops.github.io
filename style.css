@@ -162,9 +162,30 @@ body {
         0 0 40px rgba(255, 0, 255, 0.2);
 }
 
-.track-info {
+.track-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
     margin-bottom: 20px;
-    text-align: center;
+}
+
+.cover-container {
+    flex-shrink: 0;
+}
+
+.track-cover {
+    width: 120px;
+    height: 120px;
+    border-radius: 15px;
+    object-fit: cover;
+    border: 2px solid rgba(0, 255, 255, 0.5);
+    box-shadow: 
+        0 0 20px rgba(0, 255, 255, 0.4),
+        0 4px 15px rgba(0, 0, 0, 0.5);
+}
+
+.track-info {
+    flex-grow: 1;
 }
 
 .track-title {
@@ -302,6 +323,16 @@ body {
         padding: 20px;
     }
     
+    .track-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .track-cover {
+        width: 150px;
+        height: 150px;
+    }
+    
     .track-title {
         font-size: 1.4rem;
     }
@@ -325,6 +356,11 @@ body {
     .genre-btn {
         padding: 8px 12px;
         font-size: 10px;
+    }
+    
+    .track-cover {
+        width: 120px;
+        height: 120px;
     }
     
     #waveform {
