@@ -1,4 +1,4 @@
-// Firebase Configuration for UNDERGROUNDLOOPS
+// Firebase Configuration for UNDERGROUNDLOOPS v2
 const firebaseConfig = {
   apiKey: "AIzaSyC1MF9Yk34ojsILyfmJHKyJmjkVOKEEL40",
   authDomain: "undergroundloops.firebaseapp.com",
@@ -11,7 +11,7 @@ const firebaseConfig = {
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 
-// Initialize Firestore
+// Initialize Services
 const db = firebase.firestore();
 
 console.log('✅ Firebase initialized successfully!');

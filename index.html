@@ -3,32 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UNDERGROUNDLOOPS - Underground Techno & Electronic Loops</title>
+    <title>UNDERGROUNDLOOPS - Underground Techno & Electronic Music</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <!-- Cyberpunk Background -->
     <div class="cyberpunk-bg"></div>
     
+    <!-- Header with Navigation -->
+    <header class="main-header">
+        <div class="header-content">
+            <div class="logo">UNDERGROUNDLOOPS</div>
+            
+            <nav class="main-nav">
+                <a href="#" class="nav-link active" data-page="loops">Loops</a>
+                <a href="#" class="nav-link" data-page="samples">Samples</a>
+                <a href="#" class="nav-link" data-page="tracks">Tracks</a>
+                
+                <!-- Genre Dropdown -->
+                <div class="genre-dropdown">
+                    <button class="genre-dropdown-btn">
+                        Genres <span class="arrow">▼</span>
+                    </button>
+                    <div class="genre-dropdown-menu">
+                        <a href="#" data-genre="all">All Genres</a>
+                        <a href="#" data-genre="techno">Techno</a>
+                        <a href="#" data-genre="minimal">Minimal</a>
+                        <a href="#" data-genre="industrial">Industrial</a>
+                        <a href="#" data-genre="goa">Goa</a>
+                        <a href="#" data-genre="psytrance">Psytrance</a>
+                    </div>
+                </div>
+            </nav>
+            
+            <div class="user-actions">
+                <button id="loginBtn" class="login-btn">Login</button>
+                <div id="userMenu" class="user-menu hidden">
+                    <img id="userAvatar" class="user-avatar" src="" alt="Avatar">
+                    <span id="username" class="username"></span>
+                    <button id="logoutBtn" class="logout-btn-small">Logout</button>
+                </div>
+            </div>
+        </div>
+    </header>
+    
     <!-- Main Container -->
     <div class="container">
         
-        <!-- Logo -->
-        <div class="logo-container">
-            <h1 class="neon-logo">UNDERGROUNDLOOPS</h1>
-        </div>
-        
-        <!-- Genre Buttons -->
-        <div class="genre-buttons">
-            <button class="genre-btn active" data-genre="all">All</button>
-            <button class="genre-btn" data-genre="techno">Techno</button>
-            <button class="genre-btn" data-genre="minimal">Minimal</button>
-            <button class="genre-btn" data-genre="industrial">Industrial</button>
-            <button class="genre-btn" data-genre="goa">Goa</button>
-            <button class="genre-btn" data-genre="psytrance">Psytrance</button>
-        </div>
-        
-        <!-- Track List Container (dynamically filled) -->
+        <!-- Track List Container -->
         <div id="trackListContainer">
             <div class="loading-message">
                 <p style="text-align: center; color: #00ffff; font-size: 1.2rem; padding: 40px;">
@@ -39,14 +61,66 @@
         
     </div>
     
-    <!-- Firebase SDK v8 (Stable) -->
+    <!-- Login/Register Modal -->
+    <div id="authModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            
+            <!-- Login Form -->
+            <div id="loginForm" class="auth-form">
+                <h2>Login</h2>
+                <input type="email" id="loginEmail" placeholder="Email" required>
+                <input type="password" id="loginPassword" placeholder="Password" required>
+                <button id="loginSubmit" class="submit-btn">Login</button>
+                <p class="switch-form">Don't have an account? <a href="#" id="showRegister">Register</a></p>
+            </div>
+            
+            <!-- Register Form -->
+            <div id="registerForm" class="auth-form hidden">
+                <h2>Register</h2>
+                <input type="text" id="registerUsername" placeholder="Username" required>
+                <input type="email" id="registerEmail" placeholder="Email" required>
+                <input type="password" id="registerPassword" placeholder="Password" required>
+                <button id="registerSubmit" class="submit-btn">Register</button>
+                <p class="switch-form">Already have an account? <a href="#" id="showLogin">Login</a></p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Profile Modal -->
+    <div id="profileModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Profile Settings</h2>
+            
+            <div class="profile-section">
+                <label>Avatar:</label>
+                <div class="avatar-upload">
+                    <img id="profileAvatar" src="https://via.placeholder.com/100/ff00ff/ffffff?text=Avatar" alt="Avatar">
+                    <input type="file" id="avatarInput" accept="image/*">
+                    <button id="uploadAvatarBtn">Upload Avatar</button>
+                </div>
+            </div>
+            
+            <div class="profile-section">
+                <label>Username:</label>
+                <input type="text" id="profileUsername" placeholder="Your username">
+                <button id="updateUsernameBtn">Update Username</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Firebase SDK v8 -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     
-    <!-- Firebase Config (MUST load after Firebase SDK) -->
+    <!-- Firebase Config -->
     <script src="firebase-config.js"></script>
     
-    <!-- Main Application Script (MUST load after Firebase) -->
+    <!-- Main Script -->
     <script src="script.js"></script>
+    <script src="auth.js"></script>
 </body>
 </html>

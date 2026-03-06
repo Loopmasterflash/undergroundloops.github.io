@@ -1,29 +1,70 @@
-// ============================================
-// UNDERGROUNDLOOPS - Dynamic Track System
-// ============================================
+// UNDERGROUNDLOOPS v2 - Main Script with Navigation, Comments & Multi-Page
 
 let currentAudio = null;
 let currentTrackId = null;
 let allTracks = [];
 let filteredTracks = [];
 let currentGenre = 'all';
+let currentPage = 'loops'; // loops, samples, tracks
 
-// Wait for DOM to be ready
+// Wait for DOM
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, checking Firebase...');
+    console.log('DOM loaded');
     
-    // Wait a bit for Firebase to fully initialize
     setTimeout(function() {
         if(typeof db !== 'undefined') {
-            console.log('Firebase ready, loading tracks...');
+            console.log('Firebase ready');
             loadTracksFromFirestore();
-            initGenreButtons();
+            initNavigation();
+            initGenreDropdown();
         } else {
             console.error('Firebase not loaded!');
-            showError('Firebase connection failed. Please refresh the page.');
+            showError('Firebase connection failed');
         }
     }, 1000);
 });
+
+// ============================================
+// NAVIGATION
+// ============================================
+
+function initNavigation() {
+    const navLinks = document.querySelectorAll('.nav-link');
+    
+    navLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            // Remove active from all
+            navLinks.forEach(l => l.classList.remove('active'));
+            
+            // Add active to clicked
+            link.classList.add('active');
+            
+            // Get page
+            currentPage = link.getAttribute('data-page');
+            
+            // Filter tracks
+            filterTracks();
+        });
+    });
+}
+
+// ============================================
+// GENRE DROPDOWN
+// ============================================
+
+function initGenreDropdown() {
+    const genreLinks = document.querySelectorAll('.genre-dropdown-menu a');
+    
+    genreLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            currentGenre = link.getAttribute('data-genre');
+            filterTracks();
+        });
+    });
+}
 
 // ============================================
 // LOAD TRACKS FROM FIRESTORE
@@ -31,7 +72,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function loadTracksFromFirestore() {
     try {
-        console.log('Fetching tracks from Firestore...');
+        console.log('Loading tracks...');
         const snapshot = await db.collection('tracks').orderBy('uploadedAt', 'desc').get();
         
         allTracks = [];
@@ -42,30 +83,36 @@ async function loadTracksFromFirestore() {
             });
         });
         
-        console.log('✅ Loaded tracks:', allTracks.length);
-        
-        filteredTracks = allTracks;
-        renderTracks();
+        console.log('Loaded tracks:', allTracks.length);
+        filterTracks();
         
     } catch(error) {
-        console.error('❌ Error loading tracks:', error);
-        showError('Error loading tracks: ' + error.message);
+        console.error('Error loading tracks:', error);
+        showError('Error: ' + error.message);
     }
 }
 
 // ============================================
-// SHOW ERROR MESSAGE
+// FILTER TRACKS
 // ============================================
 
-function showError(message) {
-    document.getElementById('trackListContainer').innerHTML = `
-        <div style="text-align: center; color: #ff0000; padding: 40px;">
-            <p style="font-size: 1.5rem;">❌ ${message}</p>
-            <button onclick="location.reload()" style="margin-top: 20px; padding: 10px 20px; background: rgba(255,0,255,0.3); border: 2px solid #ff00ff; color: #fff; border-radius: 8px; cursor: pointer;">
-                Reload Page
-            </button>
-        </div>
-    `;
+function filterTracks() {
+    // Filter by page type
+    let pageFiltered = allTracks.filter(track => {
+        if(!track.type) return currentPage === 'loops'; // Default to loops if no type
+        return track.type === currentPage;
+    });
+    
+    // Filter by genre
+    if(currentGenre === 'all') {
+        filteredTracks = pageFiltered;
+    } else {
+        filteredTracks = pageFiltered.filter(track => 
+            track.genre && track.genre.toLowerCase() === currentGenre.toLowerCase()
+        );
+    }
+    
+    renderTracks();
 }
 
 // ============================================
@@ -77,10 +124,12 @@ function renderTracks() {
     
     if(filteredTracks.length === 0) {
         container.innerHTML = `
-            <div style="text-align: center; color: #00ffff; padding: 40px;">
-                <p style="font-size: 1.5rem;">🎵 No tracks found</p>
-                <p style="margin-top: 10px; font-size: 0.9rem;">
-                    ${currentGenre === 'all' ? 'Upload your first track in the admin panel!' : 'No tracks in this genre yet.'}
+            <div style="text-align: center; color: #00ffff; padding: 60px 20px;">
+                <p style="font-size: 1.8rem; margin-bottom: 15px;">🎵 No ${currentPage} found</p>
+                <p style="font-size: 1rem; color: #666;">
+                    ${currentGenre === 'all' ? 
+                        'Upload your first ' + currentPage + ' in the admin panel!' : 
+                        'No ' + currentPage + ' in this genre yet.'}
                 </p>
             </div>
         `;
@@ -106,6 +155,7 @@ function createTrackCard(track) {
     
     const bpmText = track.bpm ? ` • ${track.bpm} BPM` : '';
     const genreText = track.genre ? track.genre.toUpperCase() : 'UNKNOWN';
+    const typeText = track.type ? track.type.toUpperCase() : 'LOOP';
     
     card.innerHTML = `
         <div class="track-header">
@@ -115,7 +165,7 @@ function createTrackCard(track) {
             </div>
             <div class="track-info">
                 <h3 class="track-title">${track.title}</h3>
-                <p class="track-genre">${track.artist} • ${genreText}${bpmText}</p>
+                <p class="track-genre">${track.artist} • ${genreText} • ${typeText}${bpmText}</p>
             </div>
         </div>
         
@@ -135,19 +185,140 @@ function createTrackCard(track) {
             </div>
             <a href="${track.audioFile}" download class="download-btn">⬇ Download</a>
         </div>
+        
+        <div class="comments-section" id="comments-${track.id}">
+            <div class="comments-header">
+                <h4 class="comments-title">💬 Comments</h4>
+                <button class="add-comment-btn" onclick="showCommentForm('${track.id}')">Add Comment</button>
+            </div>
+            <div id="comment-form-${track.id}" class="comment-form hidden">
+                <textarea id="comment-text-${track.id}" placeholder="Write your comment..."></textarea>
+                <button onclick="submitComment('${track.id}')">Post Comment</button>
+            </div>
+            <div id="comments-list-${track.id}" class="comments-list">
+                <p style="color: #666; text-align: center; padding: 20px;">Loading comments...</p>
+            </div>
+        </div>
     `;
+    
+    // Load comments for this track
+    loadComments(track.id);
     
     return card;
 }
 
 // ============================================
-// PLAY / PAUSE TRACK
+// COMMENTS SYSTEM
+// ============================================
+
+function showCommentForm(trackId) {
+    // Check if user is logged in
+    if(!currentUser) {
+        alert('Please login to comment!');
+        document.getElementById('loginBtn').click();
+        return;
+    }
+    
+    const form = document.getElementById(`comment-form-${trackId}`);
+    form.classList.toggle('hidden');
+}
+
+async function submitComment(trackId) {
+    if(!currentUser) {
+        alert('Please login to comment!');
+        return;
+    }
+    
+    const commentText = document.getElementById(`comment-text-${trackId}`).value.trim();
+    
+    if(!commentText) {
+        alert('Comment cannot be empty!');
+        return;
+    }
+    
+    try {
+        // Get user data
+        const userDoc = await db.collection('users').doc(currentUser.uid).get();
+        const userData = userDoc.data();
+        
+        // Add comment to Firestore
+        await db.collection('comments').add({
+            trackId: trackId,
+            userId: currentUser.uid,
+            username: userData.username,
+            avatar: userData.avatar,
+            text: commentText,
+            createdAt: new Date().toISOString()
+        });
+        
+        // Clear form
+        document.getElementById(`comment-text-${trackId}`).value = '';
+        document.getElementById(`comment-form-${trackId}`).classList.add('hidden');
+        
+        // Reload comments
+        loadComments(trackId);
+        
+        alert('✅ Comment posted!');
+        
+    } catch(error) {
+        alert('❌ Failed to post comment: ' + error.message);
+    }
+}
+
+async function loadComments(trackId) {
+    try {
+        const snapshot = await db.collection('comments')
+            .where('trackId', '==', trackId)
+            .orderBy('createdAt', 'desc')
+            .get();
+        
+        const commentsList = document.getElementById(`comments-list-${trackId}`);
+        
+        if(snapshot.empty) {
+            commentsList.innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">No comments yet. Be the first!</p>';
+            return;
+        }
+        
+        commentsList.innerHTML = '';
+        
+        snapshot.forEach(doc => {
+            const comment = doc.data();
+            const commentEl = createCommentElement(comment);
+            commentsList.appendChild(commentEl);
+        });
+        
+    } catch(error) {
+        console.error('Error loading comments:', error);
+        document.getElementById(`comments-list-${trackId}`).innerHTML = 
+            '<p style="color: #ff0000; text-align: center;">Error loading comments</p>';
+    }
+}
+
+function createCommentElement(comment) {
+    const div = document.createElement('div');
+    div.className = 'comment';
+    
+    const date = new Date(comment.createdAt);
+    const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+    
+    div.innerHTML = `
+        <div class="comment-header">
+            <span class="comment-author">${comment.username}</span>
+            <span class="comment-date">${dateStr}</span>
+        </div>
+        <p class="comment-text">${comment.text}</p>
+    `;
+    
+    return div;
+}
+
+// ============================================
+// AUDIO PLAYER
 // ============================================
 
 function togglePlay(trackId, audioFile) {
     const playBtn = document.querySelector(`[data-track-id="${trackId}"] .play-btn`);
     
-    // Stop current track if different
     if(currentAudio && currentTrackId !== trackId) {
         currentAudio.pause();
         const oldBtn = document.querySelector(`[data-track-id="${currentTrackId}"] .play-btn`);
@@ -155,7 +326,6 @@ function togglePlay(trackId, audioFile) {
         stopWaveformAnimation(currentTrackId);
     }
     
-    // Toggle play/pause
     if(currentTrackId === trackId && currentAudio) {
         if(currentAudio.paused) {
             currentAudio.play();
@@ -167,7 +337,6 @@ function togglePlay(trackId, audioFile) {
             stopWaveformAnimation(trackId);
         }
     } else {
-        // New track
         currentAudio = new Audio(audioFile);
         currentAudio.volume = 0.8;
         currentTrackId = trackId;
@@ -195,7 +364,7 @@ function togglePlay(trackId, audioFile) {
 }
 
 // ============================================
-// WAVEFORM VISUALIZATION
+// WAVEFORM
 // ============================================
 
 function createWaveformBars(trackId) {
@@ -211,7 +380,6 @@ function createWaveformBars(trackId) {
     container.style.background = 'rgba(0, 0, 0, 0.3)';
     container.style.borderRadius = '10px';
     
-    // Click to seek
     container.addEventListener('click', function(e) {
         if(!currentAudio || currentTrackId !== trackId) return;
         
@@ -226,7 +394,6 @@ function createWaveformBars(trackId) {
         }
     });
     
-    // Create bars
     for(let i = 0; i < 80; i++) {
         const bar = document.createElement('div');
         bar.className = 'audio-bar';
@@ -291,60 +458,26 @@ function stopWaveformAnimation(trackId) {
     });
 }
 
-// ============================================
-// VOLUME CONTROL
-// ============================================
-
 function setVolume(value) {
     if(currentAudio) {
         currentAudio.volume = value / 100;
     }
 }
 
-// ============================================
-// GENRE FILTER
-// ============================================
-
-function initGenreButtons() {
-    const genreButtons = document.querySelectorAll('.genre-btn');
-    
-    genreButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            genreButtons.forEach(btn => btn.classList.remove('active'));
-            this.classList.add('active');
-            
-            currentGenre = this.getAttribute('data-genre');
-            filterTracksByGenre(currentGenre);
-        });
-    });
-}
-
-function filterTracksByGenre(genre) {
-    if(genre === 'all') {
-        filteredTracks = allTracks;
-    } else {
-        filteredTracks = allTracks.filter(track => 
-            track.genre && track.genre.toLowerCase() === genre.toLowerCase()
-        );
-    }
-    
-    // Stop current playback
-    if(currentAudio) {
-        currentAudio.pause();
-        currentAudio = null;
-        currentTrackId = null;
-    }
-    
-    renderTracks();
-}
-
-// ============================================
-// HELPER FUNCTIONS
-// ============================================
-
 function formatTime(seconds) {
     if(isNaN(seconds)) return '0:00';
     const minutes = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return minutes + ':' + (secs < 10 ? '0' : '') + secs;
+}
+
+function showError(message) {
+    document.getElementById('trackListContainer').innerHTML = `
+        <div style="text-align: center; color: #ff0000; padding: 40px;">
+            <p style="font-size: 1.5rem;">❌ ${message}</p>
+            <button onclick="location.reload()" style="margin-top: 20px; padding: 10px 20px; background: rgba(255,0,255,0.3); border: 2px solid #ff00ff; color: #fff; border-radius: 8px; cursor: pointer;">
+                Reload Page
+            </button>
+        </div>
+    `;
 }
