@@ -267,9 +267,9 @@ async function submitComment(trackId) {
 
 async function loadComments(trackId) {
     try {
+        // Load comments WITHOUT orderBy to avoid index requirement
         const snapshot = await db.collection('comments')
             .where('trackId', '==', trackId)
-            .orderBy('createdAt', 'desc')
             .get();
         
         const commentsList = document.getElementById(`comments-list-${trackId}`);
@@ -279,18 +279,30 @@ async function loadComments(trackId) {
             return;
         }
         
+        // Sort comments manually by date
+        const comments = [];
+        snapshot.forEach(doc => {
+            comments.push(doc.data());
+        });
+        
+        // Sort by createdAt descending (newest first)
+        comments.sort((a, b) => {
+            return new Date(b.createdAt) - new Date(a.createdAt);
+        });
+        
         commentsList.innerHTML = '';
         
-        snapshot.forEach(doc => {
-            const comment = doc.data();
+        comments.forEach(comment => {
             const commentEl = createCommentElement(comment);
             commentsList.appendChild(commentEl);
         });
         
     } catch(error) {
         console.error('Error loading comments:', error);
-        document.getElementById(`comments-list-${trackId}`).innerHTML = 
-            '<p style="color: #ff0000; text-align: center;">Error loading comments</p>';
+        const commentsList = document.getElementById(`comments-list-${trackId}`);
+        if(commentsList) {
+            commentsList.innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">No comments yet.</p>';
+        }
     }
 }
 

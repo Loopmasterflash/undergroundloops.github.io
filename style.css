@@ -62,10 +62,27 @@ body {
 }
 
 .logo {
-    font-size: 1.5rem;
-    font-weight: bold;
+    font-family: 'Orbitron', 'Russo One', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 900;
     color: #fff;
-    letter-spacing: 2px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    background: linear-gradient(180deg, #ffffff 0%, #00ffff 50%, #ff00ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 10px rgba(255, 0, 255, 0.8)) 
+            drop-shadow(0 0 20px rgba(0, 255, 255, 0.6));
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.logo:hover {
+    filter: drop-shadow(0 0 20px rgba(255, 0, 255, 1)) 
+            drop-shadow(0 0 30px rgba(0, 255, 255, 1));
+    transform: scale(1.05);
 }
 
 /* Navigation */
