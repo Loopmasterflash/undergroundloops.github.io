@@ -40,12 +40,29 @@
         
     </div>
     
-    <!-- Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <script src="firebase-config.js"></script>
+    <!-- Firebase SDK - Fixed Version -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     
-    <!-- Simple Audio Player Script -->
+    <!-- Firebase Config -->
+    <script>
+    // Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyC1MF9Yk34ojsILyfmJHKyJmjkVOKEEL40",
+      authDomain: "undergroundloops.firebaseapp.com",
+      projectId: "undergroundloops",
+      storageBucket: "undergroundloops.firebasestorage.app",
+      messagingSenderId: "971209771891",
+      appId: "1:971209771891:web:ac3e793cac51386f7f9306"
+    };
+    
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    console.log('Firebase initialized!');
+    </script>
+    
+    <!-- Main Script -->
     <script src="script.js"></script>
 </body>
 </html>
