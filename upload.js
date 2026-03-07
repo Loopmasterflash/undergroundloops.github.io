@@ -2,7 +2,7 @@
 // Token wird sicher aus Firestore geladen
 
 const GITHUB_OWNER = 'Loopmasterflash';
-const GITHUB_REPO = 'loopmasterflash.github.io';
+const GITHUB_REPO = 'undergroundloops.github.io';
 const GITHUB_BRANCH = 'master';
 let GITHUB_TOKEN = null;
 
