@@ -358,6 +358,103 @@
         </div>
     </div>
     
+    <!-- ===== PLAYER MODAL ===== -->
+    <div id="playerModal" style="
+        display:none;
+        position:fixed;inset:0;
+        background:rgba(0,0,0,0.85);
+        z-index:9999;
+        align-items:center;
+        justify-content:center;
+        backdrop-filter:blur(10px);
+    " onclick="closePlayerModal(event)">
+        <div style="
+            background:linear-gradient(135deg,#0a0a0a,#1a0a2e);
+            border:1px solid #ff00ff;
+            border-radius:20px;
+            padding:30px;
+            max-width:550px;
+            width:90%;
+            box-shadow:0 0 60px rgba(255,0,255,0.3);
+            position:relative;
+        " onclick="event.stopPropagation()">
+
+            <!-- Close -->
+            <button onclick="closePlayerModal()" style="
+                position:absolute;top:15px;right:15px;
+                background:none;border:none;color:#aaa;
+                font-size:1.5rem;cursor:pointer;
+            ">✕</button>
+
+            <!-- Cover + Info -->
+            <div style="display:flex;gap:20px;align-items:center;margin-bottom:25px;">
+                <img id="modalCover" src="" style="
+                    width:120px;height:120px;
+                    object-fit:cover;border-radius:12px;
+                    border:2px solid #ff00ff;
+                    box-shadow:0 0 20px rgba(255,0,255,0.4);
+                    flex-shrink:0;
+                ">
+                <div>
+                    <div id="modalTitle" style="color:#fff;font-size:1.1rem;font-weight:bold;margin-bottom:6px;"></div>
+                    <div id="modalArtist" style="color:#00ffff;font-size:0.9rem;margin-bottom:6px;"></div>
+                    <div id="modalMeta" style="color:#888;font-size:0.8rem;"></div>
+                </div>
+            </div>
+
+            <!-- Waveform -->
+            <div id="modalWaveform" style="
+                display:flex;align-items:center;justify-content:space-around;
+                gap:2px;padding:10px;height:80px;
+                background:rgba(0,0,0,0.4);border-radius:10px;
+                cursor:pointer;margin-bottom:20px;
+            "></div>
+
+            <!-- Time -->
+            <div style="display:flex;justify-content:space-between;color:#888;font-size:0.8rem;margin-bottom:15px;">
+                <span id="modalCurrentTime">0:00</span>
+                <span id="modalTotalTime">0:00</span>
+            </div>
+
+            <!-- Controls -->
+            <div style="display:flex;align-items:center;gap:15px;justify-content:center;margin-bottom:20px;">
+                <button onclick="modalTogglePlay()" id="modalPlayBtn" style="
+                    width:60px;height:60px;border-radius:50%;
+                    background:linear-gradient(135deg,#ff00ff,#00ffff);
+                    border:none;color:#000;font-size:1.5rem;
+                    cursor:pointer;transition:all 0.3s;
+                    box-shadow:0 0 20px rgba(255,0,255,0.5);
+                ">▶</button>
+
+                <div style="display:flex;align-items:center;gap:8px;flex:1;">
+                    <span style="color:#aaa;font-size:1rem;">🔊</span>
+                    <input type="range" id="modalVolume" min="0" max="100" value="80"
+                           oninput="setVolume(this.value)"
+                           style="flex:1;accent-color:#ff00ff;">
+                </div>
+            </div>
+
+            <!-- Like + Download -->
+            <div style="display:flex;gap:12px;justify-content:center;">
+                <button id="modalLikeBtn" onclick="modalToggleLike()" style="
+                    padding:10px 24px;
+                    background:rgba(255,0,255,0.2);
+                    border:1px solid #ff00ff;
+                    color:#fff;border-radius:8px;cursor:pointer;
+                    font-size:0.9rem;transition:all 0.3s;
+                ">🤍 <span id="modalLikeCount">0</span></button>
+
+                <a id="modalDownloadBtn" href="#" download style="
+                    padding:10px 24px;
+                    background:rgba(0,255,255,0.2);
+                    border:1px solid #00ffff;
+                    color:#fff;border-radius:8px;cursor:pointer;
+                    font-size:0.9rem;text-decoration:none;
+                ">⬇ Download</a>
+            </div>
+        </div>
+    </div>
+
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
