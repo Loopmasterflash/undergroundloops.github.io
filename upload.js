@@ -3,7 +3,7 @@
 
 const GITHUB_OWNER = 'Loopmasterflash';
 const GITHUB_REPO = 'loopmasterflash.github.io';
-const GITHUB_BRANCH = 'main';
+const GITHUB_BRANCH = 'master';
 let GITHUB_TOKEN = null;
 
 // Load token from Firestore on startup
