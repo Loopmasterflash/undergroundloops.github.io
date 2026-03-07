@@ -227,9 +227,11 @@ function playGridTrack(trackId, audioFile) {
 }
 
 function openPlayerModal(track) {
-    if(!track) return;
+    if(!track) { console.log('No track!'); return; }
     const modal = document.getElementById('playerModal');
     modal.style.display = 'flex';
+    modal.style.position = 'fixed';
+    modal.style.zIndex = '9999';
 
     // Fill modal info
     document.getElementById('modalCover').src = track.coverImage || '';
