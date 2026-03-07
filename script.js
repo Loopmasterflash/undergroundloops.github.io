@@ -153,132 +153,66 @@ function renderTracks() {
 
 function createGridCard(track) {
     const card = document.createElement('div');
-    card.style.cssText = `
-        background: rgba(0,0,0,0.6);
-        border: 1px solid #ff00ff33;
-        border-radius: 12px;
-        overflow: hidden;
-        cursor: pointer;
-        transition: all 0.3s;
-        position: relative;
+    const typeColor = track.type === 'loop' ? '#00ffff' : track.type === 'sample' ? '#ff00ff' : '#ffff00';
+    const bpmText = track.bpm ? `${track.bpm} BPM` : '';
+    const defaultImg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23200020' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23ff00ff' font-size='40'%3E🎵%3C/text%3E%3C/svg%3E";
+
+    card.style.cssText = 'background:rgba(0,0,0,0.6);border:1px solid #ff00ff33;border-radius:12px;overflow:hidden;cursor:pointer;transition:all 0.3s;position:relative;';
+
+    // Cover image
+    const img = document.createElement('img');
+    img.src = track.coverImage || defaultImg;
+    img.onerror = () => img.src = defaultImg;
+    img.style.cssText = 'width:100%;aspect-ratio:1;object-fit:cover;display:block;';
+
+    // Play overlay
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.3s;';
+    overlay.innerHTML = '<div style="width:55px;height:55px;background:rgba(255,0,255,0.9);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;">▶</div>';
+
+    // Type badge
+    const badge = document.createElement('div');
+    badge.style.cssText = `position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.85);border:1px solid ${typeColor};color:${typeColor};padding:2px 8px;border-radius:20px;font-size:0.65rem;font-family:'Orbitron',sans-serif;`;
+    badge.textContent = (track.type || 'loop').toUpperCase();
+
+    // Cover wrapper
+    const coverWrap = document.createElement('div');
+    coverWrap.style.cssText = 'position:relative;';
+    coverWrap.appendChild(img);
+    coverWrap.appendChild(overlay);
+    coverWrap.appendChild(badge);
+
+    // Info section
+    const info = document.createElement('div');
+    info.style.cssText = 'padding:12px;';
+    info.innerHTML = `
+        <div style="color:#fff;font-weight:bold;font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px;" title="${track.title}">${track.title}</div>
+        <div style="color:#00ffff;font-size:0.75rem;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${track.artist || 'Unknown'}</div>
+        <div style="display:flex;justify-content:space-between;margin-top:6px;">
+            <span style="color:#666;font-size:0.7rem;">${track.genre ? track.genre.toUpperCase() : ''}</span>
+            <span style="color:#888;font-size:0.7rem;">${bpmText}</span>
+        </div>
     `;
 
-    card.onclick = (e) => {
-        // Prevent double trigger from buttons inside
-        if(e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return;
-        openPlayerModal(track);
-    };
+    card.appendChild(coverWrap);
+    card.appendChild(info);
 
-    card.onmouseover = () => {
+    // Hover effects
+    card.addEventListener('mouseenter', () => {
         card.style.border = '1px solid #ff00ff';
-        card.style.boxShadow = '0 0 20px rgba(255,0,255,0.3)';
+        card.style.boxShadow = '0 0 25px rgba(255,0,255,0.3)';
         card.style.transform = 'translateY(-4px)';
-    };
-    card.onmouseout = () => {
+        overlay.style.opacity = '1';
+    });
+    card.addEventListener('mouseleave', () => {
         card.style.border = '1px solid #ff00ff33';
         card.style.boxShadow = 'none';
         card.style.transform = 'translateY(0)';
-    };
-
-    const typeColor = track.type === 'loop' ? '#00ffff' : track.type === 'sample' ? '#ff00ff' : '#ffff00';
-    const bpmText = track.bpm ? `${track.bpm} BPM` : '';
-
-    card.innerHTML = `
-        <div style="position:relative;">
-            <img src="${track.coverImage || ''}" 
-                 onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect fill=%22%23200020%22 width=%22200%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23ff00ff%22 font-size=%2240%22%3E🎵%3C/text%3E%3C/svg%3E'"
-                 style="width:100%;aspect-ratio:1;object-fit:cover;display:block;">
-            
-            <!-- Play overlay -->
-            <div onclick="event.stopPropagation(); openPlayerModal(allTracks.find(t=>t.id==='${track.id}'))" style="
-                position:absolute;inset:0;
-                background:rgba(0,0,0,0.4);
-                display:flex;align-items:center;justify-content:center;
-                opacity:0;transition:opacity 0.3s;
-            " class="play-overlay-${track.id}">
-                <div style="
-                    width:50px;height:50px;
-                    background:rgba(255,0,255,0.8);
-                    border-radius:50%;
-                    display:flex;align-items:center;justify-content:center;
-                    font-size:1.4rem;
-                ">▶</div>
-            </div>
-
-            <!-- Type badge -->
-            <div style="
-                position:absolute;top:8px;right:8px;
-                background:rgba(0,0,0,0.8);
-                border:1px solid ${typeColor};
-                color:${typeColor};
-                padding:2px 8px;border-radius:20px;
-                font-size:0.65rem;font-family:'Orbitron',sans-serif;
-            ">${(track.type || 'loop').toUpperCase()}</div>
-        </div>
-
-        <div style="padding:12px;">
-            <div style="
-                color:#fff;font-weight:bold;
-                font-size:0.85rem;
-                white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-                margin-bottom:4px;
-            " title="${track.title}">${track.title}</div>
-            
-            <div style="color:#00ffff;font-size:0.75rem;margin-bottom:4px;
-                white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                ${track.artist || 'Unknown'}
-            </div>
-
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
-                <span style="color:#666;font-size:0.7rem;">${track.genre ? track.genre.toUpperCase() : ''}</span>
-                <span style="color:#888;font-size:0.7rem;">${bpmText}</span>
-            </div>
-
-            <!-- Mini player -->
-            <div id="miniPlayer-${track.id}" style="display:none;margin-top:10px;">
-                <div style="display:flex;align-items:center;gap:8px;">
-                    <button onclick="openPlayerModal(allTracks.find(t=>t.id==='${track.id}'))" 
-                            id="gridPlayBtn-${track.id}"
-                            style="
-                                background:rgba(255,0,255,0.3);border:1px solid #ff00ff;
-                                color:#fff;border-radius:50%;width:30px;height:30px;
-                                cursor:pointer;font-size:0.8rem;flex-shrink:0;
-                            ">▶</button>
-                    <div style="color:#aaa;font-size:0.7rem;">
-                        <span id="gridTime-${track.id}">0:00</span>
-                    </div>
-                    <button onclick="toggleLike('${track.id}')" class="like-btn" style="
-                        background:none;border:none;cursor:pointer;
-                        color:#aaa;font-size:0.8rem;margin-left:auto;
-                    ">🤍 <span class="like-count">${track.likes || 0}</span></button>
-                </div>
-            </div>
-        </div>
-    `;
-
-    // Show play overlay on hover
-    card.addEventListener('mouseover', () => {
-        const overlay = card.querySelector(`.play-overlay-${track.id}`);
-        if(overlay) overlay.style.opacity = '1';
-        const mini = document.getElementById(`miniPlayer-${track.id}`);
-        if(mini) mini.style.display = 'block';
-    });
-    card.addEventListener('mouseout', () => {
-        const overlay = card.querySelector(`.play-overlay-${track.id}`);
-        if(overlay && currentTrackId !== track.id) overlay.style.opacity = '0';
-        const mini = document.getElementById(`miniPlayer-${track.id}`);
-        if(mini && currentTrackId !== track.id) mini.style.display = 'none';
+        overlay.style.opacity = '0';
     });
 
-    // Check if liked
-    if(typeof checkIfLiked === 'function') {
-        checkIfLiked(track.id).then(isLiked => {
-            if(isLiked) {
-                const likeBtn = card.querySelector('.like-btn');
-                if(likeBtn) { likeBtn.classList.add('liked'); likeBtn.querySelector('.heart') && (likeBtn.innerHTML = `❤️ <span class="like-count">${track.likes || 0}</span>`); }
-            }
-        });
-    }
+    // ✅ Click opens modal
+    card.addEventListener('click', () => openPlayerModal(track));
 
     return card;
 }
