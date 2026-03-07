@@ -1,6 +1,6 @@
-// Firebase Configuration for UNDERGROUNDLOOPS v3 - NEW API KEY
+// Firebase Configuration for UNDERGROUNDLOOPS v3 - CORRECT API KEY
 const firebaseConfig = {
-  apiKey: "AIzaSyALbfa5LSqPH2e7ZDgZwUaRoE2Lq46x5ys",
+  apiKey: "AIzaSyCiMf9Yk34ojsIlyfmJHKyJmjkVOKEEl40",
   authDomain: "undergroundloops.firebaseapp.com",
   projectId: "undergroundloops",
   storageBucket: "undergroundloops.firebasestorage.app",
@@ -14,4 +14,4 @@ firebase.initializeApp(firebaseConfig);
 // Initialize Services
 const db = firebase.firestore();
 
-console.log('✅ Firebase initialized successfully with NEW API KEY!');
+console.log('✅ Firebase initialized successfully with CORRECT API KEY!');
