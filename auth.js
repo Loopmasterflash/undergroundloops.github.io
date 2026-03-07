@@ -15,7 +15,6 @@ setTimeout(() => {
 function initAuth() {
     const auth = firebase.auth();
 
-    // Check if user is logged in
     auth.onAuthStateChanged(user => {
         if(user) {
             currentUser = user;
@@ -27,21 +26,18 @@ function initAuth() {
         }
     });
 
-    // Login Button
     document.getElementById('loginBtn').addEventListener('click', () => {
         document.getElementById('authModal').classList.remove('hidden');
         document.getElementById('loginForm').classList.remove('hidden');
         document.getElementById('registerForm').classList.add('hidden');
     });
 
-    // Close Modal
     document.querySelectorAll('.close-modal').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.target.closest('.modal').classList.add('hidden');
         });
     });
 
-    // Switch Forms
     document.getElementById('showRegister').addEventListener('click', (e) => {
         e.preventDefault();
         document.getElementById('loginForm').classList.add('hidden');
@@ -54,7 +50,6 @@ function initAuth() {
         document.getElementById('loginForm').classList.remove('hidden');
     });
 
-    // Login Submit
     document.getElementById('loginSubmit').addEventListener('click', async () => {
         const email = document.getElementById('loginEmail').value;
         const password = document.getElementById('loginPassword').value;
@@ -67,7 +62,6 @@ function initAuth() {
         }
     });
 
-    // Register Submit
     document.getElementById('registerSubmit').addEventListener('click', async () => {
         const username = document.getElementById('registerUsername').value;
         const email = document.getElementById('registerEmail').value;
@@ -88,7 +82,6 @@ function initAuth() {
         }
     });
 
-    // Logout
     document.getElementById('logoutBtn').addEventListener('click', async () => {
         try {
             await auth.signOut();
@@ -99,43 +92,78 @@ function initAuth() {
         }
     });
 
-    // ✅ Avatar Upload - ID ist "avatarUpload" laut index.html
+    // ✅ Avatar Upload mit automatischer Komprimierung
     const avatarUpload = document.getElementById('avatarUpload');
     if(avatarUpload) {
         avatarUpload.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if(!file) return;
-
             if(!currentUser) { alert('Please login first'); return; }
-
-            if(file.size > 2 * 1024 * 1024) {
-                alert('❌ File too large! Max 2MB allowed.');
-                return;
-            }
-
             if(!file.type.startsWith('image/')) {
                 alert('❌ Only image files allowed!');
                 return;
             }
 
-            const reader = new FileReader();
-            reader.onload = async (event) => {
-                const base64Image = event.target.result;
-                try {
-                    await db.collection('users').doc(currentUser.uid).update({ avatar: base64Image });
-                    // Update alle Avatar Bilder auf der Seite
-                    ['settingsAvatar', 'profilePageAvatar', 'userAvatar'].forEach(id => {
-                        const el = document.getElementById(id);
-                        if(el) el.src = base64Image;
-                    });
-                    alert('✅ Avatar updated successfully!');
-                } catch(err) {
-                    alert('❌ Failed to save avatar: ' + err.message);
-                }
-            };
-            reader.readAsDataURL(file);
+            try {
+                // ✅ Bild automatisch auf 200x200px verkleinern & komprimieren
+                const compressedBase64 = await compressImage(file, 200, 200, 0.7);
+                
+                await db.collection('users').doc(currentUser.uid).update({ avatar: compressedBase64 });
+
+                ['settingsAvatar', 'profilePageAvatar', 'userAvatar'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) el.src = compressedBase64;
+                });
+
+                alert('✅ Avatar updated successfully!');
+            } catch(err) {
+                alert('❌ Failed to save avatar: ' + err.message);
+            }
         });
     }
+}
+
+// ✅ Bild komprimieren Funktion
+function compressImage(file, maxWidth, maxHeight, quality) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                
+                let width = img.width;
+                let height = img.height;
+                
+                // Skalierung berechnen
+                if(width > height) {
+                    if(width > maxWidth) {
+                        height = Math.round(height * maxWidth / width);
+                        width = maxWidth;
+                    }
+                } else {
+                    if(height > maxHeight) {
+                        width = Math.round(width * maxHeight / height);
+                        height = maxHeight;
+                    }
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // Als JPEG komprimieren
+                const compressed = canvas.toDataURL('image/jpeg', quality);
+                resolve(compressed);
+            };
+            img.onerror = reject;
+            img.src = e.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
 }
 
 function showUserMenu(user) {
@@ -169,7 +197,6 @@ async function loadUserProfile(uid) {
     }
 }
 
-// Eigenes Profil öffnen
 function openProfile() {
     if(!currentUser) return;
     showProfilePage(currentUser.uid);
@@ -177,7 +204,6 @@ function openProfile() {
 
 async function showProfilePage(uid) {
     currentProfileUID = uid;
-
     document.getElementById('mainContainer').classList.add('hidden');
     document.getElementById('profileContainer').classList.remove('hidden');
     document.getElementById('messagesContainer').classList.add('hidden');
@@ -200,13 +226,11 @@ async function showProfilePage(uid) {
         const settingsUsername = document.getElementById('settingsUsername');
         if(settingsUsername) settingsUsername.value = userData.username;
 
-        // Settings Tab nur für eigenes Profil
         const settingsTabBtn = document.querySelector('[data-tab="settings"]');
         if(settingsTabBtn) {
             settingsTabBtn.style.display = (currentUser && currentUser.uid === uid) ? '' : 'none';
         }
 
-        // Follow Button für fremde Profile
         const profileActions = document.getElementById('profileActions');
         if(profileActions) {
             if(currentUser && currentUser.uid !== uid) {
@@ -219,14 +243,12 @@ async function showProfilePage(uid) {
         loadProfileStats(uid);
         loadUserUploads(uid);
 
-        // Tab switching
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.onclick = () => {
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                 document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
                 btn.classList.add('active');
-                const tabId = btn.getAttribute('data-tab') + 'Tab';
-                document.getElementById(tabId).classList.remove('hidden');
+                document.getElementById(btn.getAttribute('data-tab') + 'Tab').classList.remove('hidden');
             };
         });
 
@@ -239,13 +261,10 @@ async function loadProfileStats(uid) {
     try {
         const tracksSnap = await db.collection('tracks').where('userId', '==', uid).get();
         document.getElementById('uploadsCount').textContent = tracksSnap.size;
-
         const followersSnap = await db.collection('follows').where('followingId', '==', uid).get();
         document.getElementById('followersCount').textContent = followersSnap.size;
-
         const followingSnap = await db.collection('follows').where('followerId', '==', uid).get();
         document.getElementById('followingCount').textContent = followingSnap.size;
-
         let totalLikes = 0;
         tracksSnap.forEach(doc => { totalLikes += (doc.data().likes || 0); });
         document.getElementById('likesCount').textContent = totalLikes;
