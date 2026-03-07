@@ -163,6 +163,12 @@ function createGridCard(track) {
         position: relative;
     `;
 
+    card.onclick = (e) => {
+        // Prevent double trigger from buttons inside
+        if(e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return;
+        openPlayerModal(track);
+    };
+
     card.onmouseover = () => {
         card.style.border = '1px solid #ff00ff';
         card.style.boxShadow = '0 0 20px rgba(255,0,255,0.3)';
@@ -184,7 +190,7 @@ function createGridCard(track) {
                  style="width:100%;aspect-ratio:1;object-fit:cover;display:block;">
             
             <!-- Play overlay -->
-            <div onclick="playGridTrack('${track.id}', '${track.audioFile}')" style="
+            <div onclick="event.stopPropagation(); openPlayerModal(allTracks.find(t=>t.id==='${track.id}'))" style="
                 position:absolute;inset:0;
                 background:rgba(0,0,0,0.4);
                 display:flex;align-items:center;justify-content:center;
@@ -231,7 +237,7 @@ function createGridCard(track) {
             <!-- Mini player -->
             <div id="miniPlayer-${track.id}" style="display:none;margin-top:10px;">
                 <div style="display:flex;align-items:center;gap:8px;">
-                    <button onclick="playGridTrack('${track.id}', '${track.audioFile}')" 
+                    <button onclick="openPlayerModal(allTracks.find(t=>t.id==='${track.id}'))" 
                             id="gridPlayBtn-${track.id}"
                             style="
                                 background:rgba(255,0,255,0.3);border:1px solid #ff00ff;
@@ -277,43 +283,136 @@ function createGridCard(track) {
     return card;
 }
 
+let currentModalTrackId = null;
+
 function playGridTrack(trackId, audioFile) {
-    const playBtn = document.getElementById(`gridPlayBtn-${trackId}`);
+    // Find track data
+    const track = allTracks.find(t => t.id === trackId);
+    if(!track) return;
+    openPlayerModal(track);
+}
 
-    if(currentAudio && currentTrackId !== trackId) {
+function openPlayerModal(track) {
+    if(!track) return;
+    const modal = document.getElementById('playerModal');
+    modal.style.display = 'flex';
+
+    // Fill modal info
+    document.getElementById('modalCover').src = track.coverImage || '';
+    document.getElementById('modalTitle').textContent = track.title;
+    document.getElementById('modalArtist').textContent = track.artist || '';
+    document.getElementById('modalMeta').textContent = 
+        (track.genre ? track.genre.toUpperCase() : '') + 
+        (track.type ? ' • ' + track.type.toUpperCase() : '') + 
+        (track.bpm ? ' • ' + track.bpm + ' BPM' : '');
+    document.getElementById('modalDownloadBtn').href = track.audioFile;
+    document.getElementById('modalLikeCount').textContent = track.likes || 0;
+
+    // Stop previous audio
+    if(currentAudio && currentModalTrackId !== track.id) {
         currentAudio.pause();
-        const oldBtn = document.getElementById(`gridPlayBtn-${currentTrackId}`);
-        if(oldBtn) oldBtn.textContent = '▶';
     }
 
-    if(currentTrackId === trackId && currentAudio) {
-        if(currentAudio.paused) {
-            currentAudio.play();
-            if(playBtn) playBtn.textContent = '⏸';
-        } else {
-            currentAudio.pause();
-            if(playBtn) playBtn.textContent = '▶';
-        }
-    } else {
-        currentAudio = new Audio(audioFile);
-        currentAudio.volume = 0.8;
-        currentTrackId = trackId;
+    currentModalTrackId = track.id;
+    currentTrackId = track.id;
 
-        currentAudio.addEventListener('timeupdate', () => {
-            const el = document.getElementById(`gridTime-${trackId}`);
-            if(el) el.textContent = formatTime(currentAudio.currentTime) + ' / ' + formatTime(currentAudio.duration);
-        });
-        currentAudio.addEventListener('ended', () => {
-            if(playBtn) playBtn.textContent = '▶';
-        });
+    // Start audio
+    currentAudio = new Audio(track.audioFile);
+    currentAudio.volume = document.getElementById('modalVolume').value / 100;
 
+    currentAudio.addEventListener('loadedmetadata', () => {
+        document.getElementById('modalTotalTime').textContent = formatTime(currentAudio.duration);
+        buildModalWaveform();
+    });
+
+    currentAudio.addEventListener('timeupdate', () => {
+        document.getElementById('modalCurrentTime').textContent = formatTime(currentAudio.currentTime);
+        updateModalWaveform();
+    });
+
+    currentAudio.addEventListener('ended', () => {
+        document.getElementById('modalPlayBtn').textContent = '▶';
+    });
+
+    currentAudio.play();
+    document.getElementById('modalPlayBtn').textContent = '⏸';
+
+    // Check if liked
+    if(typeof checkIfLiked === 'function') {
+        checkIfLiked(track.id).then(isLiked => {
+            document.getElementById('modalLikeBtn').innerHTML = 
+                (isLiked ? '❤️' : '🤍') + ' <span id="modalLikeCount">' + (track.likes || 0) + '</span>';
+        });
+    }
+}
+
+function closePlayerModal(event) {
+    if(event && event.target.id !== 'playerModal') return;
+    document.getElementById('playerModal').style.display = 'none';
+    if(currentAudio) { currentAudio.pause(); currentAudio = null; }
+    document.getElementById('modalWaveform').innerHTML = '';
+    document.getElementById('modalPlayBtn').textContent = '▶';
+}
+
+function modalTogglePlay() {
+    if(!currentAudio) return;
+    if(currentAudio.paused) {
         currentAudio.play();
-        if(playBtn) playBtn.textContent = '⏸';
-
-        // Show mini player
-        const mini = document.getElementById(`miniPlayer-${trackId}`);
-        if(mini) mini.style.display = 'block';
+        document.getElementById('modalPlayBtn').textContent = '⏸';
+    } else {
+        currentAudio.pause();
+        document.getElementById('modalPlayBtn').textContent = '▶';
     }
+}
+
+async function modalToggleLike() {
+    if(!currentModalTrackId) return;
+    await toggleLike(currentModalTrackId);
+    // Update like count in modal
+    const trackDoc = await db.collection('tracks').doc(currentModalTrackId).get();
+    if(trackDoc.exists) {
+        const likes = trackDoc.data().likes || 0;
+        const likeCount = document.getElementById('modalLikeCount');
+        if(likeCount) likeCount.textContent = likes;
+    }
+}
+
+function buildModalWaveform() {
+    const container = document.getElementById('modalWaveform');
+    container.innerHTML = '';
+
+    container.addEventListener('click', function(e) {
+        if(!currentAudio) return;
+        const pct = (e.clientX - container.getBoundingClientRect().left) / container.offsetWidth;
+        const t = currentAudio.duration * pct;
+        if(!isNaN(t)) { currentAudio.currentTime = t; }
+    });
+
+    for(let i = 0; i < 60; i++) {
+        const bar = document.createElement('div');
+        bar.className = 'modal-bar';
+        bar.style.cssText = `
+            width:6px;height:${Math.random()*60+20}%;
+            background:rgba(150,150,150,0.6);
+            border-radius:3px;transition:background 0.1s;flex-shrink:0;
+        `;
+        container.appendChild(bar);
+    }
+}
+
+function updateModalWaveform() {
+    if(!currentAudio) return;
+    const bars = document.querySelectorAll('.modal-bar');
+    const p = currentAudio.currentTime / currentAudio.duration;
+    bars.forEach((bar, i) => {
+        if(i / bars.length <= p) {
+            bar.style.background = '#ff00ff';
+            bar.style.boxShadow = '0 0 8px rgba(255,0,255,0.8)';
+        } else {
+            bar.style.background = 'rgba(150,150,150,0.6)';
+            bar.style.boxShadow = 'none';
+        }
+    });
 }
 
 // ============================================
