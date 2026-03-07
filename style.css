@@ -196,6 +196,33 @@ body {
     gap: 15px;
 }
 
+.messages-icon {
+    position: relative;
+    font-size: 24px;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.messages-icon:hover {
+    transform: scale(1.1);
+}
+
+.unread-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #ff0000;
+    color: #fff;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: bold;
+}
+
 .login-btn {
     background: rgba(0, 255, 255, 0.3);
     border: 2px solid #00ffff;
@@ -722,5 +749,466 @@ body {
     
     .player-controls {
         justify-content: center;
+    }
+}
+
+/* Like Button */
+.like-btn {
+    background: transparent;
+    border: 2px solid rgba(255, 0, 255, 0.5);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.like-btn:hover {
+    background: rgba(255, 0, 255, 0.2);
+    border-color: #ff00ff;
+    transform: scale(1.05);
+}
+
+.like-btn.liked {
+    background: rgba(255, 0, 255, 0.4);
+    border-color: #ff00ff;
+}
+
+.like-btn.liked .heart {
+    color: #ff00ff;
+}
+
+/* Profile Page */
+.profile-page {
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(20px);
+    border: 2px solid rgba(255, 0, 255, 0.3);
+    border-radius: 20px;
+    padding: 40px;
+    margin-top: 20px;
+}
+
+.back-btn {
+    background: rgba(0, 255, 255, 0.3);
+    border: 2px solid #00ffff;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    margin-bottom: 30px;
+    transition: all 0.3s ease;
+}
+
+.back-btn:hover {
+    background: rgba(0, 255, 255, 0.5);
+}
+
+.profile-header {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+}
+
+.profile-page-avatar {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    border: 3px solid #00ffff;
+    object-fit: cover;
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+}
+
+.profile-info {
+    flex: 1;
+}
+
+.profile-page-username {
+    font-size: 2.5rem;
+    color: #fff;
+    margin-bottom: 10px;
+}
+
+.profile-page-email {
+    color: #00ffff;
+    font-size: 1rem;
+    margin-bottom: 5px;
+}
+
+.profile-page-joined {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.profile-actions {
+    display: flex;
+    gap: 15px;
+}
+
+.follow-btn {
+    background: rgba(255, 0, 255, 0.3);
+    border: 2px solid #ff00ff;
+    color: #fff;
+    padding: 12px 30px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.follow-btn:hover {
+    background: rgba(255, 0, 255, 0.5);
+    box-shadow: 0 0 20px rgba(255, 0, 255, 0.8);
+}
+
+.follow-btn.following {
+    background: rgba(0, 255, 255, 0.3);
+    border-color: #00ffff;
+}
+
+.message-user-btn {
+    background: rgba(0, 255, 255, 0.3);
+    border: 2px solid #00ffff;
+    color: #fff;
+    padding: 12px 30px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.message-user-btn:hover {
+    background: rgba(0, 255, 255, 0.5);
+}
+
+/* Profile Stats */
+.profile-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+}
+
+.stat-box {
+    background: rgba(0, 0, 0, 0.5);
+    border: 2px solid rgba(255, 0, 255, 0.3);
+    border-radius: 15px;
+    padding: 25px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.stat-box.clickable {
+    cursor: pointer;
+}
+
+.stat-box.clickable:hover {
+    border-color: #ff00ff;
+    background: rgba(255, 0, 255, 0.1);
+    transform: translateY(-5px);
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    color: #00ffff;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.stat-label {
+    color: #fff;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Profile Tabs */
+.profile-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 30px;
+    border-bottom: 2px solid rgba(255, 0, 255, 0.3);
+}
+
+.tab-btn {
+    background: transparent;
+    border: none;
+    color: #666;
+    padding: 15px 25px;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    border-bottom: 3px solid transparent;
+}
+
+.tab-btn:hover {
+    color: #00ffff;
+}
+
+.tab-btn.active {
+    color: #ff00ff;
+    border-bottom-color: #ff00ff;
+}
+
+.tab-content {
+    min-height: 300px;
+}
+
+/* Settings */
+.settings-section {
+    background: rgba(0, 0, 0, 0.4);
+    padding: 30px;
+    border-radius: 15px;
+    margin-bottom: 20px;
+}
+
+.settings-section h3 {
+    color: #00ffff;
+    margin-bottom: 20px;
+}
+
+.settings-avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 2px solid #00ffff;
+    margin-bottom: 15px;
+    display: block;
+}
+
+.settings-section input[type="text"] {
+    width: 100%;
+    max-width: 400px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(0, 255, 255, 0.3);
+    border-radius: 8px;
+    color: #fff;
+    font-family: 'Courier New', monospace;
+    margin-bottom: 15px;
+}
+
+.settings-section button {
+    background: rgba(255, 0, 255, 0.3);
+    border: 2px solid #ff00ff;
+    color: #fff;
+    padding: 12px 25px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    transition: all 0.3s ease;
+}
+
+.settings-section button:hover {
+    background: rgba(255, 0, 255, 0.5);
+}
+
+/* Messages Page */
+.messages-page {
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(20px);
+    border: 2px solid rgba(255, 0, 255, 0.3);
+    border-radius: 20px;
+    padding: 40px;
+    margin-top: 20px;
+}
+
+.messages-page h2 {
+    color: #00ffff;
+    margin-bottom: 30px;
+}
+
+.messages-layout {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 30px;
+    min-height: 600px;
+}
+
+.conversations-list {
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 15px;
+    padding: 20px;
+    overflow-y: auto;
+    max-height: 600px;
+}
+
+.conversation-item {
+    background: rgba(255, 0, 255, 0.1);
+    border: 2px solid rgba(255, 0, 255, 0.3);
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.conversation-item:hover {
+    background: rgba(255, 0, 255, 0.2);
+    border-color: #ff00ff;
+}
+
+.conversation-item.active {
+    background: rgba(255, 0, 255, 0.3);
+    border-color: #ff00ff;
+}
+
+.conversation-username {
+    color: #00ffff;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.conversation-preview {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.message-view {
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 15px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.messages-header {
+    color: #00ffff;
+    font-size: 1.2rem;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid rgba(255, 0, 255, 0.3);
+}
+
+.messages-body {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.message-bubble {
+    max-width: 70%;
+    padding: 12px 18px;
+    border-radius: 15px;
+    word-wrap: break-word;
+}
+
+.message-bubble.sent {
+    align-self: flex-end;
+    background: rgba(255, 0, 255, 0.3);
+    border: 2px solid rgba(255, 0, 255, 0.5);
+}
+
+.message-bubble.received {
+    align-self: flex-start;
+    background: rgba(0, 255, 255, 0.2);
+    border: 2px solid rgba(0, 255, 255, 0.4);
+}
+
+.message-time {
+    font-size: 0.75rem;
+    color: #666;
+    margin-top: 5px;
+}
+
+.message-input-area {
+    display: flex;
+    gap: 10px;
+}
+
+.message-input-area textarea {
+    flex: 1;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 2px solid rgba(0, 255, 255, 0.3);
+    border-radius: 10px;
+    color: #fff;
+    font-family: 'Courier New', monospace;
+    resize: none;
+    min-height: 50px;
+}
+
+.message-input-area textarea:focus {
+    outline: none;
+    border-color: #00ffff;
+}
+
+.send-message-btn {
+    background: rgba(255, 0, 255, 0.3);
+    border: 2px solid #ff00ff;
+    color: #fff;
+    padding: 12px 25px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    transition: all 0.3s ease;
+}
+
+.send-message-btn:hover {
+    background: rgba(255, 0, 255, 0.5);
+}
+
+/* Follow List Modal */
+.follow-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.follow-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.follow-item:hover {
+    background: rgba(255, 0, 255, 0.2);
+}
+
+.follow-item-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 2px solid #00ffff;
+    object-fit: cover;
+}
+
+.follow-item-name {
+    color: #00ffff;
+    font-size: 1.1rem;
+    cursor: pointer;
+}
+
+.follow-item-name:hover {
+    text-decoration: underline;
+}
+
+/* Responsive for Messages */
+@media (max-width: 768px) {
+    .messages-layout {
+        grid-template-columns: 1fr;
+    }
+    
+    .conversations-list {
+        max-height: 300px;
     }
 }

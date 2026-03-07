@@ -165,7 +165,10 @@ function createTrackCard(track) {
             </div>
             <div class="track-info">
                 <h3 class="track-title">${track.title}</h3>
-                <p class="track-genre">${track.artist} • ${genreText} • ${typeText}${bpmText}</p>
+                <p class="track-genre">
+                    <span class="artist-link" onclick="openProfile('${track.userId}')" style="cursor: pointer; color: #00ffff; text-decoration: underline;">${track.artist}</span>
+                    • ${genreText} • ${typeText}${bpmText}
+                </p>
             </div>
         </div>
         
@@ -183,6 +186,10 @@ function createTrackCard(track) {
                 <input type="range" class="volume-slider" min="0" max="100" value="80" 
                        onchange="setVolume(this.value)">
             </div>
+            <button class="like-btn" onclick="toggleLike('${track.id}')">
+                <span class="heart">🤍</span>
+                <span class="like-count">${track.likes || 0}</span>
+            </button>
             <a href="${track.audioFile}" download class="download-btn">⬇ Download</a>
         </div>
         
@@ -203,6 +210,19 @@ function createTrackCard(track) {
     
     // Load comments for this track
     loadComments(track.id);
+    
+    // Check if track is liked (async)
+    if(typeof checkIfLiked === 'function') {
+        checkIfLiked(track.id).then(isLiked => {
+            if(isLiked) {
+                const likeBtn = card.querySelector('.like-btn');
+                if(likeBtn) {
+                    likeBtn.classList.add('liked');
+                    likeBtn.querySelector('.heart').textContent = '❤️';
+                }
+            }
+        });
+    }
     
     return card;
 }

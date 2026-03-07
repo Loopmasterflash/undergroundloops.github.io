@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UNDERGROUNDLOOPS - Underground Techno & Electronic Music</title>
     
-    <!-- Google Fonts - Heavy Metal Style -->
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Russo+One&family=Orbitron:wght@900&display=swap" rel="stylesheet">
@@ -19,10 +19,10 @@
     <!-- Header with Navigation -->
     <header class="main-header">
         <div class="header-content">
-            <div class="logo">UNDERGROUNDLOOPS</div>
+            <div class="logo" onclick="window.location.href='index.html'">UNDERGROUNDLOOPS</div>
             
             <nav class="main-nav">
-                <a href="#" class="nav-link active" data-page="loops">Loops</a>
+                <a href="index.html" class="nav-link active" data-page="loops">Loops</a>
                 <a href="#" class="nav-link" data-page="samples">Samples</a>
                 <a href="#" class="nav-link" data-page="tracks">Tracks</a>
                 
@@ -43,10 +43,16 @@
             </nav>
             
             <div class="user-actions">
+                <!-- Messages Icon (only when logged in) -->
+                <div id="messagesIcon" class="messages-icon hidden" onclick="openMessages()">
+                    💬
+                    <span id="unreadBadge" class="unread-badge hidden">0</span>
+                </div>
+                
                 <button id="loginBtn" class="login-btn">Login</button>
                 <div id="userMenu" class="user-menu hidden">
-                    <img id="userAvatar" class="user-avatar" src="" alt="Avatar">
-                    <span id="username" class="username"></span>
+                    <img id="userAvatar" class="user-avatar" src="" alt="Avatar" onclick="openProfile()">
+                    <span id="username" class="username" onclick="openProfile()"></span>
                     <button id="logoutBtn" class="logout-btn-small">Logout</button>
                 </div>
             </div>
@@ -54,7 +60,7 @@
     </header>
     
     <!-- Main Container -->
-    <div class="container">
+    <div class="container" id="mainContainer">
         
         <!-- Track List Container -->
         <div id="trackListContainer">
@@ -67,12 +73,94 @@
         
     </div>
     
+    <!-- User Profile Page (hidden by default) -->
+    <div class="container hidden" id="profileContainer">
+        <div class="profile-page">
+            <button class="back-btn" onclick="showMainPage()">← Back to Tracks</button>
+            
+            <div class="profile-header">
+                <img id="profilePageAvatar" class="profile-page-avatar" src="" alt="Avatar">
+                <div class="profile-info">
+                    <h2 id="profilePageUsername" class="profile-page-username"></h2>
+                    <p id="profilePageEmail" class="profile-page-email"></p>
+                    <p id="profilePageJoined" class="profile-page-joined"></p>
+                </div>
+                <div class="profile-actions" id="profileActions">
+                    <!-- Follow button or Edit Profile button -->
+                </div>
+            </div>
+            
+            <div class="profile-stats">
+                <div class="stat-box">
+                    <div class="stat-number" id="uploadsCount">0</div>
+                    <div class="stat-label">Uploads</div>
+                </div>
+                <div class="stat-box clickable" onclick="showFollowers()">
+                    <div class="stat-number" id="followersCount">0</div>
+                    <div class="stat-label">Followers</div>
+                </div>
+                <div class="stat-box clickable" onclick="showFollowing()">
+                    <div class="stat-number" id="followingCount">0</div>
+                    <div class="stat-label">Following</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" id="likesCount">0</div>
+                    <div class="stat-label">Likes Received</div>
+                </div>
+            </div>
+            
+            <div class="profile-tabs">
+                <button class="tab-btn active" data-tab="uploads">My Uploads</button>
+                <button class="tab-btn" data-tab="liked">Liked Tracks</button>
+                <button class="tab-btn" data-tab="settings">Settings</button>
+            </div>
+            
+            <div class="profile-content">
+                <div id="uploadsTab" class="tab-content active">
+                    <div id="userUploads"></div>
+                </div>
+                <div id="likedTab" class="tab-content hidden">
+                    <div id="userLikedTracks"></div>
+                </div>
+                <div id="settingsTab" class="tab-content hidden">
+                    <div class="settings-section">
+                        <h3>Avatar</h3>
+                        <img id="settingsAvatar" class="settings-avatar" src="">
+                        <input type="file" id="avatarUpload" accept="image/*" style="display:none">
+                        <button onclick="document.getElementById('avatarUpload').click()">Change Avatar</button>
+                    </div>
+                    <div class="settings-section">
+                        <h3>Username</h3>
+                        <input type="text" id="settingsUsername" placeholder="Username">
+                        <button onclick="updateUsername()">Update Username</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Messages Page -->
+    <div class="container hidden" id="messagesContainer">
+        <div class="messages-page">
+            <button class="back-btn" onclick="showMainPage()">← Back</button>
+            <h2>Messages</h2>
+            
+            <div class="messages-layout">
+                <div class="conversations-list" id="conversationsList">
+                    <p style="color: #666; text-align: center; padding: 20px;">Loading conversations...</p>
+                </div>
+                <div class="message-view" id="messageView">
+                    <p style="color: #666; text-align: center; padding: 40px;">Select a conversation</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Login/Register Modal -->
     <div id="authModal" class="modal hidden">
         <div class="modal-content">
             <span class="close-modal">&times;</span>
             
-            <!-- Login Form -->
             <div id="loginForm" class="auth-form">
                 <h2>Login</h2>
                 <input type="email" id="loginEmail" placeholder="Email" required>
@@ -81,7 +169,6 @@
                 <p class="switch-form">Don't have an account? <a href="#" id="showRegister">Register</a></p>
             </div>
             
-            <!-- Register Form -->
             <div id="registerForm" class="auth-form hidden">
                 <h2>Register</h2>
                 <input type="text" id="registerUsername" placeholder="Username" required>
@@ -93,40 +180,24 @@
         </div>
     </div>
     
-    <!-- Profile Modal -->
-    <div id="profileModal" class="modal hidden">
+    <!-- Followers/Following Modal -->
+    <div id="followModal" class="modal hidden">
         <div class="modal-content">
             <span class="close-modal">&times;</span>
-            <h2>Profile Settings</h2>
-            
-            <div class="profile-section">
-                <label>Avatar:</label>
-                <div class="avatar-upload">
-                    <img id="profileAvatar" src="https://via.placeholder.com/100/ff00ff/ffffff?text=Avatar" alt="Avatar">
-                    <input type="file" id="avatarInput" accept="image/*">
-                    <button id="uploadAvatarBtn">Upload Avatar</button>
-                </div>
-            </div>
-            
-            <div class="profile-section">
-                <label>Username:</label>
-                <input type="text" id="profileUsername" placeholder="Your username">
-                <button id="updateUsernameBtn">Update Username</button>
-            </div>
+            <h2 id="followModalTitle"></h2>
+            <div id="followModalContent" class="follow-list"></div>
         </div>
     </div>
     
-    <!-- Firebase SDK v8 -->
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     
-    <!-- Firebase Config -->
     <script src="firebase-config.js"></script>
-    
-    <!-- Main Script -->
     <script src="script.js"></script>
     <script src="auth.js"></script>
+    <script src="social.js"></script>
 </body>
 </html>
