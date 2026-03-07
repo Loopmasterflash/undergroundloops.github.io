@@ -19,17 +19,18 @@
     <!-- Header with Navigation -->
     <header class="main-header">
         <div class="header-content">
-            <div class="logo" onclick="window.location.href='index.html'">UNDERGROUNDLOOPS</div>
+            <div class="logo" style="font-size:1.2rem;letter-spacing:2px;" onclick="window.location.href='index.html'">UNDERGROUNDLOOPS</div>
             
-            <nav class="main-nav">
-                <a href="index.html" class="nav-link active" data-page="latest">Latest</a>
-                <a href="#" class="nav-link" data-page="loops">Loops</a>
-                <a href="#" class="nav-link" data-page="samples">Samples</a>
-                <a href="#" class="nav-link" data-page="tracks">Tracks</a>
+            <nav class="main-nav" style="gap:4px;">
+                <a href="index.html" class="nav-link active" data-page="latest" style="padding:6px 10px;font-size:0.78rem;">Latest</a>
+                <a href="#" class="nav-link" data-page="loops" style="padding:6px 10px;font-size:0.78rem;">Loops</a>
+                <a href="#" class="nav-link" data-page="samples" style="padding:6px 10px;font-size:0.78rem;">Samples</a>
+                <a href="#" class="nav-link" data-page="tracks" style="padding:6px 10px;font-size:0.78rem;">Tracks</a>
+                <a href="#" class="nav-link" data-page="acapellas" style="padding:6px 10px;font-size:0.78rem;">Acapellas</a>
                 
                 <!-- Genre Dropdown -->
                 <div class="genre-dropdown">
-                    <button class="genre-dropdown-btn">
+                    <button class="genre-dropdown-btn" style="padding:6px 10px;font-size:0.78rem;">
                         Genres <span class="arrow">▼</span>
                     </button>
                     <div class="genre-dropdown-menu">
@@ -199,6 +200,15 @@
                         cursor:pointer; font-family:'Orbitron',sans-serif;
                         font-size:0.85rem; transition:all 0.3s;
                     ">🎵 TRACK<br><small style="color:#aaa;font-size:0.7rem;">MP3</small></button>
+
+                    <button id="typeBtn_acapella" onclick="selectUploadType('acapella')" style="
+                        flex:1; padding:14px;
+                        background: rgba(0,0,0,0.3);
+                        border: 2px solid #444;
+                        color:#aaa; border-radius:8px;
+                        cursor:pointer; font-family:'Orbitron',sans-serif;
+                        font-size:0.85rem; transition:all 0.3s;
+                    ">🎤 ACAPELLA<br><small style="color:#aaa;font-size:0.7rem;">WAV/MP3</small></button>
                 </div>
                 <input type="hidden" id="uploadType" value="loop">
             </div>

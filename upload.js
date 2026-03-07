@@ -6,37 +6,21 @@ const GITHUB_REPO = 'undergroundloops.github.io';
 const GITHUB_BRANCH = 'main';
 let GITHUB_TOKEN = null;
 
-// Load token from Firestore on startup
 async function loadGithubToken() {
     try {
         const configDoc = await db.collection('config').doc('github').get();
-        if(configDoc.exists) {
-            GITHUB_TOKEN = configDoc.data().token;
-        }
-    } catch(e) {
-        console.error('Could not load GitHub token:', e);
-    }
+        if(configDoc.exists) { GITHUB_TOKEN = configDoc.data().token; }
+    } catch(e) { console.error('Could not load GitHub token:', e); }
 }
 
-// Call on page load
 setTimeout(loadGithubToken, 2000);
 
-// ============================================
-// OPEN UPLOAD PAGE
-// ============================================
-
 function openUploadPage() {
-    if(!currentUser) {
-        alert('Please login to upload!');
-        document.getElementById('loginBtn').click();
-        return;
-    }
-
+    if(!currentUser) { alert('Please login to upload!'); document.getElementById('loginBtn').click(); return; }
     document.getElementById('mainContainer').classList.add('hidden');
     document.getElementById('profileContainer').classList.add('hidden');
     document.getElementById('messagesContainer').classList.add('hidden');
     document.getElementById('uploadContainer').classList.remove('hidden');
-
     resetUploadForm();
 }
 
@@ -59,7 +43,7 @@ function resetUploadForm() {
 // ============================================
 
 function selectUploadType(type) {
-    ['loop','sample','track'].forEach(t => {
+    ['loop','sample','track','acapella'].forEach(t => {
         const btn = document.getElementById('typeBtn_' + t);
         if(btn) {
             btn.style.background = 'rgba(0,0,0,0.3)';
@@ -82,6 +66,10 @@ function selectUploadType(type) {
         audioInput.accept = '.mp3,audio/mpeg';
         document.getElementById('uploadAudioLabel').textContent = 'Click to select MP3 file';
         document.getElementById('audioFormatHint').textContent = 'MP3 format only';
+    } else if(type === 'acapella') {
+        audioInput.accept = '.wav,.mp3,audio/wav,audio/mpeg';
+        document.getElementById('uploadAudioLabel').textContent = 'Click to select WAV or MP3 file';
+        document.getElementById('audioFormatHint').textContent = 'WAV or MP3 format';
     } else {
         audioInput.accept = '.wav,audio/wav';
         document.getElementById('uploadAudioLabel').textContent = 'Click to select WAV file';
@@ -89,21 +77,15 @@ function selectUploadType(type) {
     }
 }
 
-// ============================================
-// FILE SELECTION DISPLAY
-// ============================================
-
 document.addEventListener('DOMContentLoaded', () => {
     const audioFile = document.getElementById('uploadAudioFile');
     const coverFile = document.getElementById('uploadCoverFile');
-
     if(audioFile) {
         audioFile.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if(file) document.getElementById('uploadAudioLabel').textContent = '✅ ' + file.name;
         });
     }
-
     if(coverFile) {
         coverFile.addEventListener('change', (e) => {
             const file = e.target.files[0];
@@ -126,7 +108,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function submitUpload() {
     if(!currentUser) { alert('Please login first!'); return; }
-
     if(!GITHUB_TOKEN) {
         await loadGithubToken();
         if(!GITHUB_TOKEN) { alert('❌ Upload system not ready. Please try again.'); return; }
@@ -145,10 +126,9 @@ async function submitUpload() {
     if(type === 'track' && !audioFile.name.toLowerCase().endsWith('.mp3')) {
         alert('❌ Tracks must be MP3 format!'); return;
     }
-    if((type === 'sample' || type === 'loop') && !audioFile.name.toLowerCase().endsWith('.wav')) {
+    if((type === 'loop' || type === 'sample') && !audioFile.name.toLowerCase().endsWith('.wav')) {
         alert('❌ Samples and Loops must be WAV format!'); return;
     }
-
     if(audioFile.size > 20 * 1024 * 1024) {
         alert('❌ Audio file too large! Max 20MB allowed.'); return;
     }
@@ -158,7 +138,6 @@ async function submitUpload() {
     progressDiv.classList.remove('hidden');
 
     try {
-        // Step 1: Upload audio to GitHub
         progressText.textContent = '⏳ Uploading audio to server...';
 
         const timestamp = Date.now();
@@ -169,7 +148,6 @@ async function submitUpload() {
         const audioBase64 = await fileToBase64Raw(audioFile);
         const audioURL = await uploadToGitHub(audioFileName, audioBase64, `Upload ${type}: ${title}`);
 
-        // Step 2: Cover
         progressText.textContent = '⏳ Processing cover image...';
         let coverURL = '';
 
@@ -185,18 +163,15 @@ async function submitUpload() {
             coverURL = await uploadToGitHub(coverFileName, coverBase64Raw, `Auto cover for ${title}`);
         }
 
-        // Step 3: Save to Firestore
         progressText.textContent = '⏳ Saving to database...';
 
         const userDoc = await db.collection('users').doc(currentUser.uid).get();
         const userData = userDoc.data();
 
         await db.collection('tracks').add({
-            title: title,
-            artist: userData.username,
+            title, artist: userData.username,
             userId: currentUser.uid,
-            type: type,
-            genre: genre,
+            type, genre,
             bpm: bpm ? parseInt(bpm) : null,
             audioFile: audioURL,
             coverImage: coverURL,
@@ -205,7 +180,6 @@ async function submitUpload() {
         });
 
         progressText.textContent = '✅ Upload successful!';
-
         setTimeout(() => {
             alert('✅ ' + type.charAt(0).toUpperCase() + type.slice(1) + ' "' + title + '" uploaded successfully!');
             openProfile();
@@ -224,25 +198,15 @@ async function submitUpload() {
 
 async function uploadToGitHub(filePath, base64Content, commitMessage) {
     const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}`;
-
     const response = await fetch(url, {
         method: 'PUT',
-        headers: {
-            'Authorization': `token ${GITHUB_TOKEN}`,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            message: commitMessage,
-            content: base64Content,
-            branch: GITHUB_BRANCH
-        })
+        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: commitMessage, content: base64Content, branch: GITHUB_BRANCH })
     });
-
     if(!response.ok) {
         const error = await response.json();
         throw new Error('GitHub upload failed: ' + (error.message || response.statusText));
     }
-
     const data = await response.json();
     return data.content.download_url;
 }

@@ -79,7 +79,7 @@ function filterTracks() {
         // Show last 12 uploads from all types
         pageFiltered = allTracks.slice(0, 12);
     } else {
-        const pageType = currentPage.replace(/s$/, ''); // loops→loop
+        const pageType = currentPage.replace(/s$/, ''); // loops→loop, acapellas→acapella
         pageFiltered = allTracks.filter(track => {
             if(!track.type) return currentPage === 'loops';
             return track.type === pageType;
