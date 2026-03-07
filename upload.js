@@ -1,5 +1,11 @@
 // UNDERGROUNDLOOPS - Upload System
-// Track (MP3), Sample (WAV), Loop (WAV)
+// Audio files → GitHub Repository
+// Cover + Metadata → Firestore
+
+const GITHUB_TOKEN = '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';
+const GITHUB_OWNER = 'Loopmasterflash';
+const GITHUB_REPO = 'loopmasterflash.github.io';
+const GITHUB_BRANCH = 'main';
 
 // ============================================
 // OPEN UPLOAD PAGE
@@ -17,7 +23,6 @@ function openUploadPage() {
     document.getElementById('messagesContainer').classList.add('hidden');
     document.getElementById('uploadContainer').classList.remove('hidden');
 
-    // Reset form
     resetUploadForm();
 }
 
@@ -30,7 +35,8 @@ function resetUploadForm() {
     document.getElementById('uploadAudioLabel').textContent = 'Click to select audio file';
     document.getElementById('uploadCoverLabel').textContent = 'Click to select cover image (optional)';
     document.getElementById('uploadProgress').classList.add('hidden');
-    selectUploadType('loop'); // default
+    document.getElementById('coverPreview').classList.add('hidden');
+    selectUploadType('loop');
 }
 
 // ============================================
@@ -38,16 +44,18 @@ function resetUploadForm() {
 // ============================================
 
 function selectUploadType(type) {
-    // Update buttons
-    document.querySelectorAll('.type-btn').forEach(btn => {
-        btn.classList.remove('active');
+    document.querySelectorAll('#typeBtn_loop, #typeBtn_sample, #typeBtn_track').forEach(btn => {
+        btn.style.background = 'rgba(0,0,0,0.3)';
+        btn.style.border = '2px solid #444';
+        btn.style.color = '#aaa';
     });
-    document.getElementById('typeBtn_' + type).classList.add('active');
 
-    // Update hidden input
+    document.getElementById('typeBtn_' + type).style.background = 'rgba(255,0,255,0.3)';
+    document.getElementById('typeBtn_' + type).style.border = '2px solid #ff00ff';
+    document.getElementById('typeBtn_' + type).style.color = '#fff';
+
     document.getElementById('uploadType').value = type;
 
-    // Update accepted file format label
     const audioInput = document.getElementById('uploadAudioFile');
     if(type === 'track') {
         audioInput.accept = '.mp3,audio/mpeg';
@@ -71,9 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(audioFile) {
         audioFile.addEventListener('change', (e) => {
             const file = e.target.files[0];
-            if(file) {
-                document.getElementById('uploadAudioLabel').textContent = '✅ ' + file.name;
-            }
+            if(file) document.getElementById('uploadAudioLabel').textContent = '✅ ' + file.name;
         });
     }
 
@@ -82,15 +88,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const file = e.target.files[0];
             if(file) {
                 document.getElementById('uploadCoverLabel').textContent = '✅ ' + file.name;
-
-                // Preview
                 const reader = new FileReader();
                 reader.onload = (ev) => {
                     const preview = document.getElementById('coverPreview');
-                    if(preview) {
-                        preview.src = ev.target.result;
-                        preview.classList.remove('hidden');
-                    }
+                    preview.src = ev.target.result;
+                    preview.classList.remove('hidden');
                 };
                 reader.readAsDataURL(file);
             }
@@ -112,53 +114,60 @@ async function submitUpload() {
     const audioFile = document.getElementById('uploadAudioFile').files[0];
     const coverFile = document.getElementById('uploadCoverFile').files[0];
 
-    // Validation
     if(!title) { alert('Please enter a title!'); return; }
     if(!audioFile) { alert('Please select an audio file!'); return; }
 
-    // Check format
     if(type === 'track' && !audioFile.name.toLowerCase().endsWith('.mp3')) {
-        alert('❌ Tracks must be MP3 format!');
-        return;
+        alert('❌ Tracks must be MP3 format!'); return;
     }
     if((type === 'sample' || type === 'loop') && !audioFile.name.toLowerCase().endsWith('.wav')) {
-        alert('❌ Samples and Loops must be WAV format!');
-        return;
+        alert('❌ Samples and Loops must be WAV format!'); return;
     }
 
-    // Check audio file size (max 20MB)
+    // Max 20MB audio
     if(audioFile.size > 20 * 1024 * 1024) {
-        alert('❌ Audio file too large! Max 20MB allowed.');
-        return;
+        alert('❌ Audio file too large! Max 20MB allowed.'); return;
     }
 
-    // Show progress
     const progressDiv = document.getElementById('uploadProgress');
+    const progressText = document.getElementById('uploadProgressText');
     progressDiv.classList.remove('hidden');
-    document.getElementById('uploadProgressText').textContent = 'Converting audio file...';
 
     try {
-        // Convert audio to base64
-        const audioBase64 = await fileToBase64(audioFile);
+        // Step 1: Upload audio to GitHub
+        progressText.textContent = '⏳ Uploading audio to server... (this may take a moment)';
 
-        document.getElementById('uploadProgressText').textContent = 'Processing cover image...';
+        const timestamp = Date.now();
+        const safeTitle = title.replace(/[^a-zA-Z0-9]/g, '_');
+        const audioExt = audioFile.name.split('.').pop();
+        const audioFileName = `audio/${type}s/${safeTitle}_${timestamp}.${audioExt}`;
 
-        // Cover image
-        let coverBase64 = '';
+        const audioBase64 = await fileToBase64Raw(audioFile);
+        const audioURL = await uploadToGitHub(audioFileName, audioBase64, `Upload ${type}: ${title}`);
+
+        // Step 2: Cover image
+        progressText.textContent = '⏳ Processing cover image...';
+        let coverURL = '';
+
         if(coverFile) {
-            coverBase64 = await compressImage(coverFile, 400, 400, 0.8);
+            const compressedCover = await compressImage(coverFile, 400, 400, 0.8);
+            const coverBase64Raw = compressedCover.split(',')[1];
+            const coverFileName = `covers/${safeTitle}_${timestamp}.jpg`;
+            coverURL = await uploadToGitHub(coverFileName, coverBase64Raw, `Cover for ${title}`);
         } else {
-            // Default cover placeholder
-            coverBase64 = generateDefaultCover(title, genre);
+            // Generate default cover and upload
+            const defaultCover = generateDefaultCover(title, genre);
+            const defaultBase64Raw = defaultCover.split(',')[1];
+            const coverFileName = `covers/${safeTitle}_${timestamp}.jpg`;
+            coverURL = await uploadToGitHub(coverFileName, defaultBase64Raw, `Auto cover for ${title}`);
         }
 
-        document.getElementById('uploadProgressText').textContent = 'Saving to database...';
+        // Step 3: Save metadata to Firestore
+        progressText.textContent = '⏳ Saving to database...';
 
-        // Get user data
         const userDoc = await db.collection('users').doc(currentUser.uid).get();
         const userData = userDoc.data();
 
-        // Save to Firestore
         await db.collection('tracks').add({
             title: title,
             artist: userData.username,
@@ -166,17 +175,16 @@ async function submitUpload() {
             type: type,
             genre: genre,
             bpm: bpm ? parseInt(bpm) : null,
-            audioFile: audioBase64,
-            coverImage: coverBase64,
+            audioFile: audioURL,
+            coverImage: coverURL,
             likes: 0,
             uploadedAt: new Date().toISOString()
         });
 
-        document.getElementById('uploadProgressText').textContent = '✅ Upload successful!';
+        progressText.textContent = '✅ Upload successful!';
 
         setTimeout(() => {
-            alert('✅ ' + type.charAt(0).toUpperCase() + type.slice(1) + ' uploaded successfully!');
-            // Go back to profile
+            alert('✅ ' + type.charAt(0).toUpperCase() + type.slice(1) + ' "' + title + '" uploaded successfully!');
             openProfile();
         }, 1000);
 
@@ -188,13 +196,46 @@ async function submitUpload() {
 }
 
 // ============================================
+// GITHUB API UPLOAD
+// ============================================
+
+async function uploadToGitHub(filePath, base64Content, commitMessage) {
+    const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}`;
+
+    const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+            'Authorization': `token ${GITHUB_TOKEN}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            message: commitMessage,
+            content: base64Content,
+            branch: GITHUB_BRANCH
+        })
+    });
+
+    if(!response.ok) {
+        const error = await response.json();
+        throw new Error('GitHub upload failed: ' + (error.message || response.statusText));
+    }
+
+    const data = await response.json();
+    return data.content.download_url;
+}
+
+// ============================================
 // HELPERS
 // ============================================
 
-function fileToBase64(file) {
+// Returns raw base64 without data:mime prefix
+function fileToBase64Raw(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target.result);
+        reader.onload = (e) => {
+            const base64 = e.target.result.split(',')[1];
+            resolve(base64);
+        };
         reader.onerror = reject;
         reader.readAsDataURL(file);
     });
@@ -209,13 +250,11 @@ function compressImage(file, maxWidth, maxHeight, quality) {
                 const canvas = document.createElement('canvas');
                 let width = img.width;
                 let height = img.height;
-
                 if(width > height) {
                     if(width > maxWidth) { height = Math.round(height * maxWidth / width); width = maxWidth; }
                 } else {
                     if(height > maxHeight) { width = Math.round(width * maxHeight / height); height = maxHeight; }
                 }
-
                 canvas.width = width;
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
@@ -232,49 +271,39 @@ function compressImage(file, maxWidth, maxHeight, quality) {
 
 function generateDefaultCover(title, genre) {
     const canvas = document.createElement('canvas');
-    canvas.width = 400;
-    canvas.height = 400;
+    canvas.width = 400; canvas.height = 400;
     const ctx = canvas.getContext('2d');
 
-    // Background gradient
     const gradient = ctx.createLinearGradient(0, 0, 400, 400);
     gradient.addColorStop(0, '#0a0a0a');
     gradient.addColorStop(1, '#1a0a2e');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, 400, 400);
 
-    // Neon border
     ctx.strokeStyle = '#ff00ff';
     ctx.lineWidth = 4;
     ctx.strokeRect(10, 10, 380, 380);
 
-    // Genre text
     ctx.fillStyle = '#00ffff';
-    ctx.font = 'bold 24px Orbitron, sans-serif';
+    ctx.font = 'bold 24px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(genre.toUpperCase(), 200, 160);
 
-    // Title text
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 32px Orbitron, sans-serif';
+    ctx.font = 'bold 30px sans-serif';
     const words = title.split(' ');
-    let y = 220;
-    let line = '';
+    let y = 220; let line = '';
     words.forEach(word => {
         const testLine = line + word + ' ';
         if(ctx.measureText(testLine).width > 360 && line !== '') {
             ctx.fillText(line.trim(), 200, y);
-            line = word + ' ';
-            y += 44;
-        } else {
-            line = testLine;
-        }
+            line = word + ' '; y += 44;
+        } else { line = testLine; }
     });
     ctx.fillText(line.trim(), 200, y);
 
-    // UNDERGROUNDLOOPS watermark
     ctx.fillStyle = 'rgba(255,0,255,0.4)';
-    ctx.font = '14px Orbitron, sans-serif';
+    ctx.font = '14px sans-serif';
     ctx.fillText('UNDERGROUNDLOOPS', 200, 370);
 
     return canvas.toDataURL('image/jpeg', 0.8);
