@@ -34,17 +34,9 @@ function initNavigation() {
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
-            
-            // Remove active from all
             navLinks.forEach(l => l.classList.remove('active'));
-            
-            // Add active to clicked
             link.classList.add('active');
-            
-            // Get page
             currentPage = link.getAttribute('data-page');
-            
-            // Filter tracks
             filterTracks();
         });
     });
@@ -77,10 +69,7 @@ async function loadTracksFromFirestore() {
         
         allTracks = [];
         snapshot.forEach(doc => {
-            allTracks.push({
-                id: doc.id,
-                ...doc.data()
-            });
+            allTracks.push({ id: doc.id, ...doc.data() });
         });
         
         console.log('Loaded tracks:', allTracks.length);
@@ -93,17 +82,20 @@ async function loadTracksFromFirestore() {
 }
 
 // ============================================
-// FILTER TRACKS
+// FILTER TRACKS - FIXED singular/plural
 // ============================================
 
 function filterTracks() {
-    // Filter by page type
+    // ✅ FIX: currentPage ist 'loops'/'samples'/'tracks' (plural)
+    // aber track.type ist 'loop'/'sample'/'track' (singular)
+    // Wir entfernen das 's' am Ende für den Vergleich
+    const pageType = currentPage.replace(/s$/, ''); // 'loops' → 'loop'
+
     let pageFiltered = allTracks.filter(track => {
-        if(!track.type) return currentPage === 'loops'; // Default to loops if no type
-        return track.type === currentPage;
+        if(!track.type) return currentPage === 'loops'; // Default
+        return track.type === pageType;
     });
     
-    // Filter by genre
     if(currentGenre === 'all') {
         filteredTracks = pageFiltered;
     } else {
@@ -137,7 +129,6 @@ function renderTracks() {
     }
     
     container.innerHTML = '';
-    
     filteredTracks.forEach(track => {
         const trackCard = createTrackCard(track);
         container.appendChild(trackCard);
@@ -208,10 +199,8 @@ function createTrackCard(track) {
         </div>
     `;
     
-    // Load comments for this track
     loadComments(track.id);
     
-    // Check if track is liked (async)
     if(typeof checkIfLiked === 'function') {
         checkIfLiked(track.id).then(isLiked => {
             if(isLiked) {
@@ -232,36 +221,25 @@ function createTrackCard(track) {
 // ============================================
 
 function showCommentForm(trackId) {
-    // Check if user is logged in
     if(!currentUser) {
         alert('Please login to comment!');
         document.getElementById('loginBtn').click();
         return;
     }
-    
     const form = document.getElementById(`comment-form-${trackId}`);
     form.classList.toggle('hidden');
 }
 
 async function submitComment(trackId) {
-    if(!currentUser) {
-        alert('Please login to comment!');
-        return;
-    }
+    if(!currentUser) { alert('Please login to comment!'); return; }
     
     const commentText = document.getElementById(`comment-text-${trackId}`).value.trim();
-    
-    if(!commentText) {
-        alert('Comment cannot be empty!');
-        return;
-    }
+    if(!commentText) { alert('Comment cannot be empty!'); return; }
     
     try {
-        // Get user data
         const userDoc = await db.collection('users').doc(currentUser.uid).get();
         const userData = userDoc.data();
         
-        // Add comment to Firestore
         await db.collection('comments').add({
             trackId: trackId,
             userId: currentUser.uid,
@@ -271,13 +249,9 @@ async function submitComment(trackId) {
             createdAt: new Date().toISOString()
         });
         
-        // Clear form
         document.getElementById(`comment-text-${trackId}`).value = '';
         document.getElementById(`comment-form-${trackId}`).classList.add('hidden');
-        
-        // Reload comments
         loadComments(trackId);
-        
         alert('✅ Comment posted!');
         
     } catch(error) {
@@ -287,7 +261,6 @@ async function submitComment(trackId) {
 
 async function loadComments(trackId) {
     try {
-        // Load comments WITHOUT orderBy to avoid index requirement
         const snapshot = await db.collection('comments')
             .where('trackId', '==', trackId)
             .get();
@@ -299,48 +272,33 @@ async function loadComments(trackId) {
             return;
         }
         
-        // Sort comments manually by date
         const comments = [];
-        snapshot.forEach(doc => {
-            comments.push(doc.data());
-        });
-        
-        // Sort by createdAt descending (newest first)
-        comments.sort((a, b) => {
-            return new Date(b.createdAt) - new Date(a.createdAt);
-        });
+        snapshot.forEach(doc => comments.push(doc.data()));
+        comments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         
         commentsList.innerHTML = '';
-        
         comments.forEach(comment => {
-            const commentEl = createCommentElement(comment);
-            commentsList.appendChild(commentEl);
+            commentsList.appendChild(createCommentElement(comment));
         });
         
     } catch(error) {
         console.error('Error loading comments:', error);
         const commentsList = document.getElementById(`comments-list-${trackId}`);
-        if(commentsList) {
-            commentsList.innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">No comments yet.</p>';
-        }
+        if(commentsList) commentsList.innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">No comments yet.</p>';
     }
 }
 
 function createCommentElement(comment) {
     const div = document.createElement('div');
     div.className = 'comment';
-    
     const date = new Date(comment.createdAt);
-    const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-    
     div.innerHTML = `
         <div class="comment-header">
             <span class="comment-author">${comment.username}</span>
-            <span class="comment-date">${dateStr}</span>
+            <span class="comment-date">${date.toLocaleDateString()} ${date.toLocaleTimeString()}</span>
         </div>
         <p class="comment-text">${comment.text}</p>
     `;
-    
     return div;
 }
 
@@ -372,18 +330,15 @@ function togglePlay(trackId, audioFile) {
         currentAudio = new Audio(audioFile);
         currentAudio.volume = 0.8;
         currentTrackId = trackId;
-        
         createWaveformBars(trackId);
         
         currentAudio.addEventListener('loadedmetadata', function() {
             document.getElementById(`totalTime-${trackId}`).textContent = formatTime(currentAudio.duration);
         });
-        
         currentAudio.addEventListener('timeupdate', function() {
             document.getElementById(`currentTime-${trackId}`).textContent = formatTime(currentAudio.currentTime);
             updateWaveformProgress(trackId);
         });
-        
         currentAudio.addEventListener('ended', function() {
             playBtn.textContent = '▶';
             stopWaveformAnimation(trackId);
@@ -402,59 +357,34 @@ function togglePlay(trackId, audioFile) {
 function createWaveformBars(trackId) {
     const container = document.getElementById(`waveform-${trackId}`);
     container.innerHTML = '';
-    container.style.display = 'flex';
-    container.style.alignItems = 'center';
-    container.style.justifyContent = 'space-around';
-    container.style.gap = '3px';
-    container.style.padding = '10px';
-    container.style.height = '120px';
-    container.style.cursor = 'pointer';
-    container.style.background = 'rgba(0, 0, 0, 0.3)';
-    container.style.borderRadius = '10px';
+    container.style.cssText = 'display:flex;align-items:center;justify-content:space-around;gap:3px;padding:10px;height:120px;cursor:pointer;background:rgba(0,0,0,0.3);border-radius:10px;';
     
     container.addEventListener('click', function(e) {
         if(!currentAudio || currentTrackId !== trackId) return;
-        
         const rect = container.getBoundingClientRect();
-        const clickX = e.clientX - rect.left;
-        const percentage = clickX / rect.width;
+        const percentage = (e.clientX - rect.left) / rect.width;
         const seekTime = currentAudio.duration * percentage;
-        
-        if(!isNaN(seekTime)) {
-            currentAudio.currentTime = seekTime;
-            updateWaveformProgress(trackId);
-        }
+        if(!isNaN(seekTime)) { currentAudio.currentTime = seekTime; updateWaveformProgress(trackId); }
     });
     
     for(let i = 0; i < 80; i++) {
         const bar = document.createElement('div');
         bar.className = 'audio-bar';
-        const randomHeight = Math.random() * 60 + 40;
-        
-        bar.style.width = '5px';
-        bar.style.height = randomHeight + '%';
-        bar.style.backgroundColor = 'rgba(150, 150, 150, 0.9)';
-        bar.style.borderRadius = '3px';
-        bar.style.transition = 'all 0.3s ease';
-        
+        bar.style.cssText = `width:5px;height:${Math.random()*60+40}%;background-color:rgba(150,150,150,0.9);border-radius:3px;transition:all 0.3s ease;`;
         container.appendChild(bar);
     }
 }
 
 function updateWaveformProgress(trackId) {
     if(!currentAudio || currentTrackId !== trackId) return;
-    
     const bars = document.querySelectorAll(`#waveform-${trackId} .audio-bar`);
     const progress = currentAudio.currentTime / currentAudio.duration;
-    
     bars.forEach((bar, index) => {
-        const barProgress = index / bars.length;
-        
-        if(barProgress <= progress) {
+        if(index / bars.length <= progress) {
             bar.style.backgroundColor = '#ff00ff';
-            bar.style.boxShadow = '0 0 15px rgba(255, 0, 255, 0.8)';
+            bar.style.boxShadow = '0 0 15px rgba(255,0,255,0.8)';
         } else {
-            bar.style.backgroundColor = 'rgba(150, 150, 150, 0.9)';
+            bar.style.backgroundColor = 'rgba(150,150,150,0.9)';
             bar.style.boxShadow = 'none';
         }
     });
@@ -464,36 +394,26 @@ let animationId;
 
 function startWaveformAnimation(trackId) {
     const bars = document.querySelectorAll(`#waveform-${trackId} .audio-bar`);
-    
     function animate() {
         bars.forEach((bar, index) => {
-            const pulse = Math.sin(Date.now() / 200 + index) * 0.3 + 1;
-            bar.style.transform = `scaleY(${pulse})`;
+            bar.style.transform = `scaleY(${Math.sin(Date.now()/200+index)*0.3+1})`;
         });
-        
         if(currentAudio && !currentAudio.paused && currentTrackId === trackId) {
             animationId = requestAnimationFrame(animate);
         }
     }
-    
     animate();
 }
 
 function stopWaveformAnimation(trackId) {
-    if(animationId) {
-        cancelAnimationFrame(animationId);
-    }
-    
-    const bars = document.querySelectorAll(`#waveform-${trackId} .audio-bar`);
-    bars.forEach(bar => {
+    if(animationId) cancelAnimationFrame(animationId);
+    document.querySelectorAll(`#waveform-${trackId} .audio-bar`).forEach(bar => {
         bar.style.transform = 'scaleY(1)';
     });
 }
 
 function setVolume(value) {
-    if(currentAudio) {
-        currentAudio.volume = value / 100;
-    }
+    if(currentAudio) currentAudio.volume = value / 100;
 }
 
 function formatTime(seconds) {
@@ -507,9 +427,7 @@ function showError(message) {
     document.getElementById('trackListContainer').innerHTML = `
         <div style="text-align: center; color: #ff0000; padding: 40px;">
             <p style="font-size: 1.5rem;">❌ ${message}</p>
-            <button onclick="location.reload()" style="margin-top: 20px; padding: 10px 20px; background: rgba(255,0,255,0.3); border: 2px solid #ff00ff; color: #fff; border-radius: 8px; cursor: pointer;">
-                Reload Page
-            </button>
+            <button onclick="location.reload()" style="margin-top:20px;padding:10px 20px;background:rgba(255,0,255,0.3);border:2px solid #ff00ff;color:#fff;border-radius:8px;cursor:pointer;">Reload Page</button>
         </div>
     `;
 }
