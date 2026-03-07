@@ -82,7 +82,7 @@ function initAuth() {
             await db.collection('users').doc(user.uid).set({
                 username: username,
                 email: email,
-                avatar: 'https://via.placeholder.com/100/ff00ff/ffffff?text=' + username.charAt(0).toUpperCase(),
+                avatar: '',
                 createdAt: new Date().toISOString()
             });
             
@@ -110,60 +110,91 @@ function initAuth() {
         }
     });
     
-    // Avatar Upload
-    document.getElementById('uploadAvatarBtn').addEventListener('click', () => {
-        document.getElementById('avatarInput').click();
-    });
+    // Avatar Upload - Change Avatar Button
+    const uploadAvatarBtn = document.getElementById('uploadAvatarBtn');
+    const avatarInput = document.getElementById('avatarInput');
     
-    document.getElementById('avatarInput').addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        if(!file) return;
-        
-        if(!currentUser) {
-            alert('Please login first');
-            return;
-        }
-        
-        try {
-            const storageRef = firebase.storage().ref();
-            const avatarRef = storageRef.child(`avatars/${currentUser.uid}/${file.name}`);
+    if(uploadAvatarBtn) {
+        uploadAvatarBtn.addEventListener('click', () => {
+            avatarInput.click();
+        });
+    }
+    
+    if(avatarInput) {
+        avatarInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if(!file) return;
             
-            await avatarRef.put(file);
-            const avatarURL = await avatarRef.getDownloadURL();
+            if(!currentUser) {
+                alert('Please login first');
+                return;
+            }
+
+            // Check file size (max 2MB)
+            if(file.size > 2 * 1024 * 1024) {
+                alert('❌ File too large! Max 2MB allowed.');
+                return;
+            }
+
+            // Check file type
+            if(!file.type.startsWith('image/')) {
+                alert('❌ Only image files allowed!');
+                return;
+            }
             
-            await db.collection('users').doc(currentUser.uid).update({
-                avatar: avatarURL
-            });
-            
-            document.getElementById('profileAvatar').src = avatarURL;
-            document.getElementById('userAvatar').src = avatarURL;
-            
-            alert('✅ Avatar uploaded successfully!');
-        } catch(error) {
-            alert('❌ Avatar upload failed: ' + error.message);
-        }
-    });
+            try {
+                alert('⏳ Uploading avatar...');
+
+                // Convert to Base64 and store in Firestore (no Storage needed!)
+                const reader = new FileReader();
+                reader.onload = async (event) => {
+                    const base64Image = event.target.result;
+                    
+                    try {
+                        await db.collection('users').doc(currentUser.uid).update({
+                            avatar: base64Image
+                        });
+                        
+                        // Update all avatar images on page
+                        const allAvatars = document.querySelectorAll('#profileAvatar, #userAvatar, .user-avatar-img');
+                        allAvatars.forEach(img => img.src = base64Image);
+                        
+                        alert('✅ Avatar updated successfully!');
+                    } catch(err) {
+                        alert('❌ Failed to save avatar: ' + err.message);
+                    }
+                };
+                reader.readAsDataURL(file);
+
+            } catch(error) {
+                alert('❌ Avatar upload failed: ' + error.message);
+            }
+        });
+    }
     
     // Update Username
-    document.getElementById('updateUsernameBtn').addEventListener('click', async () => {
-        const newUsername = document.getElementById('profileUsername').value;
-        
-        if(!currentUser) {
-            alert('Please login first');
-            return;
-        }
-        
-        try {
-            await db.collection('users').doc(currentUser.uid).update({
-                username: newUsername
-            });
+    const updateUsernameBtn = document.getElementById('updateUsernameBtn');
+    if(updateUsernameBtn) {
+        updateUsernameBtn.addEventListener('click', async () => {
+            const newUsername = document.getElementById('profileUsername').value;
             
-            document.getElementById('username').textContent = newUsername;
-            alert('✅ Username updated successfully!');
-        } catch(error) {
-            alert('❌ Update failed: ' + error.message);
-        }
-    });
+            if(!currentUser) {
+                alert('Please login first');
+                return;
+            }
+            
+            try {
+                await db.collection('users').doc(currentUser.uid).update({
+                    username: newUsername
+                });
+                
+                document.getElementById('username').textContent = newUsername;
+                alert('✅ Username updated successfully!');
+            } catch(error) {
+                alert('❌ Update failed: ' + error.message);
+            }
+        });
+    }
 }
 
 function showUserMenu(user) {
@@ -182,8 +213,16 @@ async function loadUserProfile(uid) {
         
         if(userDoc.exists) {
             const userData = userDoc.data();
-            document.getElementById('username').textContent = userData.username;
-            document.getElementById('userAvatar').src = userData.avatar;
+            
+            // Set username
+            const usernameEl = document.getElementById('username');
+            if(usernameEl) usernameEl.textContent = userData.username;
+            
+            // Set avatar if exists
+            if(userData.avatar) {
+                const allAvatars = document.querySelectorAll('#userAvatar, .user-avatar-img');
+                allAvatars.forEach(img => img.src = userData.avatar);
+            }
         }
     } catch(error) {
         console.error('Error loading user profile:', error);
@@ -196,9 +235,14 @@ function openProfileModal() {
     db.collection('users').doc(currentUser.uid).get().then(doc => {
         if(doc.exists) {
             const userData = doc.data();
-            document.getElementById('profileUsername').value = userData.username;
-            document.getElementById('profileAvatar').src = userData.avatar;
-            document.getElementById('profileModal').classList.remove('hidden');
+            
+            const profileUsername = document.getElementById('profileUsername');
+            const profileAvatar = document.getElementById('profileAvatar');
+            const profileModal = document.getElementById('profileModal');
+            
+            if(profileUsername) profileUsername.value = userData.username;
+            if(profileAvatar && userData.avatar) profileAvatar.src = userData.avatar;
+            if(profileModal) profileModal.classList.remove('hidden');
         }
     });
 }
