@@ -3,7 +3,6 @@
 let currentUser = null;
 let currentProfileUID = null;
 
-// Wait for Firebase Auth to load
 setTimeout(() => {
     if(typeof firebase === 'undefined' || !firebase.auth) {
         console.error('Firebase Auth not loaded');
@@ -73,6 +72,7 @@ function initAuth() {
                 username: username,
                 email: email,
                 avatar: '',
+                banner: '',
                 createdAt: new Date().toISOString()
             });
             document.getElementById('authModal').classList.add('hidden');
@@ -92,38 +92,64 @@ function initAuth() {
         }
     });
 
-    // ✅ Avatar Upload mit automatischer Komprimierung
+    // ✅ Avatar Upload
     const avatarUpload = document.getElementById('avatarUpload');
     if(avatarUpload) {
         avatarUpload.addEventListener('change', async (e) => {
             const file = e.target.files[0];
-            if(!file) return;
-            if(!currentUser) { alert('Please login first'); return; }
-            if(!file.type.startsWith('image/')) {
-                alert('❌ Only image files allowed!');
-                return;
-            }
-
+            if(!file || !currentUser) return;
+            if(!file.type.startsWith('image/')) { alert('❌ Only image files allowed!'); return; }
             try {
-                // ✅ Bild automatisch auf 200x200px verkleinern & komprimieren
                 const compressedBase64 = await compressImage(file, 200, 200, 0.7);
-                
                 await db.collection('users').doc(currentUser.uid).update({ avatar: compressedBase64 });
-
                 ['settingsAvatar', 'profilePageAvatar', 'userAvatar'].forEach(id => {
                     const el = document.getElementById(id);
                     if(el) el.src = compressedBase64;
                 });
-
                 alert('✅ Avatar updated successfully!');
             } catch(err) {
                 alert('❌ Failed to save avatar: ' + err.message);
             }
         });
     }
+
+    // ✅ Banner Upload
+    const bannerUpload = document.getElementById('bannerUpload');
+    if(bannerUpload) {
+        bannerUpload.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if(!file || !currentUser) return;
+            if(!file.type.startsWith('image/')) { alert('❌ Only image files allowed!'); return; }
+            try {
+                const compressedBase64 = await compressImage(file, 1200, 300, 0.75);
+                if(compressedBase64.length > 900000) {
+                    alert('❌ Banner image too large! Please use a smaller image.'); return;
+                }
+                await db.collection('users').doc(currentUser.uid).update({ banner: compressedBase64 });
+                setBannerImage(compressedBase64);
+                alert('✅ Banner updated!');
+            } catch(err) {
+                alert('❌ Failed to save banner: ' + err.message);
+            }
+        });
+    }
 }
 
-// ✅ Bild komprimieren Funktion
+// ✅ Banner anzeigen
+function setBannerImage(bannerSrc) {
+    const bannerImg = document.getElementById('profileBannerImg');
+    const bannerDefault = document.getElementById('bannerDefault');
+    if(bannerSrc && bannerImg) {
+        bannerImg.src = bannerSrc;
+        bannerImg.style.display = 'block';
+        if(bannerDefault) bannerDefault.style.display = 'none';
+    } else {
+        if(bannerImg) bannerImg.style.display = 'none';
+        if(bannerDefault) bannerDefault.style.display = 'flex';
+    }
+}
+
+// ✅ Bild komprimieren
 function compressImage(file, maxWidth, maxHeight, quality) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -131,32 +157,15 @@ function compressImage(file, maxWidth, maxHeight, quality) {
             const img = new Image();
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                
-                let width = img.width;
-                let height = img.height;
-                
-                // Skalierung berechnen
+                let width = img.width, height = img.height;
                 if(width > height) {
-                    if(width > maxWidth) {
-                        height = Math.round(height * maxWidth / width);
-                        width = maxWidth;
-                    }
+                    if(width > maxWidth) { height = Math.round(height * maxWidth / width); width = maxWidth; }
                 } else {
-                    if(height > maxHeight) {
-                        width = Math.round(width * maxHeight / height);
-                        height = maxHeight;
-                    }
+                    if(height > maxHeight) { width = Math.round(width * maxHeight / height); height = maxHeight; }
                 }
-                
-                canvas.width = width;
-                canvas.height = height;
-                
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-                
-                // Als JPEG komprimieren
-                const compressed = canvas.toDataURL('image/jpeg', quality);
-                resolve(compressed);
+                canvas.width = width; canvas.height = height;
+                canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/jpeg', quality));
             };
             img.onerror = reject;
             img.src = e.target.result;
@@ -223,6 +232,15 @@ async function showProfilePage(uid) {
             if(settingsAvatar) settingsAvatar.src = userData.avatar;
         }
 
+        // ✅ Banner laden
+        setBannerImage(userData.banner || '');
+
+        // ✅ Edit Banner Button nur für eigenes Profil
+        const editBannerBtn = document.getElementById('editBannerBtn');
+        if(editBannerBtn) {
+            editBannerBtn.style.display = (currentUser && currentUser.uid === uid) ? 'block' : 'none';
+        }
+
         const settingsUsername = document.getElementById('settingsUsername');
         if(settingsUsername) settingsUsername.value = userData.username;
 
@@ -285,8 +303,11 @@ async function loadUserUploads(uid) {
         snap.forEach(doc => {
             const track = doc.data();
             const div = document.createElement('div');
-            div.style.cssText = 'padding:15px;border:1px solid #ff00ff44;border-radius:8px;margin-bottom:10px;color:#fff;';
+            div.style.cssText = 'padding:15px;border:1px solid #ff00ff44;border-radius:8px;margin-bottom:10px;color:#fff;cursor:pointer;transition:border 0.3s;';
             div.innerHTML = `<strong>${track.title}</strong> — ${track.genre || 'Unknown'} • ${track.type || 'Loop'}`;
+            div.onmouseover = () => div.style.border = '1px solid #ff00ff';
+            div.onmouseout = () => div.style.border = '1px solid #ff00ff44';
+            div.onclick = () => openPlayerModal({id: doc.id, ...track});
             container.appendChild(div);
         });
     } catch(error) {
@@ -311,6 +332,8 @@ function showMainPage() {
     document.getElementById('mainContainer').classList.remove('hidden');
     document.getElementById('profileContainer').classList.add('hidden');
     document.getElementById('messagesContainer').classList.add('hidden');
+    const uploadContainer = document.getElementById('uploadContainer');
+    if(uploadContainer) uploadContainer.classList.add('hidden');
 }
 
 function openMessages() {
