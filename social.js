@@ -251,7 +251,7 @@ async function loadProfileStats(userId) {
 
 async function loadUserUploads(userId) {
     try {
-        const snapshot = await db.collection('tracks').where('userId', '==', userId).orderBy('uploadedAt', 'desc').get();
+        const snapshot = await db.collection('tracks').where('userId', '==', userId).get();
         const container = document.getElementById('userUploads');
         if(snapshot.empty) {
             container.innerHTML = '<p style="color:#666;text-align:center;padding:40px;">No uploads yet</p>';
