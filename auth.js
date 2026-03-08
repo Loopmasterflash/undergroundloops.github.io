@@ -125,7 +125,7 @@ function initAuth() {
                 if(compressedBase64.length > 900000) {
                     alert('❌ Banner image too large! Please use a smaller image.'); return;
                 }
-                await db.collection('users').doc(currentUser.uid).update({ banner: compressedBase64 });
+                await db.collection('users').doc(currentUser.uid).set({ banner: compressedBase64 }, { merge: true });
                 setBannerImage(compressedBase64);
                 alert('✅ Banner updated!');
             } catch(err) {
