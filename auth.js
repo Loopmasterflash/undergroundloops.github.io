@@ -238,7 +238,12 @@ async function showProfilePage(uid) {
         // ✅ Edit Banner Button nur für eigenes Profil
         const editBannerBtn = document.getElementById('editBannerBtn');
         if(editBannerBtn) {
-            editBannerBtn.style.display = (currentUser && currentUser.uid === uid) ? 'block' : 'none';
+            if(currentUser && currentUser.uid === uid) {
+                editBannerBtn.style.display = 'block';
+                editBannerBtn.style.zIndex = '10';
+            } else {
+                editBannerBtn.style.display = 'none';
+            }
         }
 
         const settingsUsername = document.getElementById('settingsUsername');
