@@ -33,6 +33,8 @@ function initNavigation() {
             link.classList.add('active');
             currentPage = link.getAttribute('data-page');
             currentGenre = 'all';
+            // ✅ Immer zur Hauptseite wechseln
+            showMainPage();
             filterTracks();
         });
     });
