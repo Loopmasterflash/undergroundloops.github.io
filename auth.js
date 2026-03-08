@@ -203,6 +203,10 @@ async function loadUserProfile(uid) {
                 const userAvatar = document.getElementById('userAvatar');
                 if(userAvatar) userAvatar.src = userData.avatar;
             }
+            // ✅ Banner beim Seitenload immer setzen
+            if(userData.banner) {
+                setBannerImage(userData.banner);
+            }
         }
     } catch(error) {
         console.error('Error loading user profile:', error);
