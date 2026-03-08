@@ -139,13 +139,16 @@ function initAuth() {
 function setBannerImage(bannerSrc) {
     const bannerImg = document.getElementById('profileBannerImg');
     const bannerDefault = document.getElementById('bannerDefault');
-    if(bannerSrc && bannerImg) {
+    if(!bannerImg || !bannerDefault) return;
+    
+    if(bannerSrc && bannerSrc.length > 10) {
         bannerImg.src = bannerSrc;
         bannerImg.style.display = 'block';
-        if(bannerDefault) bannerDefault.style.display = 'none';
+        bannerDefault.style.display = 'none';
     } else {
-        if(bannerImg) bannerImg.style.display = 'none';
-        if(bannerDefault) bannerDefault.style.display = 'flex';
+        bannerImg.src = '';
+        bannerImg.style.display = 'none';
+        bannerDefault.style.display = 'flex';
     }
 }
 
@@ -232,8 +235,8 @@ async function showProfilePage(uid) {
             if(settingsAvatar) settingsAvatar.src = userData.avatar;
         }
 
-        // ✅ Banner laden
-        setBannerImage(userData.banner || '');
+        // ✅ Banner laden - immer aufrufen!
+        setBannerImage(userData.banner || null);
 
         // ✅ Edit Banner Button nur für eigenes Profil
         const editBannerBtn = document.getElementById('editBannerBtn');
