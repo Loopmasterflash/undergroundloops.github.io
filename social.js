@@ -286,15 +286,45 @@ async function loadUserUploads(userId) {
             div.appendChild(img);
             div.appendChild(info);
 
-            // Delete button - nur für eigene Tracks
+            // Rename + Delete buttons - nur für eigene Tracks
             if(currentUser && currentUser.uid === userId) {
+                // ✏️ Rename Button
+                const renameBtn = document.createElement('button');
+                renameBtn.textContent = '✏️';
+                renameBtn.title = 'Rename Track';
+                renameBtn.style.cssText = 'background:rgba(0,255,255,0.15);border:1px solid #00ffff;color:#00ffff;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:1rem;flex-shrink:0;transition:all 0.3s;margin-right:6px;';
+                renameBtn.onmouseover = () => renameBtn.style.background = 'rgba(0,255,255,0.35)';
+                renameBtn.onmouseout = () => renameBtn.style.background = 'rgba(0,255,255,0.15)';
+                renameBtn.onclick = async (e) => {
+                    e.stopPropagation();
+                    const newTitle = prompt('Enter new title:', track.title);
+                    if(!newTitle || newTitle.trim() === '') return;
+                    if(newTitle.trim() === track.title) return;
+                    try {
+                        await db.collection('tracks').doc(track.id).update({ title: newTitle.trim() });
+                        // Update in allTracks array
+                        if(typeof allTracks !== 'undefined') {
+                            const t = allTracks.find(t => t.id === track.id);
+                            if(t) t.title = newTitle.trim();
+                        }
+                        track.title = newTitle.trim();
+                        info.querySelector('div').textContent = newTitle.trim();
+                        alert('✅ Title updated!');
+                    } catch(err) {
+                        alert('❌ Failed: ' + err.message);
+                    }
+                };
+
+                // 🗑️ Delete Button
                 const deleteBtn = document.createElement('button');
                 deleteBtn.textContent = '🗑️';
                 deleteBtn.title = 'Delete Track';
                 deleteBtn.style.cssText = 'background:rgba(255,0,0,0.2);border:1px solid #ff4444;color:#ff4444;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:1rem;flex-shrink:0;transition:all 0.3s;';
-                deleteBtn.onmouseover = () => { deleteBtn.style.background = 'rgba(255,0,0,0.4)'; };
-                deleteBtn.onmouseout = () => { deleteBtn.style.background = 'rgba(255,0,0,0.2)'; };
+                deleteBtn.onmouseover = () => deleteBtn.style.background = 'rgba(255,0,0,0.4)';
+                deleteBtn.onmouseout = () => deleteBtn.style.background = 'rgba(255,0,0,0.2)';
                 deleteBtn.onclick = (e) => { e.stopPropagation(); deleteTrack(track.id); };
+
+                div.appendChild(renameBtn);
                 div.appendChild(deleteBtn);
             }
 
