@@ -512,7 +512,7 @@
                     font-size:0.9rem;transition:all 0.3s;
                 ">🤍 <span id="modalLikeCount">0</span></button>
 
-                <a id="modalDownloadBtn" href="#" download style="
+                <a id="modalDownloadBtn" href="#" download onclick="if(currentModalTrackId && typeof incrementDownloadCount==='function') incrementDownloadCount(currentModalTrackId)" style="
                     padding:10px 24px;
                     background:rgba(0,255,255,0.2);
                     border:1px solid #00ffff;

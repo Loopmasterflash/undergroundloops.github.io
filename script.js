@@ -275,6 +275,9 @@ function openPlayerModal(track) {
     currentAudio.play();
     document.getElementById('modalPlayBtn').textContent = '⏸';
 
+    // ✅ Play Counter erhöhen
+    if(typeof incrementPlayCount === 'function') incrementPlayCount(track.id);
+
     // Check if liked
     if(typeof checkIfLiked === 'function') {
         checkIfLiked(track.id).then(isLiked => {
