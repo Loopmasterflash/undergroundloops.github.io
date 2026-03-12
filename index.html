@@ -122,7 +122,63 @@
         ">Synth</button>
     </div>
 
-    <!-- ===== MAIN TRACKS PAGE ===== -->
+    <!-- ===== SAMPLES SUBMENU ===== -->
+    <div id="samplesSubmenu" style="
+        display:none;
+        background:rgba(0,0,0,0.7);
+        border-bottom:1px solid #00ffff33;
+        padding:8px 20px;
+        flex-wrap:wrap;
+        justify-content:center;
+        gap:8px;
+    ">
+        <span style="color:#00ffff;font-family:'Orbitron',sans-serif;font-size:0.75rem;margin-right:8px;line-height:2;">KEY:</span>
+        <button onclick="filterSampleKey('all')" id="sampleKey_all" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,255,255,0.3);border:1px solid #00ffff;color:#fff;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">All</button>
+        <button onclick="filterSampleKey('C')" id="sampleKey_C" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">C</button>
+        <button onclick="filterSampleKey('C#')" id="sampleKey_C#" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">C#</button>
+        <button onclick="filterSampleKey('D')" id="sampleKey_D" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">D</button>
+        <button onclick="filterSampleKey('D#')" id="sampleKey_D#" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">D#</button>
+        <button onclick="filterSampleKey('E')" id="sampleKey_E" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">E</button>
+        <button onclick="filterSampleKey('F')" id="sampleKey_F" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">F</button>
+        <button onclick="filterSampleKey('F#')" id="sampleKey_F#" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">F#</button>
+        <button onclick="filterSampleKey('G')" id="sampleKey_G" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">G</button>
+        <button onclick="filterSampleKey('G#')" id="sampleKey_G#" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">G#</button>
+        <button onclick="filterSampleKey('A')" id="sampleKey_A" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">A</button>
+        <button onclick="filterSampleKey('A#')" id="sampleKey_A#" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">A#</button>
+        <button onclick="filterSampleKey('B')" id="sampleKey_B" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">B</button>
+    </div>
+
+    <!-- ===== ACAPELLAS SUBMENU ===== -->
+    <div id="acapellasSubmenu" style="
+        display:none;
+        background:rgba(0,0,0,0.7);
+        border-bottom:1px solid #ffff0033;
+        padding:8px 20px;
+        flex-wrap:wrap;
+        justify-content:center;
+        gap:8px;
+    ">
+        <span style="color:#ffff00;font-family:'Orbitron',sans-serif;font-size:0.75rem;margin-right:4px;line-height:2;">KEY:</span>
+        <button onclick="filterAcapellaKey('all')" id="acapKey_all" style="padding:5px 12px;font-size:0.75rem;background:rgba(255,255,0,0.3);border:1px solid #ffff00;color:#fff;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">All</button>
+        <button onclick="filterAcapellaKey('C')" id="acapKey_C" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">C</button>
+        <button onclick="filterAcapellaKey('C#')" id="acapKey_C#" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">C#</button>
+        <button onclick="filterAcapellaKey('D')" id="acapKey_D" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">D</button>
+        <button onclick="filterAcapellaKey('D#')" id="acapKey_D#" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">D#</button>
+        <button onclick="filterAcapellaKey('E')" id="acapKey_E" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">E</button>
+        <button onclick="filterAcapellaKey('F')" id="acapKey_F" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">F</button>
+        <button onclick="filterAcapellaKey('F#')" id="acapKey_F#" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">F#</button>
+        <button onclick="filterAcapellaKey('G')" id="acapKey_G" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">G</button>
+        <button onclick="filterAcapellaKey('G#')" id="acapKey_G#" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">G#</button>
+        <button onclick="filterAcapellaKey('A')" id="acapKey_A" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">A</button>
+        <button onclick="filterAcapellaKey('A#')" id="acapKey_A#" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">A#</button>
+        <button onclick="filterAcapellaKey('B')" id="acapKey_B" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">B</button>
+
+        <span style="color:#ffff00;font-family:'Orbitron',sans-serif;font-size:0.75rem;margin-left:12px;margin-right:4px;line-height:2;">BPM:</span>
+        <button onclick="filterAcapellaBpm('all')" id="acapBpm_all" style="padding:5px 12px;font-size:0.75rem;background:rgba(255,255,0,0.3);border:1px solid #ffff00;color:#fff;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">All</button>
+        <button onclick="filterAcapellaBpm('slow')" id="acapBpm_slow" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">Slow &lt;90</button>
+        <button onclick="filterAcapellaBpm('mid')" id="acapBpm_mid" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">Mid 90-130</button>
+        <button onclick="filterAcapellaBpm('fast')" id="acapBpm_fast" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">Fast &gt;130</button>
+    </div>
     <div class="container" id="mainContainer">
         <div id="trackListContainer">
             <div class="loading-message">
@@ -349,6 +405,32 @@
                     <option value="kick">Kick &amp; Drums</option>
                     <option value="percussion">Percussions</option>
                     <option value="synth">Synth</option>
+                </select>
+            </div>
+
+            <!-- KEY (für Samples + Acapellas) -->
+            <div id="keySection" style="margin-bottom:20px;display:none;">
+                <label style="color:#00ffff;font-family:'Orbitron',sans-serif;font-size:0.85rem;display:block;margin-bottom:8px;">KEY</label>
+                <select id="uploadKey" style="
+                    width:100%;padding:12px 16px;
+                    background:rgba(0,0,0,0.5);
+                    border:1px solid #ff00ff44;
+                    border-radius:8px;color:#fff;
+                    font-size:1rem;box-sizing:border-box;
+                ">
+                    <option value="">-- Select Key --</option>
+                    <option value="C">C</option>
+                    <option value="C#">C#</option>
+                    <option value="D">D</option>
+                    <option value="D#">D#</option>
+                    <option value="E">E</option>
+                    <option value="F">F</option>
+                    <option value="F#">F#</option>
+                    <option value="G">G</option>
+                    <option value="G#">G#</option>
+                    <option value="A">A</option>
+                    <option value="A#">A#</option>
+                    <option value="B">B</option>
                 </select>
             </div>
 

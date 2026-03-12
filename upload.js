@@ -65,6 +65,10 @@ function selectUploadType(type) {
     const catSection = document.getElementById('loopCategorySection');
     if(catSection) catSection.style.display = type === 'loop' ? 'block' : 'none';
 
+    // Zeige Key nur für Samples + Acapellas
+    const keySection = document.getElementById('keySection');
+    if(keySection) keySection.style.display = (type === 'sample' || type === 'acapella') ? 'block' : 'none';
+
     const audioInput = document.getElementById('uploadAudioFile');
     if(type === 'track') {
         audioInput.accept = '.mp3,audio/mpeg';
@@ -173,12 +177,14 @@ async function submitUpload() {
         const userData = userDoc.data();
 
         const category = type === 'loop' ? (document.getElementById('uploadCategory')?.value || '') : '';
+        const key = (type === 'sample' || type === 'acapella') ? (document.getElementById('uploadKey')?.value || '') : '';
 
         await db.collection('tracks').add({
             title, artist: userData.username,
             userId: currentUser.uid,
             type, genre,
             category: category,
+            key: key,
             bpm: bpm ? parseInt(bpm) : null,
             audioFile: audioURL,
             coverImage: coverURL,

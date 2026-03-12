@@ -77,9 +77,13 @@ async function loadTracksFromFirestore() {
 function filterTracks() {
     let pageFiltered;
 
-    // Show/hide loops submenu
-    const submenu = document.getElementById('loopsSubmenu');
-    if(submenu) submenu.style.display = currentPage === 'loops' ? 'flex' : 'none';
+    // Show/hide submenus
+    const loopsSub = document.getElementById('loopsSubmenu');
+    const samplesSub = document.getElementById('samplesSubmenu');
+    const acapSub = document.getElementById('acapellasSubmenu');
+    if(loopsSub) loopsSub.style.display = currentPage === 'loops' ? 'flex' : 'none';
+    if(samplesSub) samplesSub.style.display = currentPage === 'samples' ? 'flex' : 'none';
+    if(acapSub) acapSub.style.display = currentPage === 'acapellas' ? 'flex' : 'none';
 
     if(currentPage === 'latest') {
         pageFiltered = allTracks.slice(0, 12);
@@ -96,6 +100,31 @@ function filterTracks() {
         pageFiltered = pageFiltered.filter(track =>
             track.category && track.category.toLowerCase() === currentLoopCategory.toLowerCase()
         );
+    }
+
+    // Sample key filter
+    if(currentPage === 'samples' && currentSampleKey !== 'all') {
+        pageFiltered = pageFiltered.filter(track =>
+            track.key && track.key === currentSampleKey
+        );
+    }
+
+    // Acapella key filter
+    if(currentPage === 'acapellas' && currentAcapellaKey !== 'all') {
+        pageFiltered = pageFiltered.filter(track =>
+            track.key && track.key === currentAcapellaKey
+        );
+    }
+
+    // Acapella BPM filter
+    if(currentPage === 'acapellas' && currentAcapellaBpm !== 'all') {
+        pageFiltered = pageFiltered.filter(track => {
+            const bpm = track.bpm || 0;
+            if(currentAcapellaBpm === 'slow') return bpm < 90;
+            if(currentAcapellaBpm === 'mid') return bpm >= 90 && bpm <= 130;
+            if(currentAcapellaBpm === 'fast') return bpm > 130;
+            return true;
+        });
     }
 
     if(currentGenre !== 'all') {
@@ -230,22 +259,60 @@ function createGridCard(track) {
 }
 
 let currentLoopCategory = 'all';
+let currentSampleKey = 'all';
+let currentAcapellaKey = 'all';
+let currentAcapellaBpm = 'all';
+
+const KEYS = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 
 function filterLoopCategory(cat) {
     currentLoopCategory = cat;
-    // Update button styles
-    ['all','bass','clap','hihats','kick','percussion','synth'].forEach(c => {
+    KEYS.concat(['all','bass','clap','hihats','kick','percussion','synth']).forEach(c => {
         const btn = document.getElementById('loopCat_' + c);
         if(!btn) return;
-        if(c === cat) {
-            btn.style.background = 'rgba(255,0,255,0.3)';
-            btn.style.border = '1px solid #ff00ff';
-            btn.style.color = '#fff';
-        } else {
-            btn.style.background = 'rgba(0,0,0,0.3)';
-            btn.style.border = '1px solid #444';
-            btn.style.color = '#aaa';
-        }
+        const active = c === cat;
+        btn.style.background = active ? 'rgba(255,0,255,0.3)' : 'rgba(0,0,0,0.3)';
+        btn.style.border = active ? '1px solid #ff00ff' : '1px solid #444';
+        btn.style.color = active ? '#fff' : '#aaa';
+    });
+    filterTracks();
+}
+
+function filterSampleKey(key) {
+    currentSampleKey = key;
+    KEYS.concat(['all']).forEach(k => {
+        const btn = document.getElementById('sampleKey_' + k);
+        if(!btn) return;
+        const active = k === key;
+        btn.style.background = active ? 'rgba(0,255,255,0.3)' : 'rgba(0,0,0,0.3)';
+        btn.style.border = active ? '1px solid #00ffff' : '1px solid #444';
+        btn.style.color = active ? '#fff' : '#aaa';
+    });
+    filterTracks();
+}
+
+function filterAcapellaKey(key) {
+    currentAcapellaKey = key;
+    KEYS.concat(['all']).forEach(k => {
+        const btn = document.getElementById('acapKey_' + k);
+        if(!btn) return;
+        const active = k === key;
+        btn.style.background = active ? 'rgba(255,255,0,0.3)' : 'rgba(0,0,0,0.3)';
+        btn.style.border = active ? '1px solid #ffff00' : '1px solid #444';
+        btn.style.color = active ? '#fff' : '#aaa';
+    });
+    filterTracks();
+}
+
+function filterAcapellaBpm(range) {
+    currentAcapellaBpm = range;
+    ['all','slow','mid','fast'].forEach(r => {
+        const btn = document.getElementById('acapBpm_' + r);
+        if(!btn) return;
+        const active = r === range;
+        btn.style.background = active ? 'rgba(255,255,0,0.3)' : 'rgba(0,0,0,0.3)';
+        btn.style.border = active ? '1px solid #ffff00' : '1px solid #444';
+        btn.style.color = active ? '#fff' : '#aaa';
     });
     filterTracks();
 }
