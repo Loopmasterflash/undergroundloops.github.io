@@ -88,30 +88,38 @@ body {
 /* Navigation */
 .main-nav {
     display: flex;
-    gap: 30px;
+    gap: 20px;
     align-items: center;
     flex: 1;
 }
 
+/* ===== ORBITRON SCHRIFT FÜR ALLE NAV LINKS ===== */
 .nav-link {
     color: #fff;
     text-decoration: none;
-    padding: 10px 20px;
+    padding: 8px 16px;
     border: 2px solid transparent;
     border-radius: 8px;
     transition: all 0.3s ease;
-    font-size: 14px;
-    letter-spacing: 1px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.75rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-weight: 600;
 }
 
 .nav-link:hover {
     border-color: #00ffff;
     background: rgba(0, 255, 255, 0.1);
+    color: #00ffff;
+    text-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
 }
 
 .nav-link.active {
     border-color: #ff00ff;
     background: rgba(255, 0, 255, 0.2);
+    color: #fff;
+    text-shadow: 0 0 8px rgba(255, 0, 255, 0.6);
 }
 
 /* Genre Dropdown */
@@ -123,12 +131,14 @@ body {
     background: rgba(255, 0, 255, 0.2);
     border: 2px solid #ff00ff;
     color: #fff;
-    padding: 10px 20px;
+    padding: 8px 16px;
     border-radius: 8px;
     cursor: pointer;
-    font-family: 'Courier New', monospace;
-    font-size: 14px;
-    letter-spacing: 1px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.75rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-weight: 600;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -178,6 +188,10 @@ body {
     text-decoration: none;
     border-bottom: 1px solid rgba(255, 0, 255, 0.2);
     transition: all 0.3s ease;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
 }
 
 .genre-dropdown-menu a:last-child {
@@ -187,6 +201,7 @@ body {
 .genre-dropdown-menu a:hover {
     background: rgba(255, 0, 255, 0.3);
     padding-left: 25px;
+    color: #ff00ff;
 }
 
 /* User Actions */
@@ -230,9 +245,10 @@ body {
     padding: 10px 25px;
     border-radius: 8px;
     cursor: pointer;
-    font-family: 'Courier New', monospace;
-    font-size: 14px;
-    letter-spacing: 1px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.75rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
     transition: all 0.3s ease;
 }
 
@@ -258,7 +274,9 @@ body {
 
 .username {
     color: #00ffff;
-    font-size: 14px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.75rem;
+    letter-spacing: 1px;
 }
 
 .logout-btn-small {
@@ -268,8 +286,10 @@ body {
     padding: 5px 15px;
     border-radius: 6px;
     cursor: pointer;
-    font-family: 'Courier New', monospace;
-    font-size: 12px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.65rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
     transition: all 0.3s ease;
 }
 
@@ -582,6 +602,8 @@ body {
     color: #00ffff;
     margin-bottom: 25px;
     text-align: center;
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 2px;
 }
 
 .auth-form input {
@@ -608,11 +630,13 @@ body {
     border: 2px solid #ff00ff;
     border-radius: 8px;
     color: #fff;
-    font-size: 16px;
+    font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
-    font-family: 'Courier New', monospace;
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 2px;
+    text-transform: uppercase;
 }
 
 .submit-btn:hover {
@@ -647,6 +671,8 @@ body {
     color: #00ffff;
     margin-bottom: 10px;
     font-size: 14px;
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 1px;
 }
 
 .avatar-upload {
@@ -674,7 +700,9 @@ body {
     padding: 10px 20px;
     border-radius: 6px;
     cursor: pointer;
-    font-family: 'Courier New', monospace;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 1px;
     transition: all 0.3s ease;
 }
 
@@ -705,7 +733,9 @@ body {
     padding: 10px 20px;
     border-radius: 6px;
     cursor: pointer;
-    font-family: 'Courier New', monospace;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 1px;
     transition: all 0.3s ease;
 }
 
@@ -800,7 +830,9 @@ body {
     padding: 10px 20px;
     border-radius: 8px;
     cursor: pointer;
-    font-family: 'Courier New', monospace;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 1px;
     margin-bottom: 30px;
     transition: all 0.3s ease;
 }
@@ -832,8 +864,10 @@ body {
 
 .profile-page-username {
     font-size: 2.5rem;
+    font-family: 'Orbitron', sans-serif;
     color: #fff;
     margin-bottom: 10px;
+    letter-spacing: 2px;
 }
 
 .profile-page-email {
@@ -859,8 +893,10 @@ body {
     padding: 12px 30px;
     border-radius: 8px;
     cursor: pointer;
-    font-family: 'Courier New', monospace;
-    font-size: 14px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
     transition: all 0.3s ease;
 }
 
@@ -881,8 +917,10 @@ body {
     padding: 12px 30px;
     border-radius: 8px;
     cursor: pointer;
-    font-family: 'Courier New', monospace;
-    font-size: 14px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
     transition: all 0.3s ease;
 }
 
@@ -922,13 +960,15 @@ body {
     color: #00ffff;
     font-weight: bold;
     margin-bottom: 10px;
+    font-family: 'Orbitron', sans-serif;
 }
 
 .stat-label {
     color: #fff;
-    font-size: 0.9rem;
+    font-size: 0.75rem;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 1.5px;
+    font-family: 'Orbitron', sans-serif;
 }
 
 /* Profile Tabs */
@@ -945,8 +985,10 @@ body {
     color: #666;
     padding: 15px 25px;
     cursor: pointer;
-    font-family: 'Courier New', monospace;
-    font-size: 14px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
     transition: all 0.3s ease;
     border-bottom: 3px solid transparent;
 }
@@ -975,6 +1017,9 @@ body {
 .settings-section h3 {
     color: #00ffff;
     margin-bottom: 20px;
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 2px;
+    font-size: 0.85rem;
 }
 
 .settings-avatar {
@@ -1005,7 +1050,10 @@ body {
     padding: 12px 25px;
     border-radius: 8px;
     cursor: pointer;
-    font-family: 'Courier New', monospace;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
     transition: all 0.3s ease;
 }
 
@@ -1026,6 +1074,8 @@ body {
 .messages-page h2 {
     color: #00ffff;
     margin-bottom: 30px;
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 2px;
 }
 
 .messages-layout {
@@ -1067,6 +1117,9 @@ body {
     color: #00ffff;
     font-weight: bold;
     margin-bottom: 5px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.75rem;
+    letter-spacing: 1px;
 }
 
 .conversation-preview {
@@ -1084,10 +1137,12 @@ body {
 
 .messages-header {
     color: #00ffff;
-    font-size: 1.2rem;
+    font-size: 1rem;
     margin-bottom: 20px;
     padding-bottom: 15px;
     border-bottom: 2px solid rgba(255, 0, 255, 0.3);
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 2px;
 }
 
 .messages-body {
@@ -1153,7 +1208,10 @@ body {
     padding: 12px 25px;
     border-radius: 10px;
     cursor: pointer;
-    font-family: 'Courier New', monospace;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
     transition: all 0.3s ease;
 }
 
@@ -1194,8 +1252,10 @@ body {
 
 .follow-item-name {
     color: #00ffff;
-    font-size: 1.1rem;
+    font-size: 0.85rem;
     cursor: pointer;
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 1px;
 }
 
 .follow-item-name:hover {
