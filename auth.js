@@ -19,6 +19,8 @@ function initAuth() {
             currentUser = user;
             showUserMenu(user);
             loadUserProfile(user.uid);
+            // ✅ Last seen updaten
+            db.collection('users').doc(user.uid).set({ lastSeen: new Date().toISOString() }, { merge: true });
         } else {
             currentUser = null;
             showLoginButton();

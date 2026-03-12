@@ -14,6 +14,9 @@ document.addEventListener('DOMContentLoaded', function() {
             loadTracksFromFirestore();
             initNavigation();
             initGenreDropdown();
+            loadOnlineMembers();
+            // Sidebar alle 2 Minuten aktualisieren
+            setInterval(loadOnlineMembers, 120000);
         } else {
             showError('Firebase connection failed');
         }
@@ -71,8 +74,57 @@ async function loadTracksFromFirestore() {
 }
 
 // ============================================
-// FILTER TRACKS
+// SIDEBAR - LAST ONLINE MEMBERS
 // ============================================
+
+async function loadOnlineMembers() {
+    try {
+        const snap = await db.collection('users').orderBy('lastSeen', 'desc').limit(15).get();
+        const container = document.getElementById('onlineMembersList');
+        if(!container) return;
+        if(snap.empty) { container.innerHTML = '<p style="color:#666;font-size:0.75rem;text-align:center;">No members yet</p>'; return; }
+
+        container.innerHTML = '';
+        snap.forEach(doc => {
+            const user = doc.data();
+            if(!user.lastSeen) return;
+
+            const lastSeen = new Date(user.lastSeen);
+            const diffMs = Date.now() - lastSeen.getTime();
+            const diffMin = Math.floor(diffMs / 60000);
+            const diffHrs = Math.floor(diffMin / 60);
+            const diffDays = Math.floor(diffHrs / 24);
+
+            let timeText, dotColor;
+            if(diffMin < 5) { timeText = 'Online'; dotColor = '#00ff00'; }
+            else if(diffMin < 60) { timeText = diffMin + 'm ago'; dotColor = '#ffff00'; }
+            else if(diffHrs < 24) { timeText = diffHrs + 'h ago'; dotColor = '#ff8800'; }
+            else { timeText = diffDays + 'd ago'; dotColor = '#666'; }
+
+            const item = document.createElement('div');
+            item.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:12px;cursor:pointer;transition:all 0.2s;';
+            item.onmouseover = () => item.style.opacity = '0.7';
+            item.onmouseout = () => item.style.opacity = '1';
+            item.onclick = () => { if(typeof showProfilePage === 'function') showProfilePage(doc.id); };
+
+            item.innerHTML = `
+                <div style="position:relative;flex-shrink:0;">
+                    <img src="${user.avatar || ''}" 
+                         onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2236%22 height=%2236%22%3E%3Crect fill=%22%23200020%22 width=%2236%22 height=%2236%22 rx=%2218%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23ff00ff%22 font-size=%2216%22%3E👤%3C/text%3E%3C/svg%3E'"
+                         style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid ${dotColor};">
+                    <div style="position:absolute;bottom:0;right:0;width:10px;height:10px;background:${dotColor};border-radius:50%;border:2px solid #000;"></div>
+                </div>
+                <div style="flex:1;min-width:0;">
+                    <div style="color:#fff;font-size:0.75rem;font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${user.username || 'Unknown'}</div>
+                    <div style="color:${dotColor};font-size:0.65rem;">${timeText}</div>
+                </div>
+            `;
+            container.appendChild(item);
+        });
+    } catch(e) { console.error('Sidebar error:', e); }
+}
+
+
 
 function filterTracks() {
     let pageFiltered;
