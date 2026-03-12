@@ -61,6 +61,10 @@ function selectUploadType(type) {
 
     document.getElementById('uploadType').value = type;
 
+    // Zeige Kategorie nur für Loops
+    const catSection = document.getElementById('loopCategorySection');
+    if(catSection) catSection.style.display = type === 'loop' ? 'block' : 'none';
+
     const audioInput = document.getElementById('uploadAudioFile');
     if(type === 'track') {
         audioInput.accept = '.mp3,audio/mpeg';
@@ -168,14 +172,19 @@ async function submitUpload() {
         const userDoc = await db.collection('users').doc(currentUser.uid).get();
         const userData = userDoc.data();
 
+        const category = type === 'loop' ? (document.getElementById('uploadCategory')?.value || '') : '';
+
         await db.collection('tracks').add({
             title, artist: userData.username,
             userId: currentUser.uid,
             type, genre,
+            category: category,
             bpm: bpm ? parseInt(bpm) : null,
             audioFile: audioURL,
             coverImage: coverURL,
             likes: 0,
+            plays: 0,
+            downloads: 0,
             uploadedAt: new Date().toISOString()
         });
 

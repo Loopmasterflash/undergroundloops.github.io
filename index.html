@@ -66,6 +66,62 @@
         </div>
     </header>
     
+    <!-- ===== LOOPS SUBMENU ===== -->
+    <div id="loopsSubmenu" style="
+        display:none;
+        background:rgba(0,0,0,0.7);
+        border-bottom:1px solid #ff00ff33;
+        padding:8px 20px;
+        text-align:center;
+        gap:8px;
+        flex-wrap:wrap;
+        justify-content:center;
+    ">
+        <span style="color:#ff00ff;font-family:'Orbitron',sans-serif;font-size:0.75rem;margin-right:8px;line-height:2;">LOOPS:</span>
+        <button onclick="filterLoopCategory('all')" id="loopCat_all" style="
+            padding:5px 14px;font-size:0.75rem;
+            background:rgba(255,0,255,0.3);border:1px solid #ff00ff;
+            color:#fff;border-radius:20px;cursor:pointer;
+            font-family:'Orbitron',sans-serif;transition:all 0.3s;
+        ">All</button>
+        <button onclick="filterLoopCategory('bass')" id="loopCat_bass" style="
+            padding:5px 14px;font-size:0.75rem;
+            background:rgba(0,0,0,0.3);border:1px solid #444;
+            color:#aaa;border-radius:20px;cursor:pointer;
+            font-family:'Orbitron',sans-serif;transition:all 0.3s;
+        ">Bass</button>
+        <button onclick="filterLoopCategory('clap')" id="loopCat_clap" style="
+            padding:5px 14px;font-size:0.75rem;
+            background:rgba(0,0,0,0.3);border:1px solid #444;
+            color:#aaa;border-radius:20px;cursor:pointer;
+            font-family:'Orbitron',sans-serif;transition:all 0.3s;
+        ">Clap &amp; Snare</button>
+        <button onclick="filterLoopCategory('hihats')" id="loopCat_hihats" style="
+            padding:5px 14px;font-size:0.75rem;
+            background:rgba(0,0,0,0.3);border:1px solid #444;
+            color:#aaa;border-radius:20px;cursor:pointer;
+            font-family:'Orbitron',sans-serif;transition:all 0.3s;
+        ">Hihats</button>
+        <button onclick="filterLoopCategory('kick')" id="loopCat_kick" style="
+            padding:5px 14px;font-size:0.75rem;
+            background:rgba(0,0,0,0.3);border:1px solid #444;
+            color:#aaa;border-radius:20px;cursor:pointer;
+            font-family:'Orbitron',sans-serif;transition:all 0.3s;
+        ">Kick &amp; Drums</button>
+        <button onclick="filterLoopCategory('percussion')" id="loopCat_percussion" style="
+            padding:5px 14px;font-size:0.75rem;
+            background:rgba(0,0,0,0.3);border:1px solid #444;
+            color:#aaa;border-radius:20px;cursor:pointer;
+            font-family:'Orbitron',sans-serif;transition:all 0.3s;
+        ">Percussions</button>
+        <button onclick="filterLoopCategory('synth')" id="loopCat_synth" style="
+            padding:5px 14px;font-size:0.75rem;
+            background:rgba(0,0,0,0.3);border:1px solid #444;
+            color:#aaa;border-radius:20px;cursor:pointer;
+            font-family:'Orbitron',sans-serif;transition:all 0.3s;
+        ">Synth</button>
+    </div>
+
     <!-- ===== MAIN TRACKS PAGE ===== -->
     <div class="container" id="mainContainer">
         <div id="trackListContainer">
@@ -275,6 +331,25 @@
                     ">🎤 ACAPELLA<br><small style="color:#aaa;font-size:0.7rem;">WAV/MP3</small></button>
                 </div>
                 <input type="hidden" id="uploadType" value="loop">
+            </div>
+
+            <!-- LOOP CATEGORY (nur für Loops) -->
+            <div id="loopCategorySection" style="margin-bottom:20px;display:none;">
+                <label style="color:#00ffff;font-family:'Orbitron',sans-serif;font-size:0.85rem;display:block;margin-bottom:8px;">LOOP CATEGORY</label>
+                <select id="uploadCategory" style="
+                    width:100%;padding:12px 16px;
+                    background:rgba(0,0,0,0.5);
+                    border:1px solid #ff00ff44;
+                    border-radius:8px;color:#fff;
+                    font-size:1rem;box-sizing:border-box;
+                ">
+                    <option value="bass">Bass</option>
+                    <option value="clap">Clap &amp; Snare</option>
+                    <option value="hihats">Hihats</option>
+                    <option value="kick">Kick &amp; Drums</option>
+                    <option value="percussion">Percussions</option>
+                    <option value="synth">Synth</option>
+                </select>
             </div>
 
             <!-- TITLE -->

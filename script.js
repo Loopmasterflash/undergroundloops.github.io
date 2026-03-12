@@ -77,15 +77,25 @@ async function loadTracksFromFirestore() {
 function filterTracks() {
     let pageFiltered;
 
+    // Show/hide loops submenu
+    const submenu = document.getElementById('loopsSubmenu');
+    if(submenu) submenu.style.display = currentPage === 'loops' ? 'flex' : 'none';
+
     if(currentPage === 'latest') {
-        // Show last 12 uploads from all types
         pageFiltered = allTracks.slice(0, 12);
     } else {
-        const pageType = currentPage.replace(/s$/, ''); // loops→loop, acapellas→acapella
+        const pageType = currentPage.replace(/s$/, '');
         pageFiltered = allTracks.filter(track => {
             if(!track.type) return currentPage === 'loops';
             return track.type === pageType;
         });
+    }
+
+    // Loop category filter
+    if(currentPage === 'loops' && currentLoopCategory !== 'all') {
+        pageFiltered = pageFiltered.filter(track =>
+            track.category && track.category.toLowerCase() === currentLoopCategory.toLowerCase()
+        );
     }
 
     if(currentGenre !== 'all') {
@@ -219,7 +229,28 @@ function createGridCard(track) {
     return card;
 }
 
-let currentModalTrackId = null;
+let currentLoopCategory = 'all';
+
+function filterLoopCategory(cat) {
+    currentLoopCategory = cat;
+    // Update button styles
+    ['all','bass','clap','hihats','kick','percussion','synth'].forEach(c => {
+        const btn = document.getElementById('loopCat_' + c);
+        if(!btn) return;
+        if(c === cat) {
+            btn.style.background = 'rgba(255,0,255,0.3)';
+            btn.style.border = '1px solid #ff00ff';
+            btn.style.color = '#fff';
+        } else {
+            btn.style.background = 'rgba(0,0,0,0.3)';
+            btn.style.border = '1px solid #444';
+            btn.style.color = '#aaa';
+        }
+    });
+    filterTracks();
+}
+
+
 
 function playGridTrack(trackId, audioFile) {
     // Find track data
