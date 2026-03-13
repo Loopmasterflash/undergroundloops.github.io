@@ -36,9 +36,13 @@ function initNavigation() {
             link.classList.add('active');
             currentPage = link.getAttribute('data-page');
             currentGenre = 'all';
-            // ✅ Immer zur Hauptseite wechseln
-            showMainPage();
-            filterTracks();
+
+            if(currentPage === 'blog') {
+                showBlogPage();
+            } else {
+                showMainPage();
+                filterTracks();
+            }
         });
     });
 }
@@ -702,3 +706,124 @@ function formatTime(s) {
 function showError(msg) {
     document.getElementById('trackListContainer').innerHTML = `<div style="text-align:center;color:#ff0000;padding:40px;"><p style="font-size:1.5rem;">❌ ${msg}</p><button onclick="location.reload()" style="margin-top:20px;padding:10px 20px;background:rgba(255,0,255,0.3);border:2px solid #ff00ff;color:#fff;border-radius:8px;cursor:pointer;">Reload</button></div>`;
 }
+
+// ============================================
+// BLOG
+// ============================================
+
+// ADMIN UID – trage hier deine Firebase User-ID ein!
+const ADMIN_UID = 'DEINE_ADMIN_UID_HIER';
+
+function showBlogPage() {
+    const flexWrapper = document.getElementById('mainFlexWrapper');
+    if(flexWrapper) flexWrapper.style.display = 'none';
+    document.getElementById('profileContainer')?.classList.add('hidden');
+    document.getElementById('messagesContainer')?.classList.add('hidden');
+    document.getElementById('uploadContainer')?.classList.add('hidden');
+    document.getElementById('blogContainer')?.classList.remove('hidden');
+
+    const newPostBtn = document.getElementById('newPostBtn');
+    if(newPostBtn && typeof currentUser !== 'undefined' && currentUser) {
+        newPostBtn.style.display = currentUser.uid === ADMIN_UID ? 'block' : 'none';
+    }
+    loadBlogPosts();
+}
+
+function showMainPage() {
+    const flexWrapper = document.getElementById('mainFlexWrapper');
+    if(flexWrapper) flexWrapper.style.display = 'flex';
+    document.getElementById('blogContainer')?.classList.add('hidden');
+    document.getElementById('profileContainer')?.classList.add('hidden');
+    document.getElementById('messagesContainer')?.classList.add('hidden');
+    document.getElementById('uploadContainer')?.classList.add('hidden');
+}
+
+function toggleNewPostForm() {
+    const form = document.getElementById('newPostForm');
+    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+async function submitBlogPost() {
+    const title = document.getElementById('blogTitle').value.trim();
+    const text = document.getElementById('blogText').value.trim();
+    const image = document.getElementById('blogImage').value.trim();
+    const video = document.getElementById('blogVideo').value.trim();
+
+    if(!title || !text) { alert('Please enter title and text!'); return; }
+
+    try {
+        await db.collection('blog').add({
+            title, text, image, video,
+            authorId: currentUser.uid,
+            createdAt: new Date().toISOString()
+        });
+        document.getElementById('blogTitle').value = '';
+        document.getElementById('blogText').value = '';
+        document.getElementById('blogImage').value = '';
+        document.getElementById('blogVideo').value = '';
+        document.getElementById('newPostForm').style.display = 'none';
+        alert('✅ Post published!');
+        loadBlogPosts();
+    } catch(e) {
+        alert('❌ Error: ' + e.message);
+    }
+}
+
+async function loadBlogPosts() {
+    const container = document.getElementById('blogPostsList');
+    if(!container) return;
+    container.innerHTML = '<p style="color:#666;text-align:center;padding:40px;font-family:Orbitron,sans-serif;font-size:0.8rem;">Loading...</p>';
+
+    try {
+        const snap = await db.collection('blog').orderBy('createdAt', 'desc').get();
+        if(snap.empty) {
+            container.innerHTML = '<p style="color:#555;text-align:center;padding:60px;font-family:Orbitron,sans-serif;font-size:0.8rem;">No posts yet. Stay tuned! 🎧</p>';
+            return;
+        }
+
+        container.innerHTML = '';
+        snap.forEach(doc => {
+            const p = doc.data();
+            const date = new Date(p.createdAt).toLocaleDateString('de-DE', { year:'numeric', month:'long', day:'numeric' });
+
+            // YouTube embed ID
+            let videoEmbed = '';
+            if(p.video) {
+                const match = p.video.match(/(?:v=|youtu\.be\/)([^&\n?#]+)/);
+                if(match) {
+                    videoEmbed = `<div style="margin:20px 0;border-radius:12px;overflow:hidden;border:1px solid #ff00ff44;">
+                        <iframe width="100%" height="360" src="https://www.youtube.com/embed/${match[1]}"
+                            frameborder="0" allowfullscreen style="display:block;"></iframe>
+                    </div>`;
+                }
+            }
+
+            const imageHtml = p.image ? `<img src="${p.image}" style="width:100%;max-height:400px;object-fit:cover;border-radius:12px;margin-bottom:20px;border:1px solid #ff00ff44;">` : '';
+
+            const deleteBtn = (typeof currentUser !== 'undefined' && currentUser && currentUser.uid === ADMIN_UID)
+                ? `<button onclick="deleteBlogPost('${doc.id}')" style="background:rgba(255,0,0,0.2);border:1px solid #ff4444;color:#ff4444;border-radius:6px;padding:5px 12px;cursor:pointer;font-size:0.7rem;font-family:Orbitron,sans-serif;margin-top:10px;">🗑️ DELETE</button>`
+                : '';
+
+            const card = document.createElement('div');
+            card.style.cssText = 'background:rgba(0,0,0,0.6);border:1px solid #ff00ff33;border-radius:16px;padding:30px;margin-bottom:25px;box-shadow:0 0 20px rgba(255,0,255,0.1);';
+            card.innerHTML = `
+                <div style="color:#666;font-family:Orbitron,sans-serif;font-size:0.65rem;letter-spacing:1px;margin-bottom:10px;">📅 ${date}</div>
+                <h2 style="font-family:Orbitron,sans-serif;color:#ff00ff;font-size:1.2rem;letter-spacing:2px;margin-bottom:16px;text-shadow:0 0 15px rgba(255,0,255,0.5);">${p.title}</h2>
+                ${imageHtml}
+                <p style="color:#ccc;font-size:0.95rem;line-height:1.8;white-space:pre-wrap;">${p.text}</p>
+                ${videoEmbed}
+                ${deleteBtn}
+            `;
+            container.appendChild(card);
+        });
+    } catch(e) {
+        container.innerHTML = `<p style="color:#ff4444;text-align:center;padding:40px;">Error: ${e.message}</p>`;
+    }
+}
+
+async function deleteBlogPost(id) {
+    if(!confirm('Delete this post?')) return;
+    await db.collection('blog').doc(id).delete();
+    loadBlogPosts();
+}
+

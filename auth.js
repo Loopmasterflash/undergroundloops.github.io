@@ -609,14 +609,6 @@ async function updateUsername() {
     }
 }
 
-function showMainPage() {
-    document.getElementById('mainContainer').classList.remove('hidden');
-    document.getElementById('profileContainer').classList.add('hidden');
-    document.getElementById('messagesContainer').classList.add('hidden');
-    const uploadContainer = document.getElementById('uploadContainer');
-    if(uploadContainer) uploadContainer.classList.add('hidden');
-}
-
 function openMessages() {
     document.getElementById('mainContainer').classList.add('hidden');
     document.getElementById('profileContainer').classList.add('hidden');
