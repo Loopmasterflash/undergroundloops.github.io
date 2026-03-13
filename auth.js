@@ -94,7 +94,7 @@ function initAuth() {
         }
     });
 
-    // ✅ Avatar Upload
+    // ✅ Avatar Upload → GitHub
     const avatarUpload = document.getElementById('avatarUpload');
     if(avatarUpload) {
         avatarUpload.addEventListener('change', async (e) => {
@@ -102,20 +102,21 @@ function initAuth() {
             if(!file || !currentUser) return;
             if(!file.type.startsWith('image/')) { alert('❌ Only image files allowed!'); return; }
             try {
-                const compressedBase64 = await compressImage(file, 200, 200, 0.7);
-                await db.collection('users').doc(currentUser.uid).update({ avatar: compressedBase64 });
+                alert('⏳ Uploading avatar...');
+                const avatarUrl = await uploadImageToGitHub(file, 'avatars', currentUser.uid, 1024, 1024);
+                await db.collection('users').doc(currentUser.uid).update({ avatar: avatarUrl });
                 ['settingsAvatar', 'profilePageAvatar', 'userAvatar'].forEach(id => {
                     const el = document.getElementById(id);
-                    if(el) el.src = compressedBase64;
+                    if(el) el.src = avatarUrl;
                 });
-                alert('✅ Avatar updated successfully!');
+                alert('✅ Avatar updated!');
             } catch(err) {
                 alert('❌ Failed to save avatar: ' + err.message);
             }
         });
     }
 
-    // ✅ Banner Upload
+    // ✅ Banner Upload → GitHub
     const bannerUpload = document.getElementById('bannerUpload');
     if(bannerUpload) {
         bannerUpload.addEventListener('change', async (e) => {
@@ -123,12 +124,10 @@ function initAuth() {
             if(!file || !currentUser) return;
             if(!file.type.startsWith('image/')) { alert('❌ Only image files allowed!'); return; }
             try {
-                const compressedBase64 = await compressImage(file, 1200, 300, 0.75);
-                if(compressedBase64.length > 900000) {
-                    alert('❌ Banner image too large! Please use a smaller image.'); return;
-                }
-                await db.collection('users').doc(currentUser.uid).set({ banner: compressedBase64 }, { merge: true });
-                setBannerImage(compressedBase64);
+                alert('⏳ Uploading banner...');
+                const bannerUrl = await uploadImageToGitHub(file, 'banners', currentUser.uid, 1536, 1024);
+                await db.collection('users').doc(currentUser.uid).set({ banner: bannerUrl }, { merge: true });
+                setBannerImage(bannerUrl);
                 alert('✅ Banner updated!');
             } catch(err) {
                 alert('❌ Failed to save banner: ' + err.message);
@@ -154,7 +153,7 @@ function setBannerImage(bannerSrc) {
     }
 }
 
-// ✅ Bild komprimieren
+// ✅ Bild komprimieren (Canvas)
 function compressImage(file, maxWidth, maxHeight, quality) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -163,11 +162,8 @@ function compressImage(file, maxWidth, maxHeight, quality) {
             img.onload = () => {
                 const canvas = document.createElement('canvas');
                 let width = img.width, height = img.height;
-                if(width > height) {
-                    if(width > maxWidth) { height = Math.round(height * maxWidth / width); width = maxWidth; }
-                } else {
-                    if(height > maxHeight) { width = Math.round(width * maxHeight / height); height = maxHeight; }
-                }
+                const ratio = Math.min(maxWidth / width, maxHeight / height);
+                if(ratio < 1) { width = Math.round(width * ratio); height = Math.round(height * ratio); }
                 canvas.width = width; canvas.height = height;
                 canvas.getContext('2d').drawImage(img, 0, 0, width, height);
                 resolve(canvas.toDataURL('image/jpeg', quality));
@@ -178,6 +174,56 @@ function compressImage(file, maxWidth, maxHeight, quality) {
         reader.onerror = reject;
         reader.readAsDataURL(file);
     });
+}
+
+// ✅ Bild zu GitHub hochladen
+async function uploadImageToGitHub(file, folder, userId, maxWidth, maxHeight) {
+    // GitHub Token aus Firestore holen
+    const configDoc = await db.collection('config').doc('github').get();
+    if(!configDoc.exists) throw new Error('GitHub config not found');
+    const token = configDoc.data().token;
+
+    // Bild komprimieren
+    const base64DataUrl = await compressImage(file, maxWidth, maxHeight, 0.9);
+    const base64Data = base64DataUrl.split(',')[1];
+
+    const ext = file.name.split('.').pop().toLowerCase() || 'jpg';
+    const fileName = `${folder}/${userId}_${Date.now()}.${ext}`;
+
+    const GITHUB_OWNER = 'Loopmasterflash';
+    const GITHUB_REPO = 'undergroundloops.github.io';
+
+    // Prüfen ob Datei schon existiert (für SHA)
+    let sha = null;
+    try {
+        const checkRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${fileName}`, {
+            headers: { 'Authorization': `token ${token}` }
+        });
+        if(checkRes.ok) { const d = await checkRes.json(); sha = d.sha; }
+    } catch(e) {}
+
+    const body = {
+        message: `Upload ${folder}: ${userId}`,
+        content: base64Data,
+        branch: 'main'
+    };
+    if(sha) body.sha = sha;
+
+    const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${fileName}`, {
+        method: 'PUT',
+        headers: {
+            'Authorization': `token ${token}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+    });
+
+    if(!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'GitHub upload failed');
+    }
+
+    return `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/main/${fileName}`;
 }
 
 function showUserMenu(user) {
