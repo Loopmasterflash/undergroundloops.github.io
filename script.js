@@ -507,6 +507,7 @@ async function modalToggleLike() {
 function buildModalWaveform() {
     const container = document.getElementById('modalWaveform');
     container.innerHTML = '';
+    container.style.cssText = 'display:flex;align-items:center;gap:1px;width:100%;height:80px;cursor:pointer;overflow:hidden;';
 
     container.addEventListener('click', function(e) {
         if(!currentAudio) return;
@@ -515,13 +516,28 @@ function buildModalWaveform() {
         if(!isNaN(t)) { currentAudio.currentTime = t; }
     });
 
-    for(let i = 0; i < 60; i++) {
+    // 180 feine Balken mit realistischerer Wellenform
+    const barCount = 180;
+    for(let i = 0; i < barCount; i++) {
         const bar = document.createElement('div');
         bar.className = 'modal-bar';
+
+        // Realistischere Wellenform: Kombination aus mehreren Sinuswellen + Zufallsanteil
+        const wave1 = Math.abs(Math.sin(i * 0.08)) * 45;
+        const wave2 = Math.abs(Math.sin(i * 0.2 + 1)) * 25;
+        const wave3 = Math.abs(Math.sin(i * 0.35 + 2)) * 15;
+        const noise = Math.random() * 12;
+        const minHeight = 4;
+        const height = Math.max(minHeight, wave1 + wave2 + wave3 + noise);
+
         bar.style.cssText = `
-            width:6px;height:${Math.random()*60+20}%;
-            background:rgba(150,150,150,0.6);
-            border-radius:3px;transition:background 0.1s;flex-shrink:0;
+            width:2px;
+            min-width:2px;
+            height:${height}px;
+            background:rgba(180,180,200,0.5);
+            border-radius:1px;
+            transition:background 0.05s;
+            flex-shrink:0;
         `;
         container.appendChild(bar);
     }
@@ -532,11 +548,12 @@ function updateModalWaveform() {
     const bars = document.querySelectorAll('.modal-bar');
     const p = currentAudio.currentTime / currentAudio.duration;
     bars.forEach((bar, i) => {
-        if(i / bars.length <= p) {
-            bar.style.background = '#ff00ff';
-            bar.style.boxShadow = '0 0 8px rgba(255,0,255,0.8)';
+        const ratio = i / bars.length;
+        if(ratio <= p) {
+            bar.style.background = 'rgba(255,0,255,1)';
+            bar.style.boxShadow = '0 0 4px rgba(255,0,255,0.9)';
         } else {
-            bar.style.background = 'rgba(150,150,150,0.6)';
+            bar.style.background = 'rgba(180,180,200,0.5)';
             bar.style.boxShadow = 'none';
         }
     });
