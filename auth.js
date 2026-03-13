@@ -94,44 +94,25 @@ function initAuth() {
         }
     });
 
-    // ✅ Avatar Upload → GitHub
+    // ✅ Avatar Upload → Crop Modal
     const avatarUpload = document.getElementById('avatarUpload');
     if(avatarUpload) {
         avatarUpload.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if(!file || !currentUser) return;
             if(!file.type.startsWith('image/')) { alert('❌ Only image files allowed!'); return; }
-            try {
-                alert('⏳ Uploading avatar...');
-                const avatarUrl = await uploadImageToGitHub(file, 'avatars', currentUser.uid, 1024, 1024);
-                await db.collection('users').doc(currentUser.uid).update({ avatar: avatarUrl });
-                ['settingsAvatar', 'profilePageAvatar', 'userAvatar'].forEach(id => {
-                    const el = document.getElementById(id);
-                    if(el) el.src = avatarUrl;
-                });
-                alert('✅ Avatar updated!');
-            } catch(err) {
-                alert('❌ Failed to save avatar: ' + err.message);
-            }
+            openCropModal(file, 'avatar', 1024, 1024);
         });
     }
 
-    // ✅ Banner Upload → GitHub
+    // ✅ Banner Upload → Crop Modal
     const bannerUpload = document.getElementById('bannerUpload');
     if(bannerUpload) {
         bannerUpload.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if(!file || !currentUser) return;
             if(!file.type.startsWith('image/')) { alert('❌ Only image files allowed!'); return; }
-            try {
-                alert('⏳ Uploading banner...');
-                const bannerUrl = await uploadImageToGitHub(file, 'banners', currentUser.uid, 1536, 1024);
-                await db.collection('users').doc(currentUser.uid).set({ banner: bannerUrl }, { merge: true });
-                setBannerImage(bannerUrl);
-                alert('✅ Banner updated!');
-            } catch(err) {
-                alert('❌ Failed to save banner: ' + err.message);
-            }
+            openCropModal(file, 'banner', 1536, 1024);
         });
     }
 }
@@ -226,7 +207,247 @@ async function uploadImageToGitHub(file, folder, userId, maxWidth, maxHeight) {
     return `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/main/${fileName}`;
 }
 
-function showUserMenu(user) {
+// ============================================
+// CROP MODAL
+// ============================================
+
+let cropFile = null;
+let cropType = null;
+let cropMaxW = 1024;
+let cropMaxH = 1024;
+let cropImg = new Image();
+let cropScale = 1;
+let cropOffsetX = 0;
+let cropOffsetY = 0;
+let cropDragging = false;
+let cropDragStartX = 0;
+let cropDragStartY = 0;
+let cropLastOffsetX = 0;
+let cropLastOffsetY = 0;
+
+function openCropModal(file, type, maxW, maxH) {
+    cropFile = file;
+    cropType = type;
+    cropMaxW = maxW;
+    cropMaxH = maxH;
+    cropScale = 1;
+    cropOffsetX = 0;
+    cropOffsetY = 0;
+
+    const title = document.getElementById('cropModalTitle');
+    const subtitle = document.getElementById('cropModalSubtitle');
+    if(title) title.textContent = type === 'avatar' ? 'CROP AVATAR' : 'CROP BANNER';
+    if(subtitle) subtitle.textContent = type === 'avatar' ? '1024 × 1024 px • Drag to move • Scroll to zoom' : '1536 × 1024 px • Drag to move • Scroll to zoom';
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        cropImg = new Image();
+        cropImg.onload = () => {
+            setupCropCanvas();
+            const modal = document.getElementById('cropModal');
+            modal.style.display = 'flex';
+        };
+        cropImg.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function setupCropCanvas() {
+    const canvas = document.getElementById('cropCanvas');
+    const wrapper = document.getElementById('cropCanvasWrapper');
+    if(!canvas || !wrapper) return;
+
+    // Canvas Anzeigegröße – Aspect Ratio des Ziels
+    const displayW = Math.min(wrapper.clientWidth || 540, 540);
+    const aspect = cropMaxW / cropMaxH;
+    const displayH = Math.round(displayW / aspect);
+
+    canvas.width = displayW;
+    canvas.height = displayH;
+    canvas.style.width = displayW + 'px';
+    canvas.style.height = displayH + 'px';
+
+    // Zoom so dass Bild den Canvas füllt
+    const scaleX = displayW / cropImg.width;
+    const scaleY = displayH / cropImg.height;
+    cropScale = Math.max(scaleX, scaleY);
+    cropOffsetX = (displayW - cropImg.width * cropScale) / 2;
+    cropOffsetY = (displayH - cropImg.height * cropScale) / 2;
+
+    const zoomSlider = document.getElementById('cropZoom');
+    if(zoomSlider) {
+        zoomSlider.min = cropScale * 0.8;
+        zoomSlider.max = cropScale * 4;
+        zoomSlider.step = cropScale * 0.01;
+        zoomSlider.value = cropScale;
+    }
+    updateZoomLabel();
+    drawCrop();
+    setupCropEvents();
+}
+
+function drawCrop() {
+    const canvas = document.getElementById('cropCanvas');
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(cropImg, cropOffsetX, cropOffsetY, cropImg.width * cropScale, cropImg.height * cropScale);
+}
+
+function updateZoomLabel() {
+    const zoomSlider = document.getElementById('cropZoom');
+    const label = document.getElementById('cropZoomLabel');
+    if(zoomSlider && label) {
+        const baseScale = parseFloat(zoomSlider.min) / 0.8;
+        label.textContent = Math.round((cropScale / baseScale) * 100 / 0.8) + '%';
+    }
+}
+
+function setupCropEvents() {
+    const canvas = document.getElementById('cropCanvas');
+    const zoomSlider = document.getElementById('cropZoom');
+    if(!canvas) return;
+
+    // Zoom Slider
+    if(zoomSlider) {
+        zoomSlider.oninput = () => {
+            const newScale = parseFloat(zoomSlider.value);
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            cropOffsetX = cx - (cx - cropOffsetX) * (newScale / cropScale);
+            cropOffsetY = cy - (cy - cropOffsetY) * (newScale / cropScale);
+            cropScale = newScale;
+            clampOffset();
+            updateZoomLabel();
+            drawCrop();
+        };
+    }
+
+    // Scroll Zoom
+    canvas.onwheel = (e) => {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? 0.95 : 1.05;
+        const newScale = Math.max(parseFloat(zoomSlider?.min || 0.3), Math.min(parseFloat(zoomSlider?.max || 10), cropScale * delta));
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        cropOffsetX = mx - (mx - cropOffsetX) * (newScale / cropScale);
+        cropOffsetY = my - (my - cropOffsetY) * (newScale / cropScale);
+        cropScale = newScale;
+        if(zoomSlider) zoomSlider.value = cropScale;
+        clampOffset();
+        updateZoomLabel();
+        drawCrop();
+    };
+
+    // Drag
+    canvas.onmousedown = (e) => {
+        cropDragging = true;
+        cropDragStartX = e.clientX - cropOffsetX;
+        cropDragStartY = e.clientY - cropOffsetY;
+        canvas.style.cursor = 'grabbing';
+    };
+    canvas.onmousemove = (e) => {
+        if(!cropDragging) return;
+        cropOffsetX = e.clientX - cropDragStartX;
+        cropOffsetY = e.clientY - cropDragStartY;
+        clampOffset();
+        drawCrop();
+    };
+    canvas.onmouseup = () => { cropDragging = false; canvas.style.cursor = 'grab'; };
+    canvas.onmouseleave = () => { cropDragging = false; canvas.style.cursor = 'grab'; };
+
+    // Touch support
+    canvas.ontouchstart = (e) => {
+        const t = e.touches[0];
+        cropDragging = true;
+        cropDragStartX = t.clientX - cropOffsetX;
+        cropDragStartY = t.clientY - cropOffsetY;
+    };
+    canvas.ontouchmove = (e) => {
+        e.preventDefault();
+        if(!cropDragging) return;
+        const t = e.touches[0];
+        cropOffsetX = t.clientX - cropDragStartX;
+        cropOffsetY = t.clientY - cropDragStartY;
+        clampOffset();
+        drawCrop();
+    };
+    canvas.ontouchend = () => { cropDragging = false; };
+}
+
+function clampOffset() {
+    const canvas = document.getElementById('cropCanvas');
+    if(!canvas) return;
+    const imgW = cropImg.width * cropScale;
+    const imgH = cropImg.height * cropScale;
+    cropOffsetX = Math.min(0, Math.max(canvas.width - imgW, cropOffsetX));
+    cropOffsetY = Math.min(0, Math.max(canvas.height - imgH, cropOffsetY));
+}
+
+function closeCropModal() {
+    document.getElementById('cropModal').style.display = 'none';
+    cropFile = null;
+    // File input zurücksetzen
+    const avatarInput = document.getElementById('avatarUpload');
+    const bannerInput = document.getElementById('bannerUpload');
+    if(avatarInput) avatarInput.value = '';
+    if(bannerInput) bannerInput.value = '';
+}
+
+async function applyCrop() {
+    const canvas = document.getElementById('cropCanvas');
+    if(!canvas || !currentUser) return;
+
+    // Ausgabe Canvas in Zielauflösung rendern
+    const outputCanvas = document.createElement('canvas');
+    outputCanvas.width = cropMaxW;
+    outputCanvas.height = cropMaxH;
+    const ctx = outputCanvas.getContext('2d');
+
+    const displayW = canvas.width;
+    const displayH = canvas.height;
+    const scaleRatio = cropMaxW / displayW;
+
+    ctx.drawImage(
+        cropImg,
+        cropOffsetX * scaleRatio,
+        cropOffsetY * scaleRatio,
+        cropImg.width * cropScale * scaleRatio,
+        cropImg.height * cropScale * scaleRatio
+    );
+
+    // Canvas → Blob → File
+    outputCanvas.toBlob(async (blob) => {
+        const ext = cropFile.name.split('.').pop() || 'jpg';
+        const croppedFile = new File([blob], `cropped.${ext}`, { type: 'image/jpeg' });
+
+        document.getElementById('cropModal').style.display = 'none';
+
+        try {
+            if(cropType === 'avatar') {
+                alert('⏳ Uploading avatar...');
+                const url = await uploadImageToGitHub(croppedFile, 'avatars', currentUser.uid, cropMaxW, cropMaxH);
+                await db.collection('users').doc(currentUser.uid).update({ avatar: url });
+                ['settingsAvatar', 'profilePageAvatar', 'userAvatar'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) el.src = url + '?t=' + Date.now();
+                });
+                alert('✅ Avatar updated!');
+            } else {
+                alert('⏳ Uploading banner...');
+                const url = await uploadImageToGitHub(croppedFile, 'banners', currentUser.uid, cropMaxW, cropMaxH);
+                await db.collection('users').doc(currentUser.uid).set({ banner: url }, { merge: true });
+                setBannerImage(url + '?t=' + Date.now());
+                alert('✅ Banner updated!');
+            }
+        } catch(err) {
+            alert('❌ Upload failed: ' + err.message);
+        }
+    }, 'image/jpeg', 0.92);
+}
+
+
     document.getElementById('loginBtn').classList.add('hidden');
     document.getElementById('userMenu').classList.remove('hidden');
     const messagesIcon = document.getElementById('messagesIcon');

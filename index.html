@@ -27,6 +27,7 @@
                 <a href="#" class="nav-link" data-page="samples" style="padding:6px 10px;font-size:0.78rem;">Samples</a>
                 <a href="#" class="nav-link" data-page="tracks" style="padding:6px 10px;font-size:0.78rem;">Tracks</a>
                 <a href="#" class="nav-link" data-page="acapellas" style="padding:6px 10px;font-size:0.78rem;">Acapellas</a>
+                <a href="#" class="nav-link" data-page="blog" id="blogNavLink" style="padding:6px 10px;font-size:0.78rem;border-color:#ff00ff;background:rgba(255,0,255,0.15);">Blog</a>
                 
                 <!-- Genre Dropdown -->
                 <div class="genre-dropdown">
@@ -217,6 +218,88 @@
 
     </div>
     
+    <!-- ===== BLOG PAGE ===== -->
+    <div class="container hidden" id="blogContainer">
+        <div style="max-width:900px;margin:0 auto;">
+
+            <!-- Header -->
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:30px;flex-wrap:wrap;gap:15px;">
+                <h1 style="font-family:'Orbitron',sans-serif;font-size:1.4rem;color:#ff00ff;letter-spacing:3px;text-shadow:0 0 20px rgba(255,0,255,0.6);">
+                    📰 UNDERGROUNDLOOPS BLOG
+                </h1>
+                <!-- Nur für Admin sichtbar -->
+                <button id="newPostBtn" onclick="toggleNewPostForm()" style="
+                    display:none;
+                    background:rgba(255,0,255,0.2);border:2px solid #ff00ff;
+                    color:#fff;padding:10px 20px;border-radius:8px;cursor:pointer;
+                    font-family:'Orbitron',sans-serif;font-size:0.7rem;letter-spacing:1px;
+                    transition:all 0.3s;
+                ">✏️ NEW POST</button>
+            </div>
+
+            <!-- New Post Form (nur Admin) -->
+            <div id="newPostForm" style="
+                display:none;
+                background:rgba(0,0,0,0.7);
+                border:2px solid #ff00ff;
+                border-radius:16px;
+                padding:30px;
+                margin-bottom:30px;
+                box-shadow:0 0 30px rgba(255,0,255,0.2);
+            ">
+                <h3 style="font-family:'Orbitron',sans-serif;color:#00ffff;font-size:0.85rem;letter-spacing:2px;margin-bottom:20px;">NEW BLOG POST</h3>
+                
+                <input id="blogTitle" type="text" placeholder="Title..." style="
+                    width:100%;padding:12px 16px;margin-bottom:15px;
+                    background:rgba(0,0,0,0.5);border:1px solid #ff00ff44;
+                    border-radius:8px;color:#fff;font-size:1rem;box-sizing:border-box;
+                    font-family:'Orbitron',sans-serif;
+                ">
+                
+                <textarea id="blogText" placeholder="Write your post here..." style="
+                    width:100%;padding:12px 16px;margin-bottom:15px;
+                    background:rgba(0,0,0,0.5);border:1px solid #ff00ff44;
+                    border-radius:8px;color:#fff;font-size:0.95rem;
+                    font-family:'Courier New',monospace;
+                    min-height:180px;resize:vertical;box-sizing:border-box;
+                "></textarea>
+
+                <input id="blogImage" type="text" placeholder="Image URL (optional)..." style="
+                    width:100%;padding:12px 16px;margin-bottom:15px;
+                    background:rgba(0,0,0,0.5);border:1px solid #ff00ff44;
+                    border-radius:8px;color:#fff;font-size:0.9rem;box-sizing:border-box;
+                ">
+
+                <input id="blogVideo" type="text" placeholder="YouTube URL (optional, e.g. https://www.youtube.com/watch?v=...)..." style="
+                    width:100%;padding:12px 16px;margin-bottom:20px;
+                    background:rgba(0,0,0,0.5);border:1px solid #ff00ff44;
+                    border-radius:8px;color:#fff;font-size:0.9rem;box-sizing:border-box;
+                ">
+
+                <div style="display:flex;gap:12px;">
+                    <button onclick="submitBlogPost()" style="
+                        background:rgba(255,0,255,0.3);border:2px solid #ff00ff;
+                        color:#fff;padding:12px 30px;border-radius:8px;cursor:pointer;
+                        font-family:'Orbitron',sans-serif;font-size:0.75rem;letter-spacing:1px;
+                        transition:all 0.3s;
+                    ">🚀 PUBLISH</button>
+                    <button onclick="toggleNewPostForm()" style="
+                        background:rgba(100,100,100,0.2);border:2px solid #444;
+                        color:#aaa;padding:12px 20px;border-radius:8px;cursor:pointer;
+                        font-family:'Orbitron',sans-serif;font-size:0.75rem;
+                        transition:all 0.3s;
+                    ">CANCEL</button>
+                </div>
+            </div>
+
+            <!-- Blog Posts List -->
+            <div id="blogPostsList">
+                <p style="color:#666;text-align:center;padding:40px;font-family:'Orbitron',sans-serif;font-size:0.8rem;">Loading posts...</p>
+            </div>
+
+        </div>
+    </div>
+
     <!-- ===== PROFILE PAGE ===== -->
     <div class="container hidden" id="profileContainer">
         <div class="profile-page">
@@ -331,11 +414,13 @@
                         <h3>Avatar</h3>
                         <img id="settingsAvatar" class="settings-avatar" src="">
                         <input type="file" id="avatarUpload" accept="image/*" style="display:none">
-                        <button onclick="document.getElementById('avatarUpload').click()">Change Avatar</button>
+                        <button onclick="document.getElementById('avatarUpload').click()">🖼️ Change Avatar</button>
+                        <p style="color:#888;font-size:0.78rem;margin-top:8px;font-family:'Orbitron',sans-serif;letter-spacing:1px;">
+                            MAX SIZE: 1024 x 1024 px • JPG/PNG
+                        </p>
                     </div>
                     <div class="settings-section">
                         <h3>Profile Banner</h3>
-                        <p style="color:#888;font-size:0.85rem;margin-bottom:12px;">Recommended size: 1200 x 300px</p>
                         <input type="file" id="bannerUpload" accept="image/*" style="display:none">
                         <button onclick="document.getElementById('bannerUpload').click()" style="
                             padding:10px 24px;
@@ -344,6 +429,9 @@
                             color:#fff;border-radius:8px;
                             cursor:pointer;font-size:0.9rem;
                         ">🖼️ Change Banner</button>
+                        <p style="color:#888;font-size:0.78rem;margin-top:8px;font-family:'Orbitron',sans-serif;letter-spacing:1px;">
+                            MAX SIZE: 1536 x 1024 px • JPG/PNG
+                        </p>
                     </div>
                     <div class="settings-section">
                         <h3>Username</h3>
@@ -716,6 +804,63 @@
                     color:#fff;border-radius:8px;cursor:pointer;
                     font-size:0.9rem;text-decoration:none;
                 ">⬇ Download</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== CROP MODAL ===== -->
+    <div id="cropModal" style="
+        display:none;position:fixed;top:0;left:0;
+        width:100%;height:100%;
+        background:rgba(0,0,0,0.92);
+        backdrop-filter:blur(10px);
+        z-index:9999;
+        align-items:center;justify-content:center;
+    ">
+        <div style="
+            background:rgba(0,0,0,0.95);
+            border:2px solid #ff00ff;
+            border-radius:20px;
+            padding:30px;
+            width:90%;max-width:600px;
+            box-shadow:0 0 50px rgba(255,0,255,0.4);
+        ">
+            <h3 style="font-family:'Orbitron',sans-serif;color:#ff00ff;font-size:0.9rem;letter-spacing:2px;margin-bottom:6px;" id="cropModalTitle">CROP IMAGE</h3>
+            <p style="color:#888;font-size:0.75rem;font-family:'Orbitron',sans-serif;margin-bottom:20px;" id="cropModalSubtitle">Drag to move • Scroll to zoom</p>
+
+            <!-- Canvas Preview -->
+            <div style="position:relative;overflow:hidden;border:2px solid #ff00ff44;border-radius:12px;margin-bottom:20px;background:#111;cursor:grab;" id="cropCanvasWrapper">
+                <canvas id="cropCanvas" style="display:block;"></canvas>
+                <!-- Overlay grid -->
+                <div style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;background:
+                    linear-gradient(rgba(255,0,255,0.1) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(255,0,255,0.1) 1px, transparent 1px);
+                    background-size:33.33% 33.33%;"></div>
+            </div>
+
+            <!-- Zoom Slider -->
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+                <span style="color:#ff00ff;font-size:1rem;">🔍</span>
+                <input type="range" id="cropZoom" min="0.5" max="3" step="0.01" value="1" style="
+                    flex:1;height:4px;-webkit-appearance:none;
+                    background:rgba(255,0,255,0.3);border-radius:2px;outline:none;cursor:pointer;
+                ">
+                <span style="color:#888;font-size:0.75rem;font-family:'Orbitron',sans-serif;" id="cropZoomLabel">100%</span>
+            </div>
+
+            <!-- Buttons -->
+            <div style="display:flex;gap:12px;justify-content:flex-end;">
+                <button onclick="closeCropModal()" style="
+                    background:rgba(100,100,100,0.2);border:2px solid #444;
+                    color:#aaa;padding:12px 24px;border-radius:8px;cursor:pointer;
+                    font-family:'Orbitron',sans-serif;font-size:0.75rem;transition:all 0.3s;
+                ">CANCEL</button>
+                <button onclick="applyCrop()" style="
+                    background:rgba(255,0,255,0.3);border:2px solid #ff00ff;
+                    color:#fff;padding:12px 30px;border-radius:8px;cursor:pointer;
+                    font-family:'Orbitron',sans-serif;font-size:0.75rem;letter-spacing:1px;
+                    transition:all 0.3s;
+                ">✅ ÜBERNEHMEN</button>
             </div>
         </div>
     </div>
