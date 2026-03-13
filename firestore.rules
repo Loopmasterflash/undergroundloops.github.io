@@ -1,0 +1,67 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Tracks - jeder kann lesen, nur authentifizierte können schreiben
+    match /tracks/{document=**} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Users - jeder kann lesen, nur eigenes Profil ändern
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Comments - eingeloggte User können schreiben
+    match /comments/{comment} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Likes
+    match /likes/{like} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Follows
+    match /follows/{follow} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Messages
+    match /messages/{message} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // Config - nur lesen erlaubt (für GitHub Token)
+    match /config/{document} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Blog - jeder kann lesen, nur Admin kann schreiben
+    match /blog/{post} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == 'DEINE_ADMIN_UID_HIER';
+    }
+
+    // Forum Threads
+    match /forumThreads/{thread} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow delete: if request.auth != null && request.auth.uid == resource.data.authorId;
+    }
+
+    // Forum Replies
+    match /forumReplies/{reply} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow delete: if request.auth != null && request.auth.uid == resource.data.authorId;
+    }
+  }
+}

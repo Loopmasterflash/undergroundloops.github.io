@@ -39,6 +39,8 @@ function initNavigation() {
 
             if(currentPage === 'blog') {
                 showBlogPage();
+            } else if(currentPage === 'forum') {
+                showForumPage();
             } else {
                 showMainPage();
                 filterTracks();
@@ -856,4 +858,315 @@ async function deleteBlogPost(id) {
     await db.collection('blog').doc(id).delete();
     loadBlogPosts();
 }
+
+// ============================================
+// FORUM
+// ============================================
+
+const FORUM_CATEGORIES = [
+    { id: 'production', icon: '🎛️', title: 'Production Tips', desc: 'Share your production knowledge and techniques', color: '#ff00ff' },
+    { id: 'vst', icon: '🔌', title: 'VST Plugins', desc: 'Reviews, recommendations and questions about plugins', color: '#00ffff' },
+    { id: 'daw', icon: '🎹', title: 'DAW Talk', desc: 'Ableton, FL Studio, Logic, Cubase and more', color: '#ffff00' },
+    { id: 'contests', icon: '🏆', title: 'Remix Contests', desc: 'Announcements and submissions for remix contests', color: '#ff8800' },
+    { id: 'general', icon: '💬', title: 'General Chat', desc: 'Everything else – music, life, gear', color: '#00ff88' },
+];
+
+let currentForumCategory = null;
+let currentForumThread = null;
+
+function showForumPage() {
+    const flexWrapper = document.getElementById('mainFlexWrapper');
+    if(flexWrapper) flexWrapper.style.display = 'none';
+    document.getElementById('profileContainer')?.classList.add('hidden');
+    document.getElementById('messagesContainer')?.classList.add('hidden');
+    document.getElementById('blogContainer')?.classList.add('hidden');
+    document.getElementById('uploadContainer')?.classList.add('hidden');
+    document.getElementById('forumContainer')?.classList.remove('hidden');
+
+    // New Thread Button nur für eingeloggte User
+    const btn = document.getElementById('newThreadBtn');
+    if(btn) btn.style.display = (typeof currentUser !== 'undefined' && currentUser) ? 'block' : 'none';
+
+    showForumCategories();
+}
+
+function showForumCategories() {
+    currentForumCategory = null;
+    currentForumThread = null;
+    document.getElementById('forumCategoriesView').style.display = 'block';
+    document.getElementById('forumThreadsView').style.display = 'none';
+    document.getElementById('forumPostView').style.display = 'none';
+    document.getElementById('newThreadForm').style.display = 'none';
+    document.getElementById('newThreadBtn').style.display = (typeof currentUser !== 'undefined' && currentUser) ? 'block' : 'none';
+
+    const container = document.getElementById('forumCategoriesView');
+    container.innerHTML = '';
+
+    FORUM_CATEGORIES.forEach(cat => {
+        const card = document.createElement('div');
+        card.style.cssText = `
+            background:rgba(0,0,0,0.6);
+            border:2px solid ${cat.color}44;
+            border-radius:16px;padding:25px 30px;
+            margin-bottom:15px;cursor:pointer;
+            display:flex;align-items:center;gap:20px;
+            transition:all 0.3s;
+            box-shadow:0 0 15px ${cat.color}11;
+        `;
+        card.onmouseover = () => { card.style.borderColor = cat.color; card.style.boxShadow = `0 0 25px ${cat.color}33`; card.style.transform = 'translateX(5px)'; };
+        card.onmouseout = () => { card.style.borderColor = cat.color + '44'; card.style.boxShadow = `0 0 15px ${cat.color}11`; card.style.transform = 'translateX(0)'; };
+        card.onclick = () => openForumCategory(cat);
+
+        card.innerHTML = `
+            <div style="font-size:2.5rem;flex-shrink:0;">${cat.icon}</div>
+            <div style="flex:1;">
+                <div style="font-family:'Orbitron',sans-serif;font-size:1rem;color:${cat.color};letter-spacing:2px;margin-bottom:6px;text-shadow:0 0 10px ${cat.color}66;">${cat.title}</div>
+                <div style="color:#888;font-size:0.85rem;">${cat.desc}</div>
+            </div>
+            <div id="catCount_${cat.id}" style="color:#666;font-family:'Orbitron',sans-serif;font-size:0.7rem;text-align:center;flex-shrink:0;">
+                <div style="color:${cat.color};font-size:1.2rem;font-weight:bold;">–</div>
+                <div>threads</div>
+            </div>
+            <div style="color:${cat.color};font-size:1.5rem;flex-shrink:0;">›</div>
+        `;
+        container.appendChild(card);
+
+        // Thread Anzahl laden
+        db.collection('forumThreads').where('categoryId', '==', cat.id).get().then(snap => {
+            const el = document.getElementById('catCount_' + cat.id);
+            if(el) el.innerHTML = `<div style="color:${cat.color};font-size:1.2rem;font-weight:bold;">${snap.size}</div><div>threads</div>`;
+        }).catch(() => {});
+    });
+}
+
+async function openForumCategory(cat) {
+    currentForumCategory = cat;
+    document.getElementById('forumCategoriesView').style.display = 'none';
+    document.getElementById('forumThreadsView').style.display = 'block';
+    document.getElementById('forumPostView').style.display = 'none';
+
+    const container = document.getElementById('forumThreadsView');
+    container.innerHTML = `
+        <div style="display:flex;align-items:center;gap:15px;margin-bottom:25px;flex-wrap:wrap;">
+            <button onclick="showForumCategories()" style="
+                background:rgba(0,0,0,0.4);border:1px solid #444;color:#aaa;
+                padding:8px 16px;border-radius:8px;cursor:pointer;
+                font-family:'Orbitron',sans-serif;font-size:0.7rem;transition:all 0.3s;
+            ">← BACK</button>
+            <h2 style="font-family:'Orbitron',sans-serif;color:${cat.color};font-size:1rem;letter-spacing:2px;text-shadow:0 0 10px ${cat.color}66;">${cat.icon} ${cat.title}</h2>
+        </div>
+        <div id="threadsList"><p style="color:#666;text-align:center;padding:40px;font-family:Orbitron,sans-serif;font-size:0.8rem;">Loading threads...</p></div>
+    `;
+
+    try {
+        const snap = await db.collection('forumThreads').where('categoryId', '==', cat.id).get();
+        const threadsList = document.getElementById('threadsList');
+
+        // Sortieren nach createdAt im Browser
+        let threads = [];
+        snap.forEach(doc => threads.push({ id: doc.id, ...doc.data() }));
+        threads.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+
+        if(threads.length === 0) {
+            threadsList.innerHTML = `<p style="color:#555;text-align:center;padding:60px;font-family:Orbitron,sans-serif;font-size:0.8rem;">No threads yet. Be the first! 🎧</p>`;
+            return;
+        }
+
+        threadsList.innerHTML = '';
+        threads.forEach(thread => {
+            const date = new Date(thread.createdAt).toLocaleDateString('de-DE');
+            const row = document.createElement('div');
+            row.style.cssText = `
+                background:rgba(0,0,0,0.5);border:1px solid ${cat.color}33;
+                border-radius:12px;padding:18px 22px;margin-bottom:10px;
+                cursor:pointer;display:flex;align-items:center;gap:15px;
+                transition:all 0.3s;
+            `;
+            row.onmouseover = () => { row.style.borderColor = cat.color; row.style.background = `rgba(0,0,0,0.7)`; };
+            row.onmouseout = () => { row.style.borderColor = cat.color + '33'; row.style.background = 'rgba(0,0,0,0.5)'; };
+            row.onclick = () => openForumThread(thread, cat);
+            row.innerHTML = `
+                <div style="font-size:1.5rem;flex-shrink:0;">💬</div>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-family:'Orbitron',sans-serif;color:#fff;font-size:0.85rem;letter-spacing:1px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${thread.title}</div>
+                    <div style="color:#666;font-size:0.75rem;">by <span style="color:${cat.color};">${thread.authorName || 'Unknown'}</span> · ${date} · <span id="replyCount_${thread.id}">– replies</span></div>
+                </div>
+                <div style="color:${cat.color};font-size:1.2rem;flex-shrink:0;">›</div>
+            `;
+            threadsList.appendChild(row);
+
+            // Reply Anzahl
+            db.collection('forumReplies').where('threadId', '==', thread.id).get().then(s => {
+                const el = document.getElementById('replyCount_' + thread.id);
+                if(el) el.textContent = s.size + ' replies';
+            }).catch(() => {});
+        });
+    } catch(e) {
+        document.getElementById('threadsList').innerHTML = `<p style="color:#ff4444;text-align:center;padding:40px;">Error: ${e.message}</p>`;
+    }
+}
+
+async function openForumThread(thread, cat) {
+    currentForumThread = thread;
+    document.getElementById('forumThreadsView').style.display = 'none';
+    document.getElementById('forumPostView').style.display = 'block';
+    document.getElementById('newThreadForm').style.display = 'none';
+
+    const container = document.getElementById('forumPostView');
+    container.innerHTML = `
+        <div style="display:flex;align-items:center;gap:15px;margin-bottom:25px;flex-wrap:wrap;">
+            <button onclick="openForumCategory(currentForumCategory)" style="
+                background:rgba(0,0,0,0.4);border:1px solid #444;color:#aaa;
+                padding:8px 16px;border-radius:8px;cursor:pointer;
+                font-family:'Orbitron',sans-serif;font-size:0.7rem;
+            ">← BACK</button>
+            <h2 style="font-family:'Orbitron',sans-serif;color:#00ffff;font-size:0.9rem;letter-spacing:1px;">${thread.title}</h2>
+        </div>
+
+        <!-- Erster Post -->
+        <div style="background:rgba(0,0,0,0.6);border:2px solid ${cat.color}44;border-radius:16px;padding:25px;margin-bottom:20px;">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:15px;">
+                <img src="${thread.authorAvatar || ''}" onerror="this.src=''" style="width:44px;height:44px;border-radius:50%;border:2px solid ${cat.color};object-fit:cover;">
+                <div>
+                    <div style="font-family:'Orbitron',sans-serif;color:${cat.color};font-size:0.8rem;">${thread.authorName || 'Unknown'}</div>
+                    <div style="color:#666;font-size:0.7rem;">${new Date(thread.createdAt).toLocaleString('de-DE')}</div>
+                </div>
+            </div>
+            <p style="color:#ddd;font-size:0.95rem;line-height:1.8;white-space:pre-wrap;">${thread.text}</p>
+        </div>
+
+        <!-- Replies -->
+        <div id="repliesList"></div>
+
+        <!-- Reply Form -->
+        <div id="replyFormArea" style="margin-top:20px;"></div>
+    `;
+
+    // Replies laden
+    loadReplies(thread.id, cat);
+
+    // Reply Form zeigen falls eingeloggt
+    const replyArea = document.getElementById('replyFormArea');
+    if(typeof currentUser !== 'undefined' && currentUser) {
+        replyArea.innerHTML = `
+            <div style="background:rgba(0,0,0,0.6);border:1px solid #00ffff33;border-radius:12px;padding:20px;">
+                <h4 style="font-family:'Orbitron',sans-serif;color:#00ffff;font-size:0.75rem;letter-spacing:2px;margin-bottom:15px;">YOUR REPLY</h4>
+                <textarea id="replyText" placeholder="Write your reply..." style="
+                    width:100%;padding:12px;margin-bottom:15px;
+                    background:rgba(0,0,0,0.5);border:1px solid #00ffff33;
+                    border-radius:8px;color:#fff;font-family:'Courier New',monospace;
+                    min-height:100px;resize:vertical;box-sizing:border-box;font-size:0.9rem;
+                "></textarea>
+                <button onclick="submitReply('${thread.id}')" style="
+                    background:rgba(0,255,255,0.2);border:2px solid #00ffff;
+                    color:#fff;padding:10px 25px;border-radius:8px;cursor:pointer;
+                    font-family:'Orbitron',sans-serif;font-size:0.7rem;letter-spacing:1px;transition:all 0.3s;
+                ">💬 REPLY</button>
+            </div>
+        `;
+    } else {
+        replyArea.innerHTML = `<p style="color:#666;text-align:center;padding:20px;font-family:'Orbitron',sans-serif;font-size:0.75rem;">
+            <a onclick="document.getElementById('loginBtn').click()" style="color:#00ffff;cursor:pointer;">LOGIN</a> to reply
+        </p>`;
+    }
+}
+
+async function loadReplies(threadId, cat) {
+    const container = document.getElementById('repliesList');
+    if(!container) return;
+    try {
+        const snap = await db.collection('forumReplies').where('threadId', '==', threadId).get();
+        let replies = [];
+        snap.forEach(doc => replies.push({ id: doc.id, ...doc.data() }));
+        replies.sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''));
+
+        container.innerHTML = '';
+        replies.forEach(reply => {
+            const div = document.createElement('div');
+            div.style.cssText = 'background:rgba(0,0,0,0.4);border:1px solid #ffffff11;border-radius:12px;padding:20px;margin-bottom:12px;';
+            div.innerHTML = `
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+                    <img src="${reply.authorAvatar || ''}" onerror="this.src=''" style="width:36px;height:36px;border-radius:50%;border:2px solid #ffffff22;object-fit:cover;">
+                    <div>
+                        <div style="font-family:'Orbitron',sans-serif;color:#00ffff;font-size:0.75rem;">${reply.authorName || 'Unknown'}</div>
+                        <div style="color:#666;font-size:0.7rem;">${new Date(reply.createdAt).toLocaleString('de-DE')}</div>
+                    </div>
+                    ${(typeof currentUser !== 'undefined' && currentUser && currentUser.uid === reply.authorId) ?
+                        `<button onclick="deleteReply('${reply.id}')" style="margin-left:auto;background:rgba(255,0,0,0.2);border:1px solid #ff4444;color:#ff4444;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:0.7rem;">🗑️</button>` : ''}
+                </div>
+                <p style="color:#ccc;font-size:0.9rem;line-height:1.7;white-space:pre-wrap;">${reply.text}</p>
+            `;
+            container.appendChild(div);
+        });
+    } catch(e) { console.error(e); }
+}
+
+async function submitReply(threadId) {
+    const text = document.getElementById('replyText')?.value.trim();
+    if(!text) { alert('Please write something!'); return; }
+    if(!currentUser) { alert('Please login!'); return; }
+    try {
+        const userDoc = await db.collection('users').doc(currentUser.uid).get();
+        const userData = userDoc.data();
+        await db.collection('forumReplies').add({
+            threadId,
+            text,
+            authorId: currentUser.uid,
+            authorName: userData.username || 'Unknown',
+            authorAvatar: userData.avatar || '',
+            createdAt: new Date().toISOString()
+        });
+        document.getElementById('replyText').value = '';
+        loadReplies(threadId, currentForumCategory);
+    } catch(e) { alert('Error: ' + e.message); }
+}
+
+async function deleteReply(replyId) {
+    if(!confirm('Delete this reply?')) return;
+    await db.collection('forumReplies').doc(replyId).delete();
+    loadReplies(currentForumThread.id, currentForumCategory);
+}
+
+function showNewThreadForm() {
+    if(!currentUser) { alert('Please login to create a thread!'); return; }
+    document.getElementById('newThreadForm').style.display = 'block';
+    document.getElementById('forumCategoriesView').style.display = 'none';
+    document.getElementById('forumThreadsView').style.display = 'none';
+    document.getElementById('forumPostView').style.display = 'none';
+}
+
+function hideNewThreadForm() {
+    document.getElementById('newThreadForm').style.display = 'none';
+    if(currentForumCategory) {
+        openForumCategory(currentForumCategory);
+    } else {
+        showForumCategories();
+    }
+}
+
+async function submitNewThread() {
+    const title = document.getElementById('threadTitle')?.value.trim();
+    const text = document.getElementById('threadText')?.value.trim();
+    if(!title || !text) { alert('Please fill in title and message!'); return; }
+    if(!currentUser) { alert('Please login!'); return; }
+    if(!currentForumCategory) { alert('Please select a category first!'); return; }
+
+    try {
+        const userDoc = await db.collection('users').doc(currentUser.uid).get();
+        const userData = userDoc.data();
+        await db.collection('forumThreads').add({
+            categoryId: currentForumCategory.id,
+            title, text,
+            authorId: currentUser.uid,
+            authorName: userData.username || 'Unknown',
+            authorAvatar: userData.avatar || '',
+            createdAt: new Date().toISOString()
+        });
+        document.getElementById('threadTitle').value = '';
+        document.getElementById('threadText').value = '';
+        alert('✅ Thread posted!');
+        openForumCategory(currentForumCategory);
+    } catch(e) { alert('Error: ' + e.message); }
+}
+
 
