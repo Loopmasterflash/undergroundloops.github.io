@@ -215,7 +215,7 @@ let cropFile = null;
 let cropType = null;
 let cropMaxW = 1024;
 let cropMaxH = 1024;
-let cropImg = new Image();
+let cropImg = null;
 let cropScale = 1;
 let cropOffsetX = 0;
 let cropOffsetY = 0;
@@ -245,7 +245,7 @@ function openCropModal(file, type, maxW, maxH) {
         cropImg.onload = () => {
             setupCropCanvas();
             const modal = document.getElementById('cropModal');
-            modal.style.display = 'flex';
+            if(modal) modal.style.display = 'flex';
         };
         cropImg.src = e.target.result;
     };
@@ -288,7 +288,7 @@ function setupCropCanvas() {
 
 function drawCrop() {
     const canvas = document.getElementById('cropCanvas');
-    if(!canvas) return;
+    if(!canvas || !cropImg) return;
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(cropImg, cropOffsetX, cropOffsetY, cropImg.width * cropScale, cropImg.height * cropScale);
