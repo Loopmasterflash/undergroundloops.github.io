@@ -68,9 +68,11 @@ function initGenreDropdown() {
 
 async function loadTracksFromFirestore() {
     try {
-        const snapshot = await db.collection('tracks').orderBy('uploadedAt', 'desc').get();
+        const snapshot = await db.collection('tracks').get();
         allTracks = [];
         snapshot.forEach(doc => allTracks.push({ id: doc.id, ...doc.data() }));
+        // Sortieren nach uploadedAt im Browser
+        allTracks.sort((a, b) => (b.uploadedAt || '').localeCompare(a.uploadedAt || ''));
         filterTracks();
     } catch(error) {
         showError('Error: ' + error.message);
@@ -83,14 +85,19 @@ async function loadTracksFromFirestore() {
 
 async function loadOnlineMembers() {
     try {
-        const snap = await db.collection('users').orderBy('lastSeen', 'desc').limit(15).get();
+        const snap = await db.collection('users').get();
         const container = document.getElementById('onlineMembersList');
         if(!container) return;
         if(snap.empty) { container.innerHTML = '<p style="color:#666;font-size:0.75rem;text-align:center;">No members yet</p>'; return; }
 
+        // Im Browser sortieren nach lastSeen
+        let users = [];
+        snap.forEach(doc => { if(doc.data().lastSeen) users.push({id: doc.id, ...doc.data()}); });
+        users.sort((a, b) => (b.lastSeen || '').localeCompare(a.lastSeen || ''));
+        users = users.slice(0, 15);
+
         container.innerHTML = '';
-        snap.forEach(doc => {
-            const user = doc.data();
+        users.forEach(user => {
             if(!user.lastSeen) return;
 
             const lastSeen = new Date(user.lastSeen);
@@ -109,7 +116,7 @@ async function loadOnlineMembers() {
             item.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:12px;cursor:pointer;transition:all 0.2s;';
             item.onmouseover = () => item.style.opacity = '0.7';
             item.onmouseout = () => item.style.opacity = '1';
-            item.onclick = () => { if(typeof showProfilePage === 'function') showProfilePage(doc.id); };
+            item.onclick = () => { if(typeof showProfilePage === 'function') showProfilePage(user.id); };
 
             item.innerHTML = `
                 <div style="position:relative;flex-shrink:0;">
