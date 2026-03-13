@@ -364,7 +364,7 @@ function filterLoopKey(key) {
     filterTracks();
 }
 
-
+function filterSampleKey(key) {
     currentSampleKey = key;
     KEYS.concat(['all']).forEach(k => {
         const btn = document.getElementById('sampleKey_' + k);
