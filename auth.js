@@ -448,6 +448,7 @@ async function applyCrop() {
 }
 
 
+function showUserMenu(user) {
     document.getElementById('loginBtn').classList.add('hidden');
     document.getElementById('userMenu').classList.remove('hidden');
     const messagesIcon = document.getElementById('messagesIcon');
