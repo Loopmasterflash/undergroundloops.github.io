@@ -135,9 +135,11 @@ function filterTracks() {
 
     // Show/hide submenus
     const loopsSub = document.getElementById('loopsSubmenu');
+    const loopsKeySub = document.getElementById('loopsKeySubmenu');
     const samplesSub = document.getElementById('samplesSubmenu');
     const acapSub = document.getElementById('acapellasSubmenu');
     if(loopsSub) loopsSub.style.display = currentPage === 'loops' ? 'flex' : 'none';
+    if(loopsKeySub) loopsKeySub.style.display = currentPage === 'loops' ? 'flex' : 'none';
     if(samplesSub) samplesSub.style.display = currentPage === 'samples' ? 'flex' : 'none';
     if(acapSub) acapSub.style.display = currentPage === 'acapellas' ? 'flex' : 'none';
 
@@ -155,6 +157,13 @@ function filterTracks() {
     if(currentPage === 'loops' && currentLoopCategory !== 'all') {
         pageFiltered = pageFiltered.filter(track =>
             track.category && track.category.toLowerCase() === currentLoopCategory.toLowerCase()
+        );
+    }
+
+    // Loop key filter
+    if(currentPage === 'loops' && currentLoopKey !== 'all') {
+        pageFiltered = pageFiltered.filter(track =>
+            track.key && track.key === currentLoopKey
         );
     }
 
@@ -315,6 +324,7 @@ function createGridCard(track) {
 }
 
 let currentLoopCategory = 'all';
+let currentLoopKey = 'all';
 let currentSampleKey = 'all';
 let currentAcapellaKey = 'all';
 let currentAcapellaBpm = 'all';
@@ -334,7 +344,20 @@ function filterLoopCategory(cat) {
     filterTracks();
 }
 
-function filterSampleKey(key) {
+function filterLoopKey(key) {
+    currentLoopKey = key;
+    KEYS.concat(['all']).forEach(k => {
+        const btn = document.getElementById('loopKey_' + k);
+        if(!btn) return;
+        const active = k === key;
+        btn.style.background = active ? 'rgba(255,0,255,0.3)' : 'rgba(0,0,0,0.3)';
+        btn.style.border = active ? '1px solid #ff00ff' : '1px solid #444';
+        btn.style.color = active ? '#fff' : '#aaa';
+    });
+    filterTracks();
+}
+
+
     currentSampleKey = key;
     KEYS.concat(['all']).forEach(k => {
         const btn = document.getElementById('sampleKey_' + k);

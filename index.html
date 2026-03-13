@@ -47,6 +47,7 @@
                         <a href="#" data-genre="cinematics">Cinematics</a>
                         <a href="#" data-genre="drumandbass">Drum and Bass</a>
                         <a href="#" data-genre="electronic">Electronic</a>
+                        <a href="#" data-genre="house">House</a>
                     </div>
                 </div>
             </nav>
@@ -121,6 +122,32 @@
             color:#aaa;border-radius:20px;cursor:pointer;
             font-family:'Orbitron',sans-serif;transition:all 0.3s;
         ">Synth</button>
+    </div>
+
+    <!-- ===== LOOPS KEY SUBMENU ===== -->
+    <div id="loopsKeySubmenu" style="
+        display:none;
+        background:rgba(0,0,0,0.65);
+        border-bottom:1px solid #ff00ff22;
+        padding:6px 20px;
+        flex-wrap:wrap;
+        justify-content:center;
+        gap:6px;
+    ">
+        <span style="color:#ff00ff;font-family:'Orbitron',sans-serif;font-size:0.75rem;margin-right:8px;line-height:2;">KEY:</span>
+        <button onclick="filterLoopKey('all')" id="loopKey_all" style="padding:5px 12px;font-size:0.75rem;background:rgba(255,0,255,0.3);border:1px solid #ff00ff;color:#fff;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">All</button>
+        <button onclick="filterLoopKey('C')" id="loopKey_C" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">C</button>
+        <button onclick="filterLoopKey('C#')" id="loopKey_C#" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">C#</button>
+        <button onclick="filterLoopKey('D')" id="loopKey_D" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">D</button>
+        <button onclick="filterLoopKey('D#')" id="loopKey_D#" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">D#</button>
+        <button onclick="filterLoopKey('E')" id="loopKey_E" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">E</button>
+        <button onclick="filterLoopKey('F')" id="loopKey_F" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">F</button>
+        <button onclick="filterLoopKey('F#')" id="loopKey_F#" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">F#</button>
+        <button onclick="filterLoopKey('G')" id="loopKey_G" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">G</button>
+        <button onclick="filterLoopKey('G#')" id="loopKey_G#" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">G#</button>
+        <button onclick="filterLoopKey('A')" id="loopKey_A" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">A</button>
+        <button onclick="filterLoopKey('A#')" id="loopKey_A#" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">A#</button>
+        <button onclick="filterLoopKey('B')" id="loopKey_B" style="padding:5px 12px;font-size:0.75rem;background:rgba(0,0,0,0.3);border:1px solid #444;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;transition:all 0.3s;">B</button>
     </div>
 
     <!-- ===== SAMPLES SUBMENU ===== -->
@@ -584,6 +611,7 @@
                         <option value="cinematics">Cinematics</option>
                         <option value="drumandbass">Drum and Bass</option>
                         <option value="electronic">Electronic</option>
+                        <option value="house">House</option>
                     </select>
                 </div>
                 <div style="flex:1;">

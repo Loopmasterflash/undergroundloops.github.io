@@ -17,9 +17,11 @@ setTimeout(loadGithubToken, 2000);
 
 function openUploadPage() {
     if(!currentUser) { alert('Please login to upload!'); document.getElementById('loginBtn').click(); return; }
-    document.getElementById('mainContainer').classList.add('hidden');
-    document.getElementById('profileContainer').classList.add('hidden');
-    document.getElementById('messagesContainer').classList.add('hidden');
+    const flexWrapper = document.getElementById('mainFlexWrapper');
+    if(flexWrapper) flexWrapper.style.display = 'none';
+    document.getElementById('profileContainer')?.classList.add('hidden');
+    document.getElementById('messagesContainer')?.classList.add('hidden');
+    document.getElementById('blogContainer')?.classList.add('hidden');
     document.getElementById('uploadContainer').classList.remove('hidden');
     resetUploadForm();
 }
@@ -65,9 +67,9 @@ function selectUploadType(type) {
     const catSection = document.getElementById('loopCategorySection');
     if(catSection) catSection.style.display = type === 'loop' ? 'block' : 'none';
 
-    // Zeige Key nur für Samples + Acapellas
+    // Zeige Key für Samples + Acapellas + Loops
     const keySection = document.getElementById('keySection');
-    if(keySection) keySection.style.display = (type === 'sample' || type === 'acapella') ? 'block' : 'none';
+    if(keySection) keySection.style.display = (type === 'sample' || type === 'acapella' || type === 'loop') ? 'block' : 'none';
 
     const audioInput = document.getElementById('uploadAudioFile');
     if(type === 'track') {
@@ -177,7 +179,7 @@ async function submitUpload() {
         const userData = userDoc.data();
 
         const category = type === 'loop' ? (document.getElementById('uploadCategory')?.value || '') : '';
-        const key = (type === 'sample' || type === 'acapella') ? (document.getElementById('uploadKey')?.value || '') : '';
+        const key = (type === 'sample' || type === 'acapella' || type === 'loop') ? (document.getElementById('uploadKey')?.value || '') : '';
 
         await db.collection('tracks').add({
             title, artist: userData.username,
