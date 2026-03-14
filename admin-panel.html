@@ -24,16 +24,8 @@
       padding-bottom: 20px;
     }
 
-    header h1 {
-      color: #00ffcc;
-      font-size: 1.2rem;
-      letter-spacing: 2px;
-    }
-
-    header span {
-      color: #555;
-      font-size: 0.8rem;
-    }
+    header h1 { color: #cc00ff; font-size: 1.2rem; letter-spacing: 2px; }
+    header span { color: #555; font-size: 0.8rem; }
 
     .logout-btn {
       background: transparent;
@@ -46,11 +38,7 @@
       border-radius: 4px;
       transition: all 0.2s;
     }
-
-    .logout-btn:hover {
-      border-color: #ff4444;
-      color: #ff4444;
-    }
+    .logout-btn:hover { border-color: #ff4444; color: #ff4444; }
 
     .section {
       background: #111;
@@ -58,27 +46,53 @@
       border-radius: 8px;
       padding: 30px;
       margin-bottom: 24px;
-      max-width: 700px;
+      max-width: 750px;
     }
 
     .section h2 {
       font-size: 0.9rem;
-      color: #00ffcc;
+      color: #cc00ff;
       letter-spacing: 1px;
       text-transform: uppercase;
-      margin-bottom: 20px;
+      margin-bottom: 24px;
     }
+
+    .field { margin-bottom: 20px; }
 
     label {
       display: block;
       font-size: 0.75rem;
       color: #888;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
       text-transform: uppercase;
       letter-spacing: 1px;
     }
 
-    input[type="text"], input[type="file"] {
+    .pill-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .pill {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 20px;
+      color: #aaa;
+      font-family: 'Courier New', monospace;
+      font-size: 0.8rem;
+      padding: 6px 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      user-select: none;
+    }
+
+    .pill:hover { border-color: #cc00ff; color: #cc00ff; }
+    .pill.active { background: #cc00ff; border-color: #cc00ff; color: #000; font-weight: bold; }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="file"] {
       width: 100%;
       background: #1a1a1a;
       border: 1px solid #333;
@@ -87,58 +101,40 @@
       font-family: 'Courier New', monospace;
       font-size: 0.9rem;
       padding: 10px 14px;
-      margin-bottom: 16px;
       outline: none;
+      transition: border-color 0.2s;
     }
 
-    input[type="file"] {
-      padding: 8px;
-      cursor: pointer;
-    }
+    input:focus { border-color: #cc00ff; }
+    input[type="file"] { padding: 8px; cursor: pointer; }
+
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
     .upload-btn {
-      background: #00ffcc;
+      background: #cc00ff;
       color: #000;
       border: none;
       border-radius: 4px;
       font-family: 'Courier New', monospace;
-      font-size: 0.9rem;
+      font-size: 1rem;
       font-weight: bold;
-      padding: 10px 24px;
+      padding: 12px 30px;
       cursor: pointer;
       letter-spacing: 1px;
       transition: background 0.2s;
+      margin-top: 10px;
     }
-
-    .upload-btn:hover { background: #00ddaa; }
+    .upload-btn:hover { background: #aa00dd; }
     .upload-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
 
-    .status {
-      margin-top: 14px;
-      font-size: 0.8rem;
-      color: #888;
-      min-height: 20px;
-    }
+    .progress { width: 100%; height: 4px; background: #222; border-radius: 2px; margin-top: 16px; overflow: hidden; display: none; }
+    .progress-bar { height: 100%; background: #cc00ff; width: 0%; transition: width 0.3s; }
 
+    .status { margin-top: 14px; font-size: 0.85rem; color: #888; min-height: 20px; }
     .status.ok { color: #00ffcc; }
     .status.err { color: #ff4444; }
 
-    .progress {
-      width: 100%;
-      height: 4px;
-      background: #222;
-      border-radius: 2px;
-      margin-top: 10px;
-      overflow: hidden;
-      display: none;
-    }
-
-    .progress-bar {
-      height: 100%;
-      background: #00ffcc;
-      width: 0%;
-      transition: width 0.3s;
-    }
+    #loopTypeField { display: block; }
   </style>
 </head>
 <body>
@@ -146,28 +142,96 @@
 <header>
   <div>
     <h1>⚡ ADMIN PANEL</h1>
-    <span>Eingeloggt als: BadBoySlim</span>
+    <span>Eingeloggt als: BadBoySlim / UndergroundLoops</span>
   </div>
   <button class="logout-btn" onclick="logout()">Ausloggen</button>
 </header>
 
-<!-- TRACK UPLOAD -->
 <div class="section">
-  <h2>🎵 Track / Loop hochladen</h2>
+  <h2>🎵 Track hochladen</h2>
 
-  <label>Track Titel</label>
-  <input type="text" id="trackTitle" placeholder="z.B. Dark Techno Loop 001">
+  <!-- KATEGORIE -->
+  <div class="field">
+    <label>Kategorie</label>
+    <div class="pill-group" id="categoryGroup">
+      <span class="pill active" data-val="loops" onclick="selectPill(this, 'categoryGroup'); toggleLoopType(this)">Loops</span>
+      <span class="pill" data-val="samples" onclick="selectPill(this, 'categoryGroup'); toggleLoopType(this)">Samples</span>
+      <span class="pill" data-val="tracks" onclick="selectPill(this, 'categoryGroup'); toggleLoopType(this)">Tracks</span>
+      <span class="pill" data-val="acapellas" onclick="selectPill(this, 'categoryGroup'); toggleLoopType(this)">Acapellas</span>
+    </div>
+  </div>
 
-  <label>Genre</label>
-  <input type="text" id="trackGenre" placeholder="z.B. Techno, Drum & Bass, Ambient">
+  <!-- LOOP TYP -->
+  <div class="field" id="loopTypeField">
+    <label>Loop Typ</label>
+    <div class="pill-group" id="loopTypeGroup">
+      <span class="pill active" data-val="all" onclick="selectPill(this, 'loopTypeGroup')">All</span>
+      <span class="pill" data-val="bass" onclick="selectPill(this, 'loopTypeGroup')">Bass</span>
+      <span class="pill" data-val="clap-snare" onclick="selectPill(this, 'loopTypeGroup')">Clap & Snare</span>
+      <span class="pill" data-val="hihats" onclick="selectPill(this, 'loopTypeGroup')">Hihats</span>
+      <span class="pill" data-val="kick-drums" onclick="selectPill(this, 'loopTypeGroup')">Kick & Drums</span>
+      <span class="pill" data-val="percussions" onclick="selectPill(this, 'loopTypeGroup')">Percussions</span>
+      <span class="pill" data-val="synth" onclick="selectPill(this, 'loopTypeGroup')">Synth</span>
+    </div>
+  </div>
 
-  <label>Audio Datei (MP3 / WAV)</label>
-  <input type="file" id="audioFile" accept="audio/*">
+  <!-- KEY -->
+  <div class="field">
+    <label>Key (Tonart)</label>
+    <div class="pill-group" id="keyGroup">
+      <span class="pill active" data-val="all" onclick="selectPill(this, 'keyGroup')">All</span>
+      <span class="pill" data-val="C" onclick="selectPill(this, 'keyGroup')">C</span>
+      <span class="pill" data-val="C#" onclick="selectPill(this, 'keyGroup')">C#</span>
+      <span class="pill" data-val="D" onclick="selectPill(this, 'keyGroup')">D</span>
+      <span class="pill" data-val="D#" onclick="selectPill(this, 'keyGroup')">D#</span>
+      <span class="pill" data-val="E" onclick="selectPill(this, 'keyGroup')">E</span>
+      <span class="pill" data-val="F" onclick="selectPill(this, 'keyGroup')">F</span>
+      <span class="pill" data-val="F#" onclick="selectPill(this, 'keyGroup')">F#</span>
+      <span class="pill" data-val="G" onclick="selectPill(this, 'keyGroup')">G</span>
+      <span class="pill" data-val="G#" onclick="selectPill(this, 'keyGroup')">G#</span>
+      <span class="pill" data-val="A" onclick="selectPill(this, 'keyGroup')">A</span>
+      <span class="pill" data-val="A#" onclick="selectPill(this, 'keyGroup')">A#</span>
+      <span class="pill" data-val="B" onclick="selectPill(this, 'keyGroup')">B</span>
+    </div>
+  </div>
 
-  <label>Cover Bild (JPG / PNG)</label>
-  <input type="file" id="coverFile" accept="image/*">
+  <!-- BPM -->
+  <div class="field">
+    <label>BPM Range</label>
+    <div class="pill-group" id="bpmGroup" style="margin-bottom:10px">
+      <span class="pill active" data-val="all" onclick="selectPill(this, 'bpmGroup')">All</span>
+      <span class="pill" data-val="slow" onclick="selectPill(this, 'bpmGroup')">Slow &lt;90</span>
+      <span class="pill" data-val="mid" onclick="selectPill(this, 'bpmGroup')">Mid 90-130</span>
+      <span class="pill" data-val="fast" onclick="selectPill(this, 'bpmGroup')">Fast &gt;130</span>
+    </div>
+    <input type="number" id="bpmExact" placeholder="Exakter BPM Wert (z.B. 138)" min="40" max="300">
+  </div>
 
-  <button class="upload-btn" id="uploadBtn" onclick="uploadTrack()">HOCHLADEN → R2</button>
+  <!-- TITEL & GENRE -->
+  <div class="row2">
+    <div class="field">
+      <label>Track Titel</label>
+      <input type="text" id="trackTitle" placeholder="z.B. Dark Bass Loop 001">
+    </div>
+    <div class="field">
+      <label>Genre</label>
+      <input type="text" id="trackGenre" placeholder="z.B. Techno, DnB, Ambient">
+    </div>
+  </div>
+
+  <!-- DATEIEN -->
+  <div class="row2">
+    <div class="field">
+      <label>Audio Datei (MP3 / WAV)</label>
+      <input type="file" id="audioFile" accept="audio/*">
+    </div>
+    <div class="field">
+      <label>Cover Bild (JPG / PNG)</label>
+      <input type="file" id="coverFile" accept="image/*">
+    </div>
+  </div>
+
+  <button class="upload-btn" id="uploadBtn" onclick="uploadTrack()">⬆ HOCHLADEN → R2</button>
 
   <div class="progress" id="progressBar">
     <div class="progress-bar" id="progressFill"></div>
@@ -176,12 +240,26 @@
 </div>
 
 <script>
-  // Zugriff prüfen
   if (sessionStorage.getItem('admin_logged_in') !== 'true') {
     window.location.href = 'admin.html';
   }
 
   const WORKER_URL = 'https://undergroundloops-upload.dj-christern.workers.dev';
+
+  function toggleLoopType(el) {
+    document.getElementById('loopTypeField').style.display =
+      el.dataset.val === 'loops' ? 'block' : 'none';
+  }
+
+  function selectPill(el, groupId) {
+    document.querySelectorAll(`#${groupId} .pill`).forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  function getSelected(groupId) {
+    const active = document.querySelector(`#${groupId} .pill.active`);
+    return active ? active.dataset.val : null;
+  }
 
   function logout() {
     sessionStorage.removeItem('admin_logged_in');
@@ -194,6 +272,12 @@
     const audioFile = document.getElementById('audioFile').files[0];
     const coverFile = document.getElementById('coverFile').files[0];
 
+    const category = getSelected('categoryGroup');
+    const loopType = category === 'loops' ? getSelected('loopTypeGroup') : null;
+    const key = getSelected('keyGroup');
+    const bpmRange = getSelected('bpmGroup');
+    const bpmExact = document.getElementById('bpmExact').value;
+
     if (!title || !audioFile) {
       setStatus('❌ Bitte Titel und Audio-Datei angeben!', 'err');
       return;
@@ -202,41 +286,57 @@
     const btn = document.getElementById('uploadBtn');
     btn.disabled = true;
     showProgress(true);
-    setStatus('⏳ Wird hochgeladen...', '');
 
     try {
+      const timestamp = Date.now();
+
       // Audio hochladen
       setStatus('⏳ Audio wird hochgeladen...', '');
       setProgressFill(20);
-
-      const audioKey = `tracks/${Date.now()}_${audioFile.name}`;
+      const audioKey = `${category}/${timestamp}_${audioFile.name}`;
       await uploadToR2(audioFile, audioKey);
       setProgressFill(60);
 
-      // Cover hochladen (optional)
+      // Cover hochladen
       let coverKey = null;
       if (coverFile) {
         setStatus('⏳ Cover wird hochgeladen...', '');
-        coverKey = `covers/${Date.now()}_${coverFile.name}`;
+        coverKey = `covers/${timestamp}_${coverFile.name}`;
         await uploadToR2(coverFile, coverKey);
-        setProgressFill(90);
+        setProgressFill(80);
       }
 
-      setProgressFill(100);
-      setStatus(`✅ Erfolgreich hochgeladen! "${title}"`, 'ok');
+      // Metadaten als JSON
+      const meta = {
+        id: timestamp,
+        title, genre, category, loopType, key,
+        bpmRange, bpm: bpmExact || null,
+        audioKey, coverKey,
+        artist: 'BadBoySlim',
+        uploadedAt: new Date().toISOString()
+      };
 
-      // Felder leeren
+      await uploadToR2(
+        new Blob([JSON.stringify(meta)], { type: 'application/json' }),
+        `meta/${timestamp}.json`
+      );
+
+      setProgressFill(100);
+      setStatus(`✅ "${title}" hochgeladen! [${category.toUpperCase()} | Key: ${key} | BPM: ${bpmExact || bpmRange}]`, 'ok');
+
+      // Reset
       document.getElementById('trackTitle').value = '';
       document.getElementById('trackGenre').value = '';
       document.getElementById('audioFile').value = '';
       document.getElementById('coverFile').value = '';
+      document.getElementById('bpmExact').value = '';
 
     } catch (err) {
       setStatus('❌ Fehler: ' + err.message, 'err');
     }
 
     btn.disabled = false;
-    setTimeout(() => showProgress(false), 2000);
+    setTimeout(() => showProgress(false), 3000);
   }
 
   async function uploadToR2(file, key) {
@@ -244,16 +344,14 @@
       method: 'POST',
       headers: {
         'X-File-Key': key,
-        'Content-Type': file.type,
+        'Content-Type': file.type || 'application/octet-stream',
       },
       body: file
     });
-
     if (!response.ok) {
       const text = await response.text();
       throw new Error(text || 'Upload fehlgeschlagen');
     }
-
     return response.json();
   }
 
