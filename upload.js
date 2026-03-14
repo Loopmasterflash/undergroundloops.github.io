@@ -1,21 +1,10 @@
 // UNDERGROUNDLOOPS - Upload System
-// Token wird sicher aus Firestore geladen
+// R2 Storage via Cloudflare Workers Proxy
 
-const GITHUB_OWNER = 'Loopmasterflash';
-const GITHUB_REPO = 'undergroundloops.github.io';
-const GITHUB_BRANCH = 'main';
-let GITHUB_TOKEN = null;
+const R2_PUBLIC_URL = 'https://pub-5f696ecb59a944058dd6a3ef1b569457.r2.dev';
+const R2_WORKER_URL = 'https://undergroundloops-upload.dj-christern.workers.dev';
 
-async function loadGithubToken() {
-    try {
-        const configDoc = await db.collection('config').doc('github').get();
-        if(configDoc.exists) { GITHUB_TOKEN = configDoc.data().token; }
-    } catch(e) { console.error('Could not load GitHub token:', e); }
-}
-
-setTimeout(loadGithubToken, 2000);
-
-function openUploadPage() {
+async function openUploadPage() {
     if(!currentUser) { alert('Please login to upload!'); document.getElementById('loginBtn').click(); return; }
     const flexWrapper = document.getElementById('mainFlexWrapper');
     if(flexWrapper) flexWrapper.style.display = 'none';
@@ -63,11 +52,9 @@ function selectUploadType(type) {
 
     document.getElementById('uploadType').value = type;
 
-    // Zeige Kategorie nur für Loops
     const catSection = document.getElementById('loopCategorySection');
     if(catSection) catSection.style.display = type === 'loop' ? 'block' : 'none';
 
-    // Zeige Key für Samples + Acapellas + Loops
     const keySection = document.getElementById('keySection');
     if(keySection) keySection.style.display = (type === 'sample' || type === 'acapella' || type === 'loop') ? 'block' : 'none';
 
@@ -118,10 +105,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function submitUpload() {
     if(!currentUser) { alert('Please login first!'); return; }
-    if(!GITHUB_TOKEN) {
-        await loadGithubToken();
-        if(!GITHUB_TOKEN) { alert('❌ Upload system not ready. Please try again.'); return; }
-    }
 
     const title = document.getElementById('uploadTitle').value.trim();
     const bpm = document.getElementById('uploadBPM').value.trim();
@@ -148,29 +131,28 @@ async function submitUpload() {
     progressDiv.classList.remove('hidden');
 
     try {
-        progressText.textContent = '⏳ Uploading audio to server...';
+        progressText.textContent = '⏳ Uploading audio to R2...';
 
         const timestamp = Date.now();
         const safeTitle = title.replace(/[^a-zA-Z0-9]/g, '_');
         const audioExt = audioFile.name.split('.').pop();
-        const audioFileName = `audio/${type}s/${safeTitle}_${timestamp}.${audioExt}`;
+        const audioKey = `audio/${type}s/${safeTitle}_${timestamp}.${audioExt}`;
 
-        const audioBase64 = await fileToBase64Raw(audioFile);
-        const audioURL = await uploadToGitHub(audioFileName, audioBase64, `Upload ${type}: ${title}`);
+        const audioURL = await uploadToR2(audioKey, audioFile, audioFile.type || 'audio/wav');
 
         progressText.textContent = '⏳ Processing cover image...';
         let coverURL = '';
 
         if(coverFile) {
             const compressed = await compressImage(coverFile, 400, 400, 0.8);
-            const coverBase64Raw = compressed.split(',')[1];
-            const coverFileName = `covers/${safeTitle}_${timestamp}.jpg`;
-            coverURL = await uploadToGitHub(coverFileName, coverBase64Raw, `Cover for ${title}`);
+            const coverBlob = await (await fetch(compressed)).blob();
+            const coverKey = `covers/${safeTitle}_${timestamp}.jpg`;
+            coverURL = await uploadToR2(coverKey, coverBlob, 'image/jpeg');
         } else {
             const defaultCover = generateDefaultCover(title, genre);
-            const coverBase64Raw = defaultCover.split(',')[1];
-            const coverFileName = `covers/${safeTitle}_${timestamp}.jpg`;
-            coverURL = await uploadToGitHub(coverFileName, coverBase64Raw, `Auto cover for ${title}`);
+            const coverBlob = await (await fetch(defaultCover)).blob();
+            const coverKey = `covers/${safeTitle}_${timestamp}.jpg`;
+            coverURL = await uploadToR2(coverKey, coverBlob, 'image/jpeg');
         }
 
         progressText.textContent = '⏳ Saving to database...';
@@ -210,36 +192,31 @@ async function submitUpload() {
 }
 
 // ============================================
-// GITHUB API
+// R2 UPLOAD via Netlify/Vercel Function
 // ============================================
 
-async function uploadToGitHub(filePath, base64Content, commitMessage) {
-    const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}`;
-    const response = await fetch(url, {
-        method: 'PUT',
-        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: commitMessage, content: base64Content, branch: GITHUB_BRANCH })
+async function uploadToR2(key, fileOrBlob, contentType) {
+    const formData = new FormData();
+    formData.append('file', fileOrBlob);
+    formData.append('key', key);
+    formData.append('contentType', contentType);
+
+    const response = await fetch(R2_WORKER_URL, {
+        method: 'POST',
+        body: formData
     });
+
     if(!response.ok) {
-        const error = await response.json();
-        throw new Error('GitHub upload failed: ' + (error.message || response.statusText));
+        const err = await response.text();
+        throw new Error('R2 upload failed: ' + err);
     }
-    const data = await response.json();
-    return data.content.download_url;
+
+    return `${R2_PUBLIC_URL}/${key}`;
 }
 
 // ============================================
 // HELPERS
 // ============================================
-
-function fileToBase64Raw(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target.result.split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
-}
 
 function compressImage(file, maxWidth, maxHeight, quality) {
     return new Promise((resolve, reject) => {
