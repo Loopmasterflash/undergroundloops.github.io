@@ -264,12 +264,10 @@ async function loadUserUploads(userId) {
             div.onmouseover = () => div.style.border = '1px solid #ff00ff';
             div.onmouseout = () => div.style.border = '1px solid #ff00ff44';
 
-            // Cover
             const img = document.createElement('img');
             img.src = track.coverImage || '';
             img.style.cssText = 'width:50px;height:50px;object-fit:cover;border-radius:6px;flex-shrink:0;';
 
-            // Info
             const info = document.createElement('div');
             info.style.cssText = 'flex:1;cursor:pointer;';
             info.innerHTML = `
@@ -284,21 +282,15 @@ async function loadUserUploads(userId) {
             div.appendChild(img);
             div.appendChild(info);
 
-            // Nur für eigene Tracks
             if(currentUser && currentUser.uid === userId) {
-                // ✏️ Edit Button → öffnet neues Modal
                 const editBtn = document.createElement('button');
                 editBtn.textContent = '✏️';
                 editBtn.title = 'Edit Track';
                 editBtn.style.cssText = 'background:rgba(0,255,255,0.15);border:1px solid #00ffff;color:#00ffff;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:1rem;flex-shrink:0;transition:all 0.3s;margin-right:6px;';
                 editBtn.onmouseover = () => editBtn.style.background = 'rgba(0,255,255,0.35)';
                 editBtn.onmouseout = () => editBtn.style.background = 'rgba(0,255,255,0.15)';
-                editBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    openEditModal(track);
-                };
+                editBtn.onclick = (e) => { e.stopPropagation(); openEditModal(track); };
 
-                // 🗑️ Delete Button
                 const deleteBtn = document.createElement('button');
                 deleteBtn.textContent = '🗑️';
                 deleteBtn.title = 'Delete Track';
@@ -315,6 +307,224 @@ async function loadUserUploads(userId) {
         });
     } catch(error) { console.error('Error loading uploads:', error); }
 }
+
+// ============================================
+// EDIT MODAL (mit Cover Upload!)
+// ============================================
+
+function openEditModal(track) {
+    // Altes Modal entfernen falls vorhanden
+    const old = document.getElementById('editTrackModal');
+    if(old) old.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'editTrackModal';
+    modal.style.cssText = `
+        position:fixed;inset:0;background:rgba(0,0,0,0.88);
+        z-index:10000;display:flex;align-items:center;justify-content:center;
+        backdrop-filter:blur(8px);
+    `;
+
+    modal.innerHTML = `
+        <div style="
+            background:#111;border:1px solid #00ffff;border-radius:12px;
+            padding:30px;width:90%;max-width:500px;
+            box-shadow:0 0 40px rgba(0,255,255,0.2);
+            position:relative;max-height:90vh;overflow-y:auto;
+        ">
+            <button onclick="document.getElementById('editTrackModal').remove()" style="
+                position:absolute;top:12px;right:14px;
+                background:none;border:none;color:#aaa;font-size:1.4rem;cursor:pointer;
+            ">✕</button>
+
+            <h3 style="font-family:'Orbitron',sans-serif;color:#00ffff;font-size:0.9rem;letter-spacing:2px;margin-bottom:24px;">✏️ EDIT TRACK</h3>
+
+            <!-- Titel -->
+            <div style="margin-bottom:16px;">
+                <label style="display:block;color:#888;font-size:0.75rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Titel</label>
+                <input type="text" id="editTitle" value="${track.title || ''}" style="
+                    width:100%;background:#1a1a1a;border:1px solid #333;border-radius:4px;
+                    color:#fff;font-size:0.9rem;padding:10px 14px;outline:none;box-sizing:border-box;
+                ">
+            </div>
+
+            <!-- Genre -->
+            <div style="margin-bottom:16px;">
+                <label style="display:block;color:#888;font-size:0.75rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Genre</label>
+                <input type="text" id="editGenre" value="${track.genre || ''}" style="
+                    width:100%;background:#1a1a1a;border:1px solid #333;border-radius:4px;
+                    color:#fff;font-size:0.9rem;padding:10px 14px;outline:none;box-sizing:border-box;
+                ">
+            </div>
+
+            <!-- BPM -->
+            <div style="margin-bottom:16px;">
+                <label style="display:block;color:#888;font-size:0.75rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">BPM</label>
+                <input type="number" id="editBpm" value="${track.bpm || ''}" style="
+                    width:100%;background:#1a1a1a;border:1px solid #333;border-radius:4px;
+                    color:#fff;font-size:0.9rem;padding:10px 14px;outline:none;box-sizing:border-box;
+                ">
+            </div>
+
+            <!-- Cover Upload -->
+            <div style="margin-bottom:20px;">
+                <label style="display:block;color:#888;font-size:0.75rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Cover Bild ersetzen</label>
+
+                <!-- Aktuelles Cover -->
+                <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px;">
+                    <img id="editCoverPreview" src="${track.coverImage || ''}"
+                         style="width:70px;height:70px;object-fit:cover;border-radius:8px;border:2px solid #333;"
+                         onerror="this.style.display='none'">
+                    <span style="color:#666;font-size:0.8rem;">Aktuelles Cover</span>
+                </div>
+
+                <!-- File Picker -->
+                <input type="file" id="editCoverFile" accept="image/*" style="display:none">
+                <div onclick="document.getElementById('editCoverFile').click()" style="
+                    padding:14px;border:2px dashed #00ffff44;border-radius:8px;
+                    text-align:center;cursor:pointer;color:#aaa;font-size:0.85rem;
+                    background:rgba(0,255,255,0.04);transition:all 0.2s;
+                "
+                onmouseover="this.style.borderColor='#00ffff';this.style.background='rgba(0,255,255,0.1)'"
+                onmouseout="this.style.borderColor='#00ffff44';this.style.background='rgba(0,255,255,0.04)'"
+                >
+                    🖼️ <span id="editCoverLabel">Neues Cover auswählen (optional)</span>
+                </div>
+            </div>
+
+            <!-- Status -->
+            <div id="editStatus" style="font-size:0.8rem;color:#888;margin-bottom:14px;min-height:18px;"></div>
+
+            <!-- Buttons -->
+            <div style="display:flex;gap:10px;">
+                <button id="editSaveBtn" onclick="saveEditModal('${track.id}')" style="
+                    flex:1;background:#00ffff;color:#000;border:none;border-radius:6px;
+                    font-family:'Courier New',monospace;font-weight:bold;font-size:0.9rem;
+                    padding:12px;cursor:pointer;transition:background 0.2s;
+                ">💾 SPEICHERN</button>
+                <button onclick="document.getElementById('editTrackModal').remove()" style="
+                    background:#1a1a1a;border:1px solid #333;color:#888;border-radius:6px;
+                    font-family:'Courier New',monospace;font-size:0.9rem;
+                    padding:12px 20px;cursor:pointer;
+                ">Abbrechen</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Cover Vorschau bei Auswahl
+    document.getElementById('editCoverFile').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if(file) {
+            document.getElementById('editCoverLabel').textContent = '✅ ' + file.name;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                document.getElementById('editCoverPreview').src = ev.target.result;
+                document.getElementById('editCoverPreview').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Klick außerhalb schließt Modal
+    modal.addEventListener('click', (e) => {
+        if(e.target === modal) modal.remove();
+    });
+}
+
+async function saveEditModal(trackId) {
+    const title  = document.getElementById('editTitle').value.trim();
+    const genre  = document.getElementById('editGenre').value.trim();
+    const bpm    = document.getElementById('editBpm').value;
+    const coverFile = document.getElementById('editCoverFile').files[0];
+
+    if(!title) { document.getElementById('editStatus').textContent = '❌ Titel darf nicht leer sein!'; return; }
+
+    const saveBtn = document.getElementById('editSaveBtn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = '⏳ Speichern...';
+
+    const R2_PUBLIC_URL = 'https://pub-5f696ecb59a944058dd6a3ef1b569457.r2.dev';
+    const R2_WORKER_URL = 'https://undergroundloops-upload.dj-christern.workers.dev';
+
+    try {
+        const updates = {
+            title,
+            genre,
+            bpm: bpm ? parseInt(bpm) : null,
+        };
+
+        // Cover hochladen falls neu gewählt
+        if(coverFile) {
+            document.getElementById('editStatus').textContent = '⏳ Cover wird hochgeladen...';
+
+            // Komprimieren
+            const compressed = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let w = img.width, h = img.height;
+                        if(w > 400) { h = Math.round(h * 400 / w); w = 400; }
+                        canvas.width = w; canvas.height = h;
+                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                        resolve(canvas.toDataURL('image/jpeg', 0.85));
+                    };
+                    img.onerror = reject;
+                    img.src = e.target.result;
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(coverFile);
+            });
+
+            const coverBlob = await (await fetch(compressed)).blob();
+            const coverKey = `covers/edit_${trackId}_${Date.now()}.jpg`;
+
+            const response = await fetch(`${R2_WORKER_URL}/upload`, {
+                method: 'POST',
+                headers: {
+                    'X-File-Key': coverKey,
+                    'Content-Type': 'image/jpeg',
+                },
+                body: coverBlob
+            });
+
+            if(!response.ok) throw new Error('Cover Upload fehlgeschlagen');
+            updates.coverImage = `${R2_PUBLIC_URL}/${coverKey}`;
+        }
+
+        // Firebase updaten
+        await db.collection('tracks').doc(trackId).update(updates);
+
+        document.getElementById('editStatus').style.color = '#00ffcc';
+        document.getElementById('editStatus').textContent = '✅ Gespeichert!';
+
+        // Lokale Daten updaten
+        if(typeof allTracks !== 'undefined') {
+            const idx = allTracks.findIndex(t => t.id === trackId);
+            if(idx !== -1) Object.assign(allTracks[idx], updates);
+        }
+
+        setTimeout(() => {
+            document.getElementById('editTrackModal').remove();
+            if(typeof loadUserUploads === 'function' && typeof currentUser !== 'undefined' && currentUser) {
+                loadUserUploads(currentUser.uid);
+            }
+        }, 800);
+
+    } catch(err) {
+        document.getElementById('editStatus').style.color = '#ff4444';
+        document.getElementById('editStatus').textContent = '❌ Fehler: ' + err.message;
+        saveBtn.disabled = false;
+        saveBtn.textContent = '💾 SPEICHERN';
+    }
+}
+
+// ============================================
+// LIKED TRACKS
+// ============================================
 
 async function loadUserLikedTracks() {
     if(!currentUser) return;
