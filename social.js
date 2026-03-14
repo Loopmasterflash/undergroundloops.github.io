@@ -313,100 +313,94 @@ async function loadUserUploads(userId) {
 // ============================================
 
 function openEditModal(track) {
-    // Altes Modal entfernen falls vorhanden
     const old = document.getElementById('editTrackModal');
     if(old) old.remove();
 
+    const keys = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+    const genres = ['techno','minimal','industrial','goa','psytrance','rap','hiphop','chillout','drumandbass','electronic','house'];
+
+    function pillsHTML(groupId, options, current) {
+        return options.map(o => {
+            const active = (o.val === current || o.val === (current||'').toLowerCase()) ? 'background:#cc00ff;border-color:#cc00ff;color:#000;font-weight:bold;' : 'background:#1a1a1a;border-color:#333;color:#aaa;';
+            return `<span class="epill" data-group="${groupId}" data-val="${o.val}" onclick="editPillSelect(this,'${groupId}')" style="${active}border:1px solid;border-radius:20px;padding:5px 12px;font-size:0.75rem;cursor:pointer;user-select:none;font-family:'Courier New',monospace;">${o.label}</span>`;
+        }).join('');
+    }
+
+    const keyOptions = [{val:'',label:'–'}].concat(keys.map(k=>({val:k,label:k})));
+    const bpmOptions = [{val:'',label:'–'},{val:'slow',label:'Slow <90'},{val:'mid',label:'Mid 90-130'},{val:'fast',label:'Fast >130'}];
+    const typeOptions = [{val:'loop',label:'Loop'},{val:'sample',label:'Sample'},{val:'track',label:'Track'},{val:'acapella',label:'Acapella'}];
+    const catOptions = [{val:'',label:'–'},{val:'bass',label:'Bass'},{val:'clap',label:'Clap & Snare'},{val:'hihats',label:'Hihats'},{val:'kick',label:'Kick & Drums'},{val:'percussion',label:'Percussions'},{val:'synth',label:'Synth'}];
+    const genreOptions = genres.map(g=>({val:g,label:g.charAt(0).toUpperCase()+g.slice(1)}));
+
     const modal = document.createElement('div');
     modal.id = 'editTrackModal';
-    modal.style.cssText = `
-        position:fixed;inset:0;background:rgba(0,0,0,0.88);
-        z-index:10000;display:flex;align-items:center;justify-content:center;
-        backdrop-filter:blur(8px);
-    `;
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:10000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);';
 
     modal.innerHTML = `
-        <div style="
-            background:#111;border:1px solid #00ffff;border-radius:12px;
-            padding:30px;width:90%;max-width:500px;
-            box-shadow:0 0 40px rgba(0,255,255,0.2);
-            position:relative;max-height:90vh;overflow-y:auto;
-        ">
-            <button onclick="document.getElementById('editTrackModal').remove()" style="
-                position:absolute;top:12px;right:14px;
-                background:none;border:none;color:#aaa;font-size:1.4rem;cursor:pointer;
-            ">✕</button>
-
-            <h3 style="font-family:'Orbitron',sans-serif;color:#00ffff;font-size:0.9rem;letter-spacing:2px;margin-bottom:24px;">✏️ EDIT TRACK</h3>
+        <div style="background:#111;border:1px solid #00ffff;border-radius:12px;padding:28px;width:90%;max-width:560px;box-shadow:0 0 40px rgba(0,255,255,0.2);position:relative;max-height:90vh;overflow-y:auto;">
+            <button onclick="document.getElementById('editTrackModal').remove()" style="position:absolute;top:12px;right:14px;background:none;border:none;color:#aaa;font-size:1.4rem;cursor:pointer;">✕</button>
+            <h3 style="font-family:'Orbitron',sans-serif;color:#00ffff;font-size:0.9rem;letter-spacing:2px;margin-bottom:22px;">✏️ EDIT TRACK</h3>
 
             <!-- Titel -->
             <div style="margin-bottom:16px;">
-                <label style="display:block;color:#888;font-size:0.75rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Titel</label>
-                <input type="text" id="editTitle" value="${track.title || ''}" style="
-                    width:100%;background:#1a1a1a;border:1px solid #333;border-radius:4px;
-                    color:#fff;font-size:0.9rem;padding:10px 14px;outline:none;box-sizing:border-box;
-                ">
+                <label style="display:block;color:#888;font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Titel</label>
+                <input type="text" id="editTitle" value="${track.title || ''}" style="width:100%;background:#1a1a1a;border:1px solid #333;border-radius:4px;color:#fff;font-size:0.9rem;padding:10px 14px;outline:none;box-sizing:border-box;">
+            </div>
+
+            <!-- Typ -->
+            <div style="margin-bottom:16px;">
+                <label style="display:block;color:#888;font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Kategorie</label>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;">${pillsHTML('editType', typeOptions, track.type)}</div>
+            </div>
+
+            <!-- Loop Kategorie -->
+            <div style="margin-bottom:16px;">
+                <label style="display:block;color:#888;font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Loop Typ</label>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;">${pillsHTML('editCategory', catOptions, track.category)}</div>
+            </div>
+
+            <!-- Key -->
+            <div style="margin-bottom:16px;">
+                <label style="display:block;color:#888;font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Key (Tonart)</label>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;">${pillsHTML('editKey', keyOptions, track.key)}</div>
+            </div>
+
+            <!-- BPM Range -->
+            <div style="margin-bottom:16px;">
+                <label style="display:block;color:#888;font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">BPM Range</label>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;">${pillsHTML('editBpmRange', bpmOptions, track.bpmRange)}</div>
+            </div>
+
+            <!-- BPM exakt -->
+            <div style="margin-bottom:16px;">
+                <label style="display:block;color:#888;font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">BPM (exakt)</label>
+                <input type="number" id="editBpm" value="${track.bpm || ''}" min="40" max="300" style="width:100%;background:#1a1a1a;border:1px solid #333;border-radius:4px;color:#fff;font-size:0.9rem;padding:10px 14px;outline:none;box-sizing:border-box;">
             </div>
 
             <!-- Genre -->
             <div style="margin-bottom:16px;">
-                <label style="display:block;color:#888;font-size:0.75rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Genre</label>
-                <input type="text" id="editGenre" value="${track.genre || ''}" style="
-                    width:100%;background:#1a1a1a;border:1px solid #333;border-radius:4px;
-                    color:#fff;font-size:0.9rem;padding:10px 14px;outline:none;box-sizing:border-box;
-                ">
+                <label style="display:block;color:#888;font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Genre</label>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;">${pillsHTML('editGenre', genreOptions, track.genre)}</div>
             </div>
 
-            <!-- BPM -->
-            <div style="margin-bottom:16px;">
-                <label style="display:block;color:#888;font-size:0.75rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">BPM</label>
-                <input type="number" id="editBpm" value="${track.bpm || ''}" style="
-                    width:100%;background:#1a1a1a;border:1px solid #333;border-radius:4px;
-                    color:#fff;font-size:0.9rem;padding:10px 14px;outline:none;box-sizing:border-box;
-                ">
-            </div>
-
-            <!-- Cover Upload -->
+            <!-- Cover -->
             <div style="margin-bottom:20px;">
-                <label style="display:block;color:#888;font-size:0.75rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Cover Bild ersetzen</label>
-
-                <!-- Aktuelles Cover -->
-                <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px;">
-                    <img id="editCoverPreview" src="${track.coverImage || ''}"
-                         style="width:70px;height:70px;object-fit:cover;border-radius:8px;border:2px solid #333;"
-                         onerror="this.style.display='none'">
+                <label style="display:block;color:#888;font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Cover Bild ersetzen</label>
+                <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px;">
+                    <img id="editCoverPreview" src="${track.coverImage || ''}" style="width:65px;height:65px;object-fit:cover;border-radius:8px;border:2px solid #333;" onerror="this.style.display='none'">
                     <span style="color:#666;font-size:0.8rem;">Aktuelles Cover</span>
                 </div>
-
-                <!-- File Picker -->
                 <input type="file" id="editCoverFile" accept="image/*" style="display:none">
-                <div onclick="document.getElementById('editCoverFile').click()" style="
-                    padding:14px;border:2px dashed #00ffff44;border-radius:8px;
-                    text-align:center;cursor:pointer;color:#aaa;font-size:0.85rem;
-                    background:rgba(0,255,255,0.04);transition:all 0.2s;
-                "
-                onmouseover="this.style.borderColor='#00ffff';this.style.background='rgba(0,255,255,0.1)'"
-                onmouseout="this.style.borderColor='#00ffff44';this.style.background='rgba(0,255,255,0.04)'"
-                >
+                <div onclick="document.getElementById('editCoverFile').click()" style="padding:12px;border:2px dashed #00ffff44;border-radius:8px;text-align:center;cursor:pointer;color:#aaa;font-size:0.85rem;background:rgba(0,255,255,0.04);transition:all 0.2s;" onmouseover="this.style.borderColor='#00ffff'" onmouseout="this.style.borderColor='#00ffff44'">
                     🖼️ <span id="editCoverLabel">Neues Cover auswählen (optional)</span>
                 </div>
             </div>
 
-            <!-- Status -->
             <div id="editStatus" style="font-size:0.8rem;color:#888;margin-bottom:14px;min-height:18px;"></div>
 
-            <!-- Buttons -->
             <div style="display:flex;gap:10px;">
-                <button id="editSaveBtn" onclick="saveEditModal('${track.id}')" style="
-                    flex:1;background:#00ffff;color:#000;border:none;border-radius:6px;
-                    font-family:'Courier New',monospace;font-weight:bold;font-size:0.9rem;
-                    padding:12px;cursor:pointer;transition:background 0.2s;
-                ">💾 SPEICHERN</button>
-                <button onclick="document.getElementById('editTrackModal').remove()" style="
-                    background:#1a1a1a;border:1px solid #333;color:#888;border-radius:6px;
-                    font-family:'Courier New',monospace;font-size:0.9rem;
-                    padding:12px 20px;cursor:pointer;
-                ">Abbrechen</button>
+                <button id="editSaveBtn" onclick="saveEditModal('${track.id}')" style="flex:1;background:#00ffff;color:#000;border:none;border-radius:6px;font-family:'Courier New',monospace;font-weight:bold;font-size:0.9rem;padding:12px;cursor:pointer;">💾 SPEICHERN</button>
+                <button onclick="document.getElementById('editTrackModal').remove()" style="background:#1a1a1a;border:1px solid #333;color:#888;border-radius:6px;font-family:'Courier New',monospace;font-size:0.9rem;padding:12px 20px;cursor:pointer;">Abbrechen</button>
             </div>
         </div>
     `;
@@ -433,11 +427,39 @@ function openEditModal(track) {
     });
 }
 
+function editPillSelect(el, groupId) {
+    document.querySelectorAll(`.epill[data-group="${groupId}"]`).forEach(p => {
+        p.style.background = '#1a1a1a';
+        p.style.borderColor = '#333';
+        p.style.color = '#aaa';
+        p.style.fontWeight = 'normal';
+    });
+    el.style.background = '#cc00ff';
+    el.style.borderColor = '#cc00ff';
+    el.style.color = '#000';
+    el.style.fontWeight = 'bold';
+}
+
+function getEditPill(groupId) {
+    const el = document.querySelector(`.epill[data-group="${groupId}"]`);
+    if(!el) return '';
+    // Find the active one (bold + magenta background)
+    const all = document.querySelectorAll(`.epill[data-group="${groupId}"]`);
+    for(const p of all) {
+        if(p.style.color === 'rgb(0, 0, 0)' || p.style.fontWeight === 'bold') return p.dataset.val;
+    }
+    return '';
+}
+
 async function saveEditModal(trackId) {
-    const title  = document.getElementById('editTitle').value.trim();
-    const genre  = document.getElementById('editGenre').value.trim();
-    const bpm    = document.getElementById('editBpm').value;
+    const title     = document.getElementById('editTitle').value.trim();
+    const bpm       = document.getElementById('editBpm').value;
     const coverFile = document.getElementById('editCoverFile').files[0];
+    const type      = getEditPill('editType');
+    const category  = getEditPill('editCategory');
+    const key       = getEditPill('editKey');
+    const bpmRange  = getEditPill('editBpmRange');
+    const genre     = getEditPill('editGenre');
 
     if(!title) { document.getElementById('editStatus').textContent = '❌ Titel darf nicht leer sein!'; return; }
 
@@ -452,6 +474,10 @@ async function saveEditModal(trackId) {
         const updates = {
             title,
             genre,
+            type,
+            category,
+            key,
+            bpmRange: bpmRange || null,
             bpm: bpm ? parseInt(bpm) : null,
         };
 
