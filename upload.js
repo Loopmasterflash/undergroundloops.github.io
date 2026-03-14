@@ -192,18 +192,17 @@ async function submitUpload() {
 }
 
 // ============================================
-// R2 UPLOAD via Netlify/Vercel Function
+// R2 UPLOAD - Fixed Version
 // ============================================
 
 async function uploadToR2(key, fileOrBlob, contentType) {
-    const formData = new FormData();
-    formData.append('file', fileOrBlob);
-    formData.append('key', key);
-    formData.append('contentType', contentType);
-
-    const response = await fetch(R2_WORKER_URL, {
+    const response = await fetch(R2_WORKER_URL + '/upload', {
         method: 'POST',
-        body: formData
+        headers: {
+            'X-File-Key': key,
+            'Content-Type': contentType,
+        },
+        body: fileOrBlob
     });
 
     if(!response.ok) {
