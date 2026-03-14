@@ -4,137 +4,72 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Panel – UndergroundLoops</title>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-
     body {
-      background: #0a0a0a;
-      color: #fff;
+      background: #0a0a0a; color: #fff;
       font-family: 'Courier New', monospace;
-      min-height: 100vh;
-      padding: 40px 20px;
+      min-height: 100vh; padding: 40px 20px;
     }
-
     header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 40px;
-      border-bottom: 1px solid #222;
-      padding-bottom: 20px;
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 40px; border-bottom: 1px solid #222; padding-bottom: 20px;
     }
-
     header h1 { color: #cc00ff; font-size: 1.2rem; letter-spacing: 2px; }
-    header span { color: #555; font-size: 0.8rem; }
-
+    header span { color: #555; font-size: 0.8rem; display: block; margin-top: 4px; }
     .logout-btn {
-      background: transparent;
-      border: 1px solid #333;
-      color: #888;
-      font-family: 'Courier New', monospace;
-      font-size: 0.8rem;
-      padding: 6px 14px;
-      cursor: pointer;
-      border-radius: 4px;
-      transition: all 0.2s;
+      background: transparent; border: 1px solid #333; color: #888;
+      font-family: 'Courier New', monospace; font-size: 0.8rem;
+      padding: 6px 14px; cursor: pointer; border-radius: 4px; transition: all 0.2s;
     }
     .logout-btn:hover { border-color: #ff4444; color: #ff4444; }
-
     .section {
-      background: #111;
-      border: 1px solid #222;
-      border-radius: 8px;
-      padding: 30px;
-      margin-bottom: 24px;
-      max-width: 750px;
+      background: #111; border: 1px solid #222; border-radius: 8px;
+      padding: 30px; margin-bottom: 24px; max-width: 750px;
     }
-
     .section h2 {
-      font-size: 0.9rem;
-      color: #cc00ff;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      margin-bottom: 24px;
+      font-size: 0.9rem; color: #cc00ff; letter-spacing: 1px;
+      text-transform: uppercase; margin-bottom: 24px;
     }
-
     .field { margin-bottom: 20px; }
-
     label {
-      display: block;
-      font-size: 0.75rem;
-      color: #888;
-      margin-bottom: 8px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
+      display: block; font-size: 0.75rem; color: #888;
+      margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;
     }
-
-    .pill-group {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
+    .pill-group { display: flex; flex-wrap: wrap; gap: 8px; }
     .pill {
-      background: #1a1a1a;
-      border: 1px solid #333;
-      border-radius: 20px;
-      color: #aaa;
-      font-family: 'Courier New', monospace;
-      font-size: 0.8rem;
-      padding: 6px 14px;
-      cursor: pointer;
-      transition: all 0.2s;
-      user-select: none;
+      background: #1a1a1a; border: 1px solid #333; border-radius: 20px;
+      color: #aaa; font-family: 'Courier New', monospace; font-size: 0.8rem;
+      padding: 6px 14px; cursor: pointer; transition: all 0.2s; user-select: none;
     }
-
     .pill:hover { border-color: #cc00ff; color: #cc00ff; }
     .pill.active { background: #cc00ff; border-color: #cc00ff; color: #000; font-weight: bold; }
-
-    input[type="text"],
-    input[type="number"],
-    input[type="file"] {
-      width: 100%;
-      background: #1a1a1a;
-      border: 1px solid #333;
-      border-radius: 4px;
-      color: #fff;
-      font-family: 'Courier New', monospace;
-      font-size: 0.9rem;
-      padding: 10px 14px;
-      outline: none;
-      transition: border-color 0.2s;
+    input[type="text"], input[type="number"], input[type="file"] {
+      width: 100%; background: #1a1a1a; border: 1px solid #333; border-radius: 4px;
+      color: #fff; font-family: 'Courier New', monospace; font-size: 0.9rem;
+      padding: 10px 14px; outline: none; transition: border-color 0.2s;
     }
-
     input:focus { border-color: #cc00ff; }
     input[type="file"] { padding: 8px; cursor: pointer; }
-
     .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-
     .upload-btn {
-      background: #cc00ff;
-      color: #000;
-      border: none;
-      border-radius: 4px;
-      font-family: 'Courier New', monospace;
-      font-size: 1rem;
-      font-weight: bold;
-      padding: 12px 30px;
-      cursor: pointer;
-      letter-spacing: 1px;
-      transition: background 0.2s;
-      margin-top: 10px;
+      background: #cc00ff; color: #000; border: none; border-radius: 4px;
+      font-family: 'Courier New', monospace; font-size: 1rem; font-weight: bold;
+      padding: 12px 30px; cursor: pointer; letter-spacing: 1px;
+      transition: background 0.2s; margin-top: 10px;
     }
     .upload-btn:hover { background: #aa00dd; }
     .upload-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
-
     .progress { width: 100%; height: 4px; background: #222; border-radius: 2px; margin-top: 16px; overflow: hidden; display: none; }
     .progress-bar { height: 100%; background: #cc00ff; width: 0%; transition: width 0.3s; }
-
     .status { margin-top: 14px; font-size: 0.85rem; color: #888; min-height: 20px; }
     .status.ok { color: #00ffcc; }
     .status.err { color: #ff4444; }
-
-    #loopTypeField { display: block; }
   </style>
 </head>
 <body>
@@ -154,10 +89,10 @@
   <div class="field">
     <label>Kategorie</label>
     <div class="pill-group" id="categoryGroup">
-      <span class="pill active" data-val="loops" onclick="selectPill(this, 'categoryGroup'); toggleLoopType(this)">Loops</span>
-      <span class="pill" data-val="samples" onclick="selectPill(this, 'categoryGroup'); toggleLoopType(this)">Samples</span>
-      <span class="pill" data-val="tracks" onclick="selectPill(this, 'categoryGroup'); toggleLoopType(this)">Tracks</span>
-      <span class="pill" data-val="acapellas" onclick="selectPill(this, 'categoryGroup'); toggleLoopType(this)">Acapellas</span>
+      <span class="pill active" data-val="loop" onclick="selectPill(this,'categoryGroup');toggleLoopType(this)">Loops</span>
+      <span class="pill" data-val="sample" onclick="selectPill(this,'categoryGroup');toggleLoopType(this)">Samples</span>
+      <span class="pill" data-val="track" onclick="selectPill(this,'categoryGroup');toggleLoopType(this)">Tracks</span>
+      <span class="pill" data-val="acapella" onclick="selectPill(this,'categoryGroup');toggleLoopType(this)">Acapellas</span>
     </div>
   </div>
 
@@ -165,13 +100,13 @@
   <div class="field" id="loopTypeField">
     <label>Loop Typ</label>
     <div class="pill-group" id="loopTypeGroup">
-      <span class="pill active" data-val="all" onclick="selectPill(this, 'loopTypeGroup')">All</span>
-      <span class="pill" data-val="bass" onclick="selectPill(this, 'loopTypeGroup')">Bass</span>
-      <span class="pill" data-val="clap-snare" onclick="selectPill(this, 'loopTypeGroup')">Clap & Snare</span>
-      <span class="pill" data-val="hihats" onclick="selectPill(this, 'loopTypeGroup')">Hihats</span>
-      <span class="pill" data-val="kick-drums" onclick="selectPill(this, 'loopTypeGroup')">Kick & Drums</span>
-      <span class="pill" data-val="percussions" onclick="selectPill(this, 'loopTypeGroup')">Percussions</span>
-      <span class="pill" data-val="synth" onclick="selectPill(this, 'loopTypeGroup')">Synth</span>
+      <span class="pill active" data-val="" onclick="selectPill(this,'loopTypeGroup')">All</span>
+      <span class="pill" data-val="bass" onclick="selectPill(this,'loopTypeGroup')">Bass</span>
+      <span class="pill" data-val="clap" onclick="selectPill(this,'loopTypeGroup')">Clap & Snare</span>
+      <span class="pill" data-val="hihats" onclick="selectPill(this,'loopTypeGroup')">Hihats</span>
+      <span class="pill" data-val="kick" onclick="selectPill(this,'loopTypeGroup')">Kick & Drums</span>
+      <span class="pill" data-val="percussion" onclick="selectPill(this,'loopTypeGroup')">Percussions</span>
+      <span class="pill" data-val="synth" onclick="selectPill(this,'loopTypeGroup')">Synth</span>
     </div>
   </div>
 
@@ -179,19 +114,19 @@
   <div class="field">
     <label>Key (Tonart)</label>
     <div class="pill-group" id="keyGroup">
-      <span class="pill active" data-val="all" onclick="selectPill(this, 'keyGroup')">All</span>
-      <span class="pill" data-val="C" onclick="selectPill(this, 'keyGroup')">C</span>
-      <span class="pill" data-val="C#" onclick="selectPill(this, 'keyGroup')">C#</span>
-      <span class="pill" data-val="D" onclick="selectPill(this, 'keyGroup')">D</span>
-      <span class="pill" data-val="D#" onclick="selectPill(this, 'keyGroup')">D#</span>
-      <span class="pill" data-val="E" onclick="selectPill(this, 'keyGroup')">E</span>
-      <span class="pill" data-val="F" onclick="selectPill(this, 'keyGroup')">F</span>
-      <span class="pill" data-val="F#" onclick="selectPill(this, 'keyGroup')">F#</span>
-      <span class="pill" data-val="G" onclick="selectPill(this, 'keyGroup')">G</span>
-      <span class="pill" data-val="G#" onclick="selectPill(this, 'keyGroup')">G#</span>
-      <span class="pill" data-val="A" onclick="selectPill(this, 'keyGroup')">A</span>
-      <span class="pill" data-val="A#" onclick="selectPill(this, 'keyGroup')">A#</span>
-      <span class="pill" data-val="B" onclick="selectPill(this, 'keyGroup')">B</span>
+      <span class="pill active" data-val="" onclick="selectPill(this,'keyGroup')">–</span>
+      <span class="pill" data-val="C" onclick="selectPill(this,'keyGroup')">C</span>
+      <span class="pill" data-val="C#" onclick="selectPill(this,'keyGroup')">C#</span>
+      <span class="pill" data-val="D" onclick="selectPill(this,'keyGroup')">D</span>
+      <span class="pill" data-val="D#" onclick="selectPill(this,'keyGroup')">D#</span>
+      <span class="pill" data-val="E" onclick="selectPill(this,'keyGroup')">E</span>
+      <span class="pill" data-val="F" onclick="selectPill(this,'keyGroup')">F</span>
+      <span class="pill" data-val="F#" onclick="selectPill(this,'keyGroup')">F#</span>
+      <span class="pill" data-val="G" onclick="selectPill(this,'keyGroup')">G</span>
+      <span class="pill" data-val="G#" onclick="selectPill(this,'keyGroup')">G#</span>
+      <span class="pill" data-val="A" onclick="selectPill(this,'keyGroup')">A</span>
+      <span class="pill" data-val="A#" onclick="selectPill(this,'keyGroup')">A#</span>
+      <span class="pill" data-val="B" onclick="selectPill(this,'keyGroup')">B</span>
     </div>
   </div>
 
@@ -199,30 +134,42 @@
   <div class="field">
     <label>BPM Range</label>
     <div class="pill-group" id="bpmGroup" style="margin-bottom:10px">
-      <span class="pill active" data-val="all" onclick="selectPill(this, 'bpmGroup')">All</span>
-      <span class="pill" data-val="slow" onclick="selectPill(this, 'bpmGroup')">Slow &lt;90</span>
-      <span class="pill" data-val="mid" onclick="selectPill(this, 'bpmGroup')">Mid 90-130</span>
-      <span class="pill" data-val="fast" onclick="selectPill(this, 'bpmGroup')">Fast &gt;130</span>
+      <span class="pill active" data-val="" onclick="selectPill(this,'bpmGroup')">–</span>
+      <span class="pill" data-val="slow" onclick="selectPill(this,'bpmGroup')">Slow &lt;90</span>
+      <span class="pill" data-val="mid" onclick="selectPill(this,'bpmGroup')">Mid 90-130</span>
+      <span class="pill" data-val="fast" onclick="selectPill(this,'bpmGroup')">Fast &gt;130</span>
     </div>
     <input type="number" id="bpmExact" placeholder="Exakter BPM Wert (z.B. 138)" min="40" max="300">
   </div>
 
-  <!-- TITEL & GENRE -->
-  <div class="row2">
-    <div class="field">
-      <label>Track Titel</label>
-      <input type="text" id="trackTitle" placeholder="z.B. Dark Bass Loop 001">
+  <!-- GENRE -->
+  <div class="field">
+    <label>Genre</label>
+    <div class="pill-group" id="genreGroup">
+      <span class="pill active" data-val="techno" onclick="selectPill(this,'genreGroup')">Techno</span>
+      <span class="pill" data-val="minimal" onclick="selectPill(this,'genreGroup')">Minimal</span>
+      <span class="pill" data-val="industrial" onclick="selectPill(this,'genreGroup')">Industrial</span>
+      <span class="pill" data-val="goa" onclick="selectPill(this,'genreGroup')">Goa</span>
+      <span class="pill" data-val="psytrance" onclick="selectPill(this,'genreGroup')">Psytrance</span>
+      <span class="pill" data-val="rap" onclick="selectPill(this,'genreGroup')">Rap</span>
+      <span class="pill" data-val="hiphop" onclick="selectPill(this,'genreGroup')">Hip Hop</span>
+      <span class="pill" data-val="chillout" onclick="selectPill(this,'genreGroup')">Chillout</span>
+      <span class="pill" data-val="drumandbass" onclick="selectPill(this,'genreGroup')">Drum & Bass</span>
+      <span class="pill" data-val="electronic" onclick="selectPill(this,'genreGroup')">Electronic</span>
+      <span class="pill" data-val="house" onclick="selectPill(this,'genreGroup')">House</span>
     </div>
-    <div class="field">
-      <label>Genre</label>
-      <input type="text" id="trackGenre" placeholder="z.B. Techno, DnB, Ambient">
-    </div>
+  </div>
+
+  <!-- TITEL -->
+  <div class="field">
+    <label>Track Titel *</label>
+    <input type="text" id="trackTitle" placeholder="z.B. Dark Bass Loop 001">
   </div>
 
   <!-- DATEIEN -->
   <div class="row2">
     <div class="field">
-      <label>Audio Datei (MP3 / WAV)</label>
+      <label>Audio Datei (MP3 / WAV) *</label>
       <input type="file" id="audioFile" accept="audio/*">
     </div>
     <div class="field">
@@ -231,7 +178,7 @@
     </div>
   </div>
 
-  <button class="upload-btn" id="uploadBtn" onclick="uploadTrack()">⬆ HOCHLADEN → R2</button>
+  <button class="upload-btn" id="uploadBtn" onclick="uploadTrack()">⬆ HOCHLADEN → R2 + Firebase</button>
 
   <div class="progress" id="progressBar">
     <div class="progress-bar" id="progressFill"></div>
@@ -239,16 +186,31 @@
   <div class="status" id="uploadStatus"></div>
 </div>
 
+<!-- Firebase + Script -->
 <script>
+  // Auth check
   if (sessionStorage.getItem('admin_logged_in') !== 'true') {
     window.location.href = 'admin.html';
   }
 
-  const WORKER_URL = 'https://undergroundloops-upload.dj-christern.workers.dev';
+  // Firebase Init
+  const firebaseConfig = {
+    apiKey: "AIzaSyCuufd8YsIUtKddT4hcNGBKeMbDojU0Paw",
+    authDomain: "undergroundloops.firebaseapp.com",
+    projectId: "undergroundloops",
+    storageBucket: "undergroundloops.firebasestorage.app",
+    messagingSenderId: "971209771891",
+    appId: "1:971209771891:web:ac3e793cac51386f7f9306"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  const R2_PUBLIC_URL = 'https://pub-5f696ecb59a944058dd6a3ef1b569457.r2.dev';
+  const R2_WORKER_URL = 'https://undergroundloops-upload.dj-christern.workers.dev';
 
   function toggleLoopType(el) {
     document.getElementById('loopTypeField').style.display =
-      el.dataset.val === 'loops' ? 'block' : 'none';
+      el.dataset.val === 'loop' ? 'block' : 'none';
   }
 
   function selectPill(el, groupId) {
@@ -258,7 +220,7 @@
 
   function getSelected(groupId) {
     const active = document.querySelector(`#${groupId} .pill.active`);
-    return active ? active.dataset.val : null;
+    return active ? active.dataset.val : '';
   }
 
   function logout() {
@@ -268,20 +230,18 @@
 
   async function uploadTrack() {
     const title = document.getElementById('trackTitle').value.trim();
-    const genre = document.getElementById('trackGenre').value.trim();
     const audioFile = document.getElementById('audioFile').files[0];
     const coverFile = document.getElementById('coverFile').files[0];
 
-    const category = getSelected('categoryGroup');
-    const loopType = category === 'loops' ? getSelected('loopTypeGroup') : null;
-    const key = getSelected('keyGroup');
+    if (!title) { setStatus('❌ Bitte Titel eingeben!', 'err'); return; }
+    if (!audioFile) { setStatus('❌ Bitte Audio-Datei auswählen!', 'err'); return; }
+
+    const type     = getSelected('categoryGroup');   // loop/sample/track/acapella
+    const category = getSelected('loopTypeGroup');   // bass/clap/etc
+    const key      = getSelected('keyGroup');
     const bpmRange = getSelected('bpmGroup');
     const bpmExact = document.getElementById('bpmExact').value;
-
-    if (!title || !audioFile) {
-      setStatus('❌ Bitte Titel und Audio-Datei angeben!', 'err');
-      return;
-    }
+    const genre    = getSelected('genreGroup');
 
     const btn = document.getElementById('uploadBtn');
     btn.disabled = true;
@@ -289,49 +249,66 @@
 
     try {
       const timestamp = Date.now();
+      const safeTitle = title.replace(/[^a-zA-Z0-9]/g, '_');
+      const audioExt = audioFile.name.split('.').pop();
 
-      // Audio hochladen
+      // 1. Audio → R2
       setStatus('⏳ Audio wird hochgeladen...', '');
       setProgressFill(20);
-      const audioKey = `${category}/${timestamp}_${audioFile.name}`;
-      await uploadToR2(audioFile, audioKey);
-      setProgressFill(60);
+      const audioKey = `audio/${type}s/${safeTitle}_${timestamp}.${audioExt}`;
+      await uploadToR2(audioKey, audioFile, audioFile.type || 'audio/wav');
+      const audioURL = `${R2_PUBLIC_URL}/${audioKey}`;
+      setProgressFill(55);
 
-      // Cover hochladen
-      let coverKey = null;
+      // 2. Cover → R2 (oder Default generieren)
+      setStatus('⏳ Cover wird hochgeladen...', '');
+      let coverURL = '';
       if (coverFile) {
-        setStatus('⏳ Cover wird hochgeladen...', '');
-        coverKey = `covers/${timestamp}_${coverFile.name}`;
-        await uploadToR2(coverFile, coverKey);
-        setProgressFill(80);
+        const compressed = await compressImage(coverFile, 400, 400, 0.85);
+        const coverBlob = await (await fetch(compressed)).blob();
+        const coverKey = `covers/${safeTitle}_${timestamp}.jpg`;
+        await uploadToR2(coverKey, coverBlob, 'image/jpeg');
+        coverURL = `${R2_PUBLIC_URL}/${coverKey}`;
+      } else {
+        const defaultCover = generateDefaultCover(title, genre);
+        const coverBlob = await (await fetch(defaultCover)).blob();
+        const coverKey = `covers/${safeTitle}_${timestamp}.jpg`;
+        await uploadToR2(coverKey, coverBlob, 'image/jpeg');
+        coverURL = `${R2_PUBLIC_URL}/${coverKey}`;
       }
+      setProgressFill(80);
 
-      // Metadaten als JSON
-      const meta = {
-        id: timestamp,
-        title, genre, category, loopType, key,
-        bpmRange, bpm: bpmExact || null,
-        audioKey, coverKey,
-        artist: 'BadBoySlim',
-        uploadedAt: new Date().toISOString()
-      };
-
-      await uploadToR2(
-        new Blob([JSON.stringify(meta)], { type: 'application/json' }),
-        `meta/${timestamp}.json`
-      );
-
+      // 3. Metadaten → Firebase Firestore
+      setStatus('⏳ Wird in Datenbank gespeichert...', '');
+      await db.collection('tracks').add({
+        title,
+        artist:      'BadBoySlim',
+        userId:      'admin_badboyslim',
+        type,
+        genre,
+        category,
+        key,
+        bpmRange:    bpmRange || null,
+        bpm:         bpmExact ? parseInt(bpmExact) : null,
+        audioFile:   audioURL,
+        coverImage:  coverURL,
+        likes:       0,
+        plays:       0,
+        downloads:   0,
+        uploadedAt:  new Date().toISOString()
+      });
       setProgressFill(100);
-      setStatus(`✅ "${title}" hochgeladen! [${category.toUpperCase()} | Key: ${key} | BPM: ${bpmExact || bpmRange}]`, 'ok');
+
+      setStatus(`✅ "${title}" erfolgreich hochgeladen! [${type.toUpperCase()} | Key: ${key||'–'} | BPM: ${bpmExact||bpmRange||'–'}]`, 'ok');
 
       // Reset
       document.getElementById('trackTitle').value = '';
-      document.getElementById('trackGenre').value = '';
       document.getElementById('audioFile').value = '';
       document.getElementById('coverFile').value = '';
       document.getElementById('bpmExact').value = '';
 
     } catch (err) {
+      console.error(err);
       setStatus('❌ Fehler: ' + err.message, 'err');
     }
 
@@ -339,20 +316,70 @@
     setTimeout(() => showProgress(false), 3000);
   }
 
-  async function uploadToR2(file, key) {
-    const response = await fetch(`${WORKER_URL}/upload`, {
+  async function uploadToR2(key, fileOrBlob, contentType) {
+    const response = await fetch(`${R2_WORKER_URL}/upload`, {
       method: 'POST',
       headers: {
         'X-File-Key': key,
-        'Content-Type': file.type || 'application/octet-stream',
+        'Content-Type': contentType,
       },
-      body: file
+      body: fileOrBlob
     });
     if (!response.ok) {
       const text = await response.text();
-      throw new Error(text || 'Upload fehlgeschlagen');
+      throw new Error(text || 'R2 Upload fehlgeschlagen');
     }
     return response.json();
+  }
+
+  function compressImage(file, maxWidth, maxHeight, quality) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let w = img.width, h = img.height;
+          if (w > h) { if (w > maxWidth)  { h = Math.round(h * maxWidth / w);  w = maxWidth; } }
+          else        { if (h > maxHeight) { w = Math.round(w * maxHeight / h); h = maxHeight; } }
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function generateDefaultCover(title, genre) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 400; canvas.height = 400;
+    const ctx = canvas.getContext('2d');
+    const gradient = ctx.createLinearGradient(0, 0, 400, 400);
+    gradient.addColorStop(0, '#0a0a0a');
+    gradient.addColorStop(1, '#1a0a2e');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 400, 400);
+    ctx.strokeStyle = '#cc00ff'; ctx.lineWidth = 4;
+    ctx.strokeRect(10, 10, 380, 380);
+    ctx.fillStyle = '#00ffcc'; ctx.font = 'bold 22px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText((genre || 'UNDERGROUND').toUpperCase(), 200, 160);
+    ctx.fillStyle = '#ffffff'; ctx.font = 'bold 28px sans-serif';
+    let y = 220, line = '';
+    (title || '').split(' ').forEach(word => {
+      const test = line + word + ' ';
+      if (ctx.measureText(test).width > 360 && line !== '') {
+        ctx.fillText(line.trim(), 200, y); line = word + ' '; y += 40;
+      } else line = test;
+    });
+    ctx.fillText(line.trim(), 200, y);
+    ctx.fillStyle = 'rgba(204,0,255,0.5)'; ctx.font = '13px sans-serif';
+    ctx.fillText('UNDERGROUNDLOOPS', 200, 370);
+    return canvas.toDataURL('image/jpeg', 0.85);
   }
 
   function setStatus(msg, type) {
