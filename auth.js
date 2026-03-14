@@ -19,7 +19,7 @@ function initAuth() {
             currentUser = user;
             showUserMenu(user);
             loadUserProfile(user.uid);
-            // ✅ Last seen updaten
+            // Last seen updaten
             db.collection('users').doc(user.uid).set({ lastSeen: new Date().toISOString() }, { merge: true });
         } else {
             currentUser = null;
@@ -94,7 +94,7 @@ function initAuth() {
         }
     });
 
-    // ✅ Avatar Upload → Crop Modal
+    // Avatar Upload
     const avatarUpload = document.getElementById('avatarUpload');
     if(avatarUpload) {
         avatarUpload.addEventListener('change', async (e) => {
@@ -105,7 +105,7 @@ function initAuth() {
         });
     }
 
-    // ✅ Banner Upload → Crop Modal
+    // Banner Upload
     const bannerUpload = document.getElementById('bannerUpload');
     if(bannerUpload) {
         bannerUpload.addEventListener('change', async (e) => {
@@ -117,12 +117,10 @@ function initAuth() {
     }
 }
 
-// ✅ Banner anzeigen
 function setBannerImage(bannerSrc) {
     const bannerImg = document.getElementById('profileBannerImg');
     const bannerDefault = document.getElementById('bannerDefault');
     if(!bannerImg || !bannerDefault) return;
-    
     if(bannerSrc && bannerSrc.length > 10) {
         bannerImg.src = bannerSrc;
         bannerImg.style.display = 'block';
@@ -134,7 +132,6 @@ function setBannerImage(bannerSrc) {
     }
 }
 
-// ✅ Bild komprimieren (Canvas)
 function compressImage(file, maxWidth, maxHeight, quality) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -157,14 +154,11 @@ function compressImage(file, maxWidth, maxHeight, quality) {
     });
 }
 
-// ✅ Bild zu GitHub hochladen
 async function uploadImageToGitHub(file, folder, userId, maxWidth, maxHeight) {
-    // GitHub Token aus Firestore holen
     const configDoc = await db.collection('config').doc('github').get();
     if(!configDoc.exists) throw new Error('GitHub config not found');
     const token = configDoc.data().token;
 
-    // Bild komprimieren
     const base64DataUrl = await compressImage(file, maxWidth, maxHeight, 0.9);
     const base64Data = base64DataUrl.split(',')[1];
 
@@ -174,7 +168,6 @@ async function uploadImageToGitHub(file, folder, userId, maxWidth, maxHeight) {
     const GITHUB_OWNER = 'Loopmasterflash';
     const GITHUB_REPO = 'undergroundloops.github.io';
 
-    // Prüfen ob Datei schon existiert (für SHA)
     let sha = null;
     try {
         const checkRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${fileName}`, {
@@ -183,19 +176,12 @@ async function uploadImageToGitHub(file, folder, userId, maxWidth, maxHeight) {
         if(checkRes.ok) { const d = await checkRes.json(); sha = d.sha; }
     } catch(e) {}
 
-    const body = {
-        message: `Upload ${folder}: ${userId}`,
-        content: base64Data,
-        branch: 'main'
-    };
+    const body = { message: `Upload ${folder}: ${userId}`, content: base64Data, branch: 'main' };
     if(sha) body.sha = sha;
 
     const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${fileName}`, {
         method: 'PUT',
-        headers: {
-            'Authorization': `token ${token}`,
-            'Content-Type': 'application/json'
-        },
+        headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
     });
 
@@ -222,8 +208,6 @@ let cropOffsetY = 0;
 let cropDragging = false;
 let cropDragStartX = 0;
 let cropDragStartY = 0;
-let cropLastOffsetX = 0;
-let cropLastOffsetY = 0;
 
 function openCropModal(file, type, maxW, maxH) {
     cropFile = file;
@@ -257,7 +241,6 @@ function setupCropCanvas() {
     const wrapper = document.getElementById('cropCanvasWrapper');
     if(!canvas || !wrapper) return;
 
-    // Canvas Anzeigegröße – Aspect Ratio des Ziels
     const displayW = Math.min(wrapper.clientWidth || 540, 540);
     const aspect = cropMaxW / cropMaxH;
     const displayH = Math.round(displayW / aspect);
@@ -267,7 +250,6 @@ function setupCropCanvas() {
     canvas.style.width = displayW + 'px';
     canvas.style.height = displayH + 'px';
 
-    // Zoom so dass Bild den Canvas füllt
     const scaleX = displayW / cropImg.width;
     const scaleY = displayH / cropImg.height;
     cropScale = Math.max(scaleX, scaleY);
@@ -308,7 +290,6 @@ function setupCropEvents() {
     const zoomSlider = document.getElementById('cropZoom');
     if(!canvas) return;
 
-    // Zoom Slider
     if(zoomSlider) {
         zoomSlider.oninput = () => {
             const newScale = parseFloat(zoomSlider.value);
@@ -323,7 +304,6 @@ function setupCropEvents() {
         };
     }
 
-    // Scroll Zoom
     canvas.onwheel = (e) => {
         e.preventDefault();
         const delta = e.deltaY > 0 ? 0.95 : 1.05;
@@ -340,7 +320,6 @@ function setupCropEvents() {
         drawCrop();
     };
 
-    // Drag
     canvas.onmousedown = (e) => {
         cropDragging = true;
         cropDragStartX = e.clientX - cropOffsetX;
@@ -357,7 +336,6 @@ function setupCropEvents() {
     canvas.onmouseup = () => { cropDragging = false; canvas.style.cursor = 'grab'; };
     canvas.onmouseleave = () => { cropDragging = false; canvas.style.cursor = 'grab'; };
 
-    // Touch support
     canvas.ontouchstart = (e) => {
         const t = e.touches[0];
         cropDragging = true;
@@ -388,7 +366,6 @@ function clampOffset() {
 function closeCropModal() {
     document.getElementById('cropModal').style.display = 'none';
     cropFile = null;
-    // File input zurücksetzen
     const avatarInput = document.getElementById('avatarUpload');
     const bannerInput = document.getElementById('bannerUpload');
     if(avatarInput) avatarInput.value = '';
@@ -399,14 +376,12 @@ async function applyCrop() {
     const canvas = document.getElementById('cropCanvas');
     if(!canvas || !currentUser) return;
 
-    // Ausgabe Canvas in Zielauflösung rendern
     const outputCanvas = document.createElement('canvas');
     outputCanvas.width = cropMaxW;
     outputCanvas.height = cropMaxH;
     const ctx = outputCanvas.getContext('2d');
 
     const displayW = canvas.width;
-    const displayH = canvas.height;
     const scaleRatio = cropMaxW / displayW;
 
     ctx.drawImage(
@@ -417,7 +392,6 @@ async function applyCrop() {
         cropImg.height * cropScale * scaleRatio
     );
 
-    // Canvas → Blob → File
     outputCanvas.toBlob(async (blob) => {
         const ext = cropFile.name.split('.').pop() || 'jpg';
         const croppedFile = new File([blob], `cropped.${ext}`, { type: 'image/jpeg' });
@@ -447,7 +421,6 @@ async function applyCrop() {
     }, 'image/jpeg', 0.92);
 }
 
-
 function showUserMenu(user) {
     document.getElementById('loginBtn').classList.add('hidden');
     document.getElementById('userMenu').classList.remove('hidden');
@@ -473,10 +446,7 @@ async function loadUserProfile(uid) {
                 const userAvatar = document.getElementById('userAvatar');
                 if(userAvatar) userAvatar.src = userData.avatar;
             }
-            // ✅ Banner beim Seitenload immer setzen
-            if(userData.banner) {
-                setBannerImage(userData.banner);
-            }
+            if(userData.banner) setBannerImage(userData.banner);
         }
     } catch(error) {
         console.error('Error loading user profile:', error);
@@ -509,27 +479,19 @@ async function showProfilePage(uid) {
             if(settingsAvatar) settingsAvatar.src = userData.avatar;
         }
 
-        // ✅ Banner laden - immer aufrufen!
         setBannerImage(userData.banner || null);
 
-        // ✅ Edit Banner Button nur für eigenes Profil
         const editBannerBtn = document.getElementById('editBannerBtn');
         if(editBannerBtn) {
-            if(currentUser && currentUser.uid === uid) {
-                editBannerBtn.style.display = 'block';
-                editBannerBtn.style.zIndex = '10';
-            } else {
-                editBannerBtn.style.display = 'none';
-            }
+            editBannerBtn.style.display = (currentUser && currentUser.uid === uid) ? 'block' : 'none';
+            if(currentUser && currentUser.uid === uid) editBannerBtn.style.zIndex = '10';
         }
 
         const settingsUsername = document.getElementById('settingsUsername');
         if(settingsUsername) settingsUsername.value = userData.username;
 
         const settingsTabBtn = document.querySelector('[data-tab="settings"]');
-        if(settingsTabBtn) {
-            settingsTabBtn.style.display = (currentUser && currentUser.uid === uid) ? '' : 'none';
-        }
+        if(settingsTabBtn) settingsTabBtn.style.display = (currentUser && currentUser.uid === uid) ? '' : 'none';
 
         const profileActions = document.getElementById('profileActions');
         if(profileActions) {
@@ -573,6 +535,10 @@ async function loadProfileStats(uid) {
     }
 }
 
+// ============================================
+// MY UPLOADS + EDIT
+// ============================================
+
 async function loadUserUploads(uid) {
     try {
         const snap = await db.collection('tracks').where('userId', '==', uid).get();
@@ -583,17 +549,129 @@ async function loadUserUploads(uid) {
         }
         container.innerHTML = '';
         snap.forEach(doc => {
-            const track = doc.data();
+            const track = { id: doc.id, ...doc.data() };
             const div = document.createElement('div');
-            div.style.cssText = 'padding:15px;border:1px solid #ff00ff44;border-radius:8px;margin-bottom:10px;color:#fff;cursor:pointer;transition:border 0.3s;';
-            div.innerHTML = `<strong>${track.title}</strong> — ${track.genre || 'Unknown'} • ${track.type || 'Loop'}`;
+            div.style.cssText = 'display:flex;align-items:center;gap:10px;padding:12px 15px;border:1px solid #ff00ff44;border-radius:8px;margin-bottom:10px;color:#fff;transition:border 0.3s;';
+
+            const info = document.createElement('div');
+            info.style.cssText = 'flex:1;cursor:pointer;';
+            info.innerHTML = `<strong>${track.title}</strong> — ${track.genre || 'Unknown'} • ${track.type || 'Loop'}${track.bpm ? ' • ' + track.bpm + ' BPM' : ''}`;
+            info.onclick = () => openPlayerModal(track);
+
+            div.appendChild(info);
+
+            if(currentUser && currentUser.uid === uid) {
+                const editBtn = document.createElement('button');
+                editBtn.innerHTML = '✏️';
+                editBtn.title = 'Edit';
+                editBtn.style.cssText = 'background:rgba(0,255,255,0.2);border:1px solid #00ffff;color:#fff;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:1rem;flex-shrink:0;';
+                editBtn.onclick = (e) => { e.stopPropagation(); openEditModal(track); };
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.innerHTML = '🗑️';
+                deleteBtn.title = 'Delete';
+                deleteBtn.style.cssText = 'background:rgba(255,0,0,0.2);border:1px solid #ff4444;color:#fff;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:1rem;flex-shrink:0;';
+                deleteBtn.onclick = async (e) => {
+                    e.stopPropagation();
+                    if(!confirm('Delete "' + track.title + '"?')) return;
+                    await db.collection('tracks').doc(track.id).delete();
+                    loadUserUploads(uid);
+                };
+
+                div.appendChild(editBtn);
+                div.appendChild(deleteBtn);
+            }
+
             div.onmouseover = () => div.style.border = '1px solid #ff00ff';
             div.onmouseout = () => div.style.border = '1px solid #ff00ff44';
-            div.onclick = () => openPlayerModal({id: doc.id, ...track});
             container.appendChild(div);
         });
     } catch(error) {
         console.error('Error loading uploads:', error);
+    }
+}
+
+function openEditModal(track) {
+    let modal = document.getElementById('editTrackModal');
+    if(!modal) {
+        modal = document.createElement('div');
+        modal.id = 'editTrackModal';
+        modal.style.cssText = 'display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:99999;align-items:center;justify-content:center;';
+        document.body.appendChild(modal);
+    }
+
+    const KEYS = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+    const GENRES = ['techno','house','trance','drum-and-bass','ambient','industrial','electro','minimal','cinematics','other'];
+    const TYPES = ['loop','sample','track','acapella'];
+    const CATEGORIES = ['bass','clap','hihats','kick','percussion','synth'];
+
+    modal.innerHTML = `
+        <div style="background:#0a0a1a;border:2px solid #ff00ff;border-radius:16px;padding:30px;width:90%;max-width:500px;max-height:90vh;overflow-y:auto;position:relative;">
+            <h2 style="font-family:'Orbitron',sans-serif;color:#ff00ff;font-size:1rem;letter-spacing:3px;margin-bottom:25px;">✏️ EDIT TRACK</h2>
+
+            <label style="color:#aaa;font-size:0.75rem;font-family:'Orbitron',sans-serif;letter-spacing:1px;">TITLE</label>
+            <input id="editTitle" value="${(track.title || '').replace(/"/g, '&quot;')}" style="width:100%;padding:10px;margin:6px 0 15px 0;background:rgba(0,0,0,0.5);border:1px solid #ff00ff44;border-radius:8px;color:#fff;font-size:0.9rem;box-sizing:border-box;">
+
+            <label style="color:#aaa;font-size:0.75rem;font-family:'Orbitron',sans-serif;letter-spacing:1px;">BPM</label>
+            <input id="editBPM" type="number" value="${track.bpm || ''}" placeholder="e.g. 138" style="width:100%;padding:10px;margin:6px 0 15px 0;background:rgba(0,0,0,0.5);border:1px solid #ff00ff44;border-radius:8px;color:#fff;font-size:0.9rem;box-sizing:border-box;">
+
+            <label style="color:#aaa;font-size:0.75rem;font-family:'Orbitron',sans-serif;letter-spacing:1px;">TYPE</label>
+            <select id="editType" style="width:100%;padding:10px;margin:6px 0 15px 0;background:#0a0a1a;border:1px solid #ff00ff44;border-radius:8px;color:#fff;font-size:0.9rem;box-sizing:border-box;">
+                ${TYPES.map(t => `<option value="${t}" ${track.type === t ? 'selected' : ''}>${t.charAt(0).toUpperCase()+t.slice(1)}</option>`).join('')}
+            </select>
+
+            <label style="color:#aaa;font-size:0.75rem;font-family:'Orbitron',sans-serif;letter-spacing:1px;">GENRE</label>
+            <select id="editGenre" style="width:100%;padding:10px;margin:6px 0 15px 0;background:#0a0a1a;border:1px solid #ff00ff44;border-radius:8px;color:#fff;font-size:0.9rem;box-sizing:border-box;">
+                ${GENRES.map(g => `<option value="${g}" ${track.genre === g ? 'selected' : ''}>${g.charAt(0).toUpperCase()+g.slice(1)}</option>`).join('')}
+            </select>
+
+            <label style="color:#aaa;font-size:0.75rem;font-family:'Orbitron',sans-serif;letter-spacing:1px;">KEY</label>
+            <select id="editKey" style="width:100%;padding:10px;margin:6px 0 15px 0;background:#0a0a1a;border:1px solid #ff00ff44;border-radius:8px;color:#fff;font-size:0.9rem;box-sizing:border-box;">
+                <option value="">— No Key —</option>
+                ${KEYS.map(k => `<option value="${k}" ${track.key === k ? 'selected' : ''}>${k}</option>`).join('')}
+            </select>
+
+            <label style="color:#aaa;font-size:0.75rem;font-family:'Orbitron',sans-serif;letter-spacing:1px;">CATEGORY (Loops only)</label>
+            <select id="editCategory" style="width:100%;padding:10px;margin:6px 0 25px 0;background:#0a0a1a;border:1px solid #ff00ff44;border-radius:8px;color:#fff;font-size:0.9rem;box-sizing:border-box;">
+                <option value="">— No Category —</option>
+                ${CATEGORIES.map(c => `<option value="${c}" ${track.category === c ? 'selected' : ''}>${c.charAt(0).toUpperCase()+c.slice(1)}</option>`).join('')}
+            </select>
+
+            <div style="display:flex;gap:12px;">
+                <button onclick="saveEditTrack('${track.id}')" style="flex:1;padding:12px;background:rgba(255,0,255,0.3);border:2px solid #ff00ff;color:#fff;border-radius:8px;cursor:pointer;font-family:'Orbitron',sans-serif;font-size:0.75rem;letter-spacing:1px;">💾 SAVE</button>
+                <button onclick="document.getElementById('editTrackModal').style.display='none'" style="flex:1;padding:12px;background:rgba(0,0,0,0.4);border:1px solid #444;color:#aaa;border-radius:8px;cursor:pointer;font-family:'Orbitron',sans-serif;font-size:0.75rem;">CANCEL</button>
+            </div>
+        </div>
+    `;
+
+    modal.style.display = 'flex';
+    modal.onclick = (e) => { if(e.target === modal) modal.style.display = 'none'; };
+}
+
+async function saveEditTrack(trackId) {
+    const title = document.getElementById('editTitle').value.trim();
+    const bpm = document.getElementById('editBPM').value.trim();
+    const type = document.getElementById('editType').value;
+    const genre = document.getElementById('editGenre').value;
+    const key = document.getElementById('editKey').value;
+    const category = document.getElementById('editCategory').value;
+
+    if(!title) { alert('Please enter a title!'); return; }
+
+    try {
+        await db.collection('tracks').doc(trackId).update({
+            title,
+            bpm: bpm ? parseInt(bpm) : null,
+            type,
+            genre,
+            key,
+            category
+        });
+        document.getElementById('editTrackModal').style.display = 'none';
+        alert('✅ Track updated!');
+        loadUserUploads(currentProfileUID);
+    } catch(error) {
+        alert('❌ Update failed: ' + error.message);
     }
 }
 
