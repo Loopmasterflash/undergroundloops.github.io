@@ -46,31 +46,25 @@ async function deleteTrack(trackId) {
         if(!trackDoc.exists) { alert('Track not found!'); return; }
         if(trackDoc.data().userId !== currentUser.uid) { alert('You can only delete your own tracks!'); return; }
 
-        // Delete from Firestore
         await db.collection('tracks').doc(trackId).delete();
 
-        // Delete likes for this track
         const likesSnap = await db.collection('likes').where('trackId', '==', trackId).get();
         const batch = db.batch();
         likesSnap.forEach(doc => batch.delete(doc.ref));
         await batch.commit();
 
-        // Remove card from DOM everywhere
         document.querySelectorAll(`[data-track-id="${trackId}"]`).forEach(el => el.remove());
 
-        // Remove from allTracks array
         if(typeof allTracks !== 'undefined') {
             allTracks = allTracks.filter(t => t.id !== trackId);
             filteredTracks = filteredTracks.filter(t => t.id !== trackId);
         }
 
-        // Reload uploads in profile if open
         if(!document.getElementById('profileContainer').classList.contains('hidden')) {
             loadUserUploads(currentUser.uid);
             loadProfileStats(currentUser.uid);
         }
 
-        // Close modal if open
         const modal = document.getElementById('playerModal');
         if(modal && modal.style.display === 'flex') {
             modal.style.display = 'none';
@@ -249,6 +243,10 @@ async function loadProfileStats(userId) {
     } catch(error) { console.error('Error loading stats:', error); }
 }
 
+// ============================================
+// MY UPLOADS
+// ============================================
+
 async function loadUserUploads(userId) {
     try {
         const snapshot = await db.collection('tracks').where('userId', '==', userId).get();
@@ -286,33 +284,18 @@ async function loadUserUploads(userId) {
             div.appendChild(img);
             div.appendChild(info);
 
-            // Rename + Delete buttons - nur für eigene Tracks
+            // Nur für eigene Tracks
             if(currentUser && currentUser.uid === userId) {
-                // ✏️ Rename Button
-                const renameBtn = document.createElement('button');
-                renameBtn.textContent = '✏️';
-                renameBtn.title = 'Rename Track';
-                renameBtn.style.cssText = 'background:rgba(0,255,255,0.15);border:1px solid #00ffff;color:#00ffff;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:1rem;flex-shrink:0;transition:all 0.3s;margin-right:6px;';
-                renameBtn.onmouseover = () => renameBtn.style.background = 'rgba(0,255,255,0.35)';
-                renameBtn.onmouseout = () => renameBtn.style.background = 'rgba(0,255,255,0.15)';
-                renameBtn.onclick = async (e) => {
+                // ✏️ Edit Button → öffnet neues Modal
+                const editBtn = document.createElement('button');
+                editBtn.textContent = '✏️';
+                editBtn.title = 'Edit Track';
+                editBtn.style.cssText = 'background:rgba(0,255,255,0.15);border:1px solid #00ffff;color:#00ffff;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:1rem;flex-shrink:0;transition:all 0.3s;margin-right:6px;';
+                editBtn.onmouseover = () => editBtn.style.background = 'rgba(0,255,255,0.35)';
+                editBtn.onmouseout = () => editBtn.style.background = 'rgba(0,255,255,0.15)';
+                editBtn.onclick = (e) => {
                     e.stopPropagation();
-                    const newTitle = prompt('Enter new title:', track.title);
-                    if(!newTitle || newTitle.trim() === '') return;
-                    if(newTitle.trim() === track.title) return;
-                    try {
-                        await db.collection('tracks').doc(track.id).update({ title: newTitle.trim() });
-                        // Update in allTracks array
-                        if(typeof allTracks !== 'undefined') {
-                            const t = allTracks.find(t => t.id === track.id);
-                            if(t) t.title = newTitle.trim();
-                        }
-                        track.title = newTitle.trim();
-                        info.querySelector('div').textContent = newTitle.trim();
-                        alert('✅ Title updated!');
-                    } catch(err) {
-                        alert('❌ Failed: ' + err.message);
-                    }
+                    openEditModal(track);
                 };
 
                 // 🗑️ Delete Button
@@ -324,7 +307,7 @@ async function loadUserUploads(userId) {
                 deleteBtn.onmouseout = () => deleteBtn.style.background = 'rgba(255,0,0,0.2)';
                 deleteBtn.onclick = (e) => { e.stopPropagation(); deleteTrack(track.id); };
 
-                div.appendChild(renameBtn);
+                div.appendChild(editBtn);
                 div.appendChild(deleteBtn);
             }
 
