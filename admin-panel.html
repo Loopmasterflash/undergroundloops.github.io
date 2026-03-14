@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel – UndergroundLoops</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0a0a0a;
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 40px;
+      border-bottom: 1px solid #222;
+      padding-bottom: 20px;
+    }
+
+    header h1 {
+      color: #00ffcc;
+      font-size: 1.2rem;
+      letter-spacing: 2px;
+    }
+
+    header span {
+      color: #555;
+      font-size: 0.8rem;
+    }
+
+    .logout-btn {
+      background: transparent;
+      border: 1px solid #333;
+      color: #888;
+      font-family: 'Courier New', monospace;
+      font-size: 0.8rem;
+      padding: 6px 14px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+
+    .logout-btn:hover {
+      border-color: #ff4444;
+      color: #ff4444;
+    }
+
+    .section {
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 8px;
+      padding: 30px;
+      margin-bottom: 24px;
+      max-width: 700px;
+    }
+
+    .section h2 {
+      font-size: 0.9rem;
+      color: #00ffcc;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.75rem;
+      color: #888;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    input[type="text"], input[type="file"] {
+      width: 100%;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 4px;
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+      padding: 10px 14px;
+      margin-bottom: 16px;
+      outline: none;
+    }
+
+    input[type="file"] {
+      padding: 8px;
+      cursor: pointer;
+    }
+
+    .upload-btn {
+      background: #00ffcc;
+      color: #000;
+      border: none;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+      font-weight: bold;
+      padding: 10px 24px;
+      cursor: pointer;
+      letter-spacing: 1px;
+      transition: background 0.2s;
+    }
+
+    .upload-btn:hover { background: #00ddaa; }
+    .upload-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
+
+    .status {
+      margin-top: 14px;
+      font-size: 0.8rem;
+      color: #888;
+      min-height: 20px;
+    }
+
+    .status.ok { color: #00ffcc; }
+    .status.err { color: #ff4444; }
+
+    .progress {
+      width: 100%;
+      height: 4px;
+      background: #222;
+      border-radius: 2px;
+      margin-top: 10px;
+      overflow: hidden;
+      display: none;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: #00ffcc;
+      width: 0%;
+      transition: width 0.3s;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>⚡ ADMIN PANEL</h1>
+    <span>Eingeloggt als: BadBoySlim</span>
+  </div>
+  <button class="logout-btn" onclick="logout()">Ausloggen</button>
+</header>
+
+<!-- TRACK UPLOAD -->
+<div class="section">
+  <h2>🎵 Track / Loop hochladen</h2>
+
+  <label>Track Titel</label>
+  <input type="text" id="trackTitle" placeholder="z.B. Dark Techno Loop 001">
+
+  <label>Genre</label>
+  <input type="text" id="trackGenre" placeholder="z.B. Techno, Drum & Bass, Ambient">
+
+  <label>Audio Datei (MP3 / WAV)</label>
+  <input type="file" id="audioFile" accept="audio/*">
+
+  <label>Cover Bild (JPG / PNG)</label>
+  <input type="file" id="coverFile" accept="image/*">
+
+  <button class="upload-btn" id="uploadBtn" onclick="uploadTrack()">HOCHLADEN → R2</button>
+
+  <div class="progress" id="progressBar">
+    <div class="progress-bar" id="progressFill"></div>
+  </div>
+  <div class="status" id="uploadStatus"></div>
+</div>
+
+<script>
+  // Zugriff prüfen
+  if (sessionStorage.getItem('admin_logged_in') !== 'true') {
+    window.location.href = 'admin.html';
+  }
+
+  const WORKER_URL = 'https://undergroundloops-upload.dj-christern.workers.dev';
+
+  function logout() {
+    sessionStorage.removeItem('admin_logged_in');
+    window.location.href = 'admin.html';
+  }
+
+  async function uploadTrack() {
+    const title = document.getElementById('trackTitle').value.trim();
+    const genre = document.getElementById('trackGenre').value.trim();
+    const audioFile = document.getElementById('audioFile').files[0];
+    const coverFile = document.getElementById('coverFile').files[0];
+
+    if (!title || !audioFile) {
+      setStatus('❌ Bitte Titel und Audio-Datei angeben!', 'err');
+      return;
+    }
+
+    const btn = document.getElementById('uploadBtn');
+    btn.disabled = true;
+    showProgress(true);
+    setStatus('⏳ Wird hochgeladen...', '');
+
+    try {
+      // Audio hochladen
+      setStatus('⏳ Audio wird hochgeladen...', '');
+      setProgressFill(20);
+
+      const audioKey = `tracks/${Date.now()}_${audioFile.name}`;
+      await uploadToR2(audioFile, audioKey);
+      setProgressFill(60);
+
+      // Cover hochladen (optional)
+      let coverKey = null;
+      if (coverFile) {
+        setStatus('⏳ Cover wird hochgeladen...', '');
+        coverKey = `covers/${Date.now()}_${coverFile.name}`;
+        await uploadToR2(coverFile, coverKey);
+        setProgressFill(90);
+      }
+
+      setProgressFill(100);
+      setStatus(`✅ Erfolgreich hochgeladen! "${title}"`, 'ok');
+
+      // Felder leeren
+      document.getElementById('trackTitle').value = '';
+      document.getElementById('trackGenre').value = '';
+      document.getElementById('audioFile').value = '';
+      document.getElementById('coverFile').value = '';
+
+    } catch (err) {
+      setStatus('❌ Fehler: ' + err.message, 'err');
+    }
+
+    btn.disabled = false;
+    setTimeout(() => showProgress(false), 2000);
+  }
+
+  async function uploadToR2(file, key) {
+    const response = await fetch(`${WORKER_URL}/upload`, {
+      method: 'POST',
+      headers: {
+        'X-File-Key': key,
+        'Content-Type': file.type,
+      },
+      body: file
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(text || 'Upload fehlgeschlagen');
+    }
+
+    return response.json();
+  }
+
+  function setStatus(msg, type) {
+    const el = document.getElementById('uploadStatus');
+    el.textContent = msg;
+    el.className = 'status ' + type;
+  }
+
+  function showProgress(show) {
+    document.getElementById('progressBar').style.display = show ? 'block' : 'none';
+    if (!show) setProgressFill(0);
+  }
+
+  function setProgressFill(pct) {
+    document.getElementById('progressFill').style.width = pct + '%';
+  }
+</script>
+
+</body>
+</html>
