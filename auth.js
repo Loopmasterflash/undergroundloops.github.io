@@ -19,7 +19,6 @@ function initAuth() {
             currentUser = user;
             showUserMenu(user);
             loadUserProfile(user.uid);
-            // Last seen updaten
             db.collection('users').doc(user.uid).set({ lastSeen: new Date().toISOString() }, { merge: true });
         } else {
             currentUser = null;
@@ -194,7 +193,7 @@ async function uploadImageToGitHub(file, folder, userId, maxWidth, maxHeight) {
 }
 
 // ============================================
-// CROP MODAL
+// CROP MODAL - FIXED (kleineres Modal + scrollbar)
 // ============================================
 
 let cropFile = null;
@@ -223,13 +222,48 @@ function openCropModal(file, type, maxW, maxH) {
     if(title) title.textContent = type === 'avatar' ? 'CROP AVATAR' : 'CROP BANNER';
     if(subtitle) subtitle.textContent = type === 'avatar' ? '1024 × 1024 px • Drag to move • Scroll to zoom' : '1536 × 1024 px • Drag to move • Scroll to zoom';
 
+    // ✅ FIX: Modal kleiner und scrollbar machen
+    const cropModal = document.getElementById('cropModal');
+    if(cropModal) {
+        cropModal.style.cssText = `
+            display:flex;
+            position:fixed;
+            top:0;left:0;
+            width:100%;height:100%;
+            background:rgba(0,0,0,0.92);
+            backdrop-filter:blur(10px);
+            z-index:9999;
+            align-items:center;
+            justify-content:center;
+            overflow-y:auto;
+            padding:20px;
+            box-sizing:border-box;
+        `;
+
+        // Inner box kleiner machen
+        const innerBox = cropModal.querySelector('div');
+        if(innerBox) {
+            innerBox.style.cssText = `
+                background:rgba(0,0,0,0.95);
+                border:2px solid #ff00ff;
+                border-radius:20px;
+                padding:20px;
+                width:90%;
+                max-width:480px;
+                max-height:85vh;
+                overflow-y:auto;
+                box-shadow:0 0 50px rgba(255,0,255,0.4);
+                position:relative;
+            `;
+        }
+    }
+
     const reader = new FileReader();
     reader.onload = (e) => {
         cropImg = new Image();
         cropImg.onload = () => {
             setupCropCanvas();
-            const modal = document.getElementById('cropModal');
-            if(modal) modal.style.display = 'flex';
+            if(cropModal) cropModal.style.display = 'flex';
         };
         cropImg.src = e.target.result;
     };
@@ -241,7 +275,8 @@ function setupCropCanvas() {
     const wrapper = document.getElementById('cropCanvasWrapper');
     if(!canvas || !wrapper) return;
 
-    const displayW = Math.min(wrapper.clientWidth || 540, 540);
+    // ✅ FIX: Canvas kleiner machen damit Buttons sichtbar sind
+    const displayW = Math.min(wrapper.clientWidth || 400, 400);
     const aspect = cropMaxW / cropMaxH;
     const displayH = Math.round(displayW / aspect);
 
@@ -364,7 +399,8 @@ function clampOffset() {
 }
 
 function closeCropModal() {
-    document.getElementById('cropModal').style.display = 'none';
+    const modal = document.getElementById('cropModal');
+    if(modal) modal.style.display = 'none';
     cropFile = null;
     const avatarInput = document.getElementById('avatarUpload');
     const bannerInput = document.getElementById('bannerUpload');
@@ -481,22 +517,37 @@ async function showProfilePage(uid) {
 
         setBannerImage(userData.banner || null);
 
+        // ✅ FIX BUG 1: Settings Tab NUR für eigenen Account sichtbar!
+        const isOwnProfile = currentUser && currentUser.uid === uid;
+
+        const settingsTabBtn = document.querySelector('[data-tab="settings"]');
+        if(settingsTabBtn) {
+            settingsTabBtn.style.display = isOwnProfile ? '' : 'none';
+        }
+
+        // Wenn fremdes Profil → Settings Tab verstecken und Uploads Tab aktivieren
+        if(!isOwnProfile) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            const uploadsTab = document.querySelector('[data-tab="uploads"]');
+            if(uploadsTab) uploadsTab.classList.add('active');
+            const uploadsContent = document.getElementById('uploadsTab');
+            if(uploadsContent) uploadsContent.classList.remove('hidden');
+        }
+
         const editBannerBtn = document.getElementById('editBannerBtn');
         if(editBannerBtn) {
-            editBannerBtn.style.display = (currentUser && currentUser.uid === uid) ? 'block' : 'none';
-            if(currentUser && currentUser.uid === uid) editBannerBtn.style.zIndex = '10';
+            editBannerBtn.style.display = isOwnProfile ? 'block' : 'none';
         }
 
         const settingsUsername = document.getElementById('settingsUsername');
         if(settingsUsername) settingsUsername.value = userData.username;
 
-        const settingsTabBtn = document.querySelector('[data-tab="settings"]');
-        if(settingsTabBtn) settingsTabBtn.style.display = (currentUser && currentUser.uid === uid) ? '' : 'none';
-
+        // Profile Actions (Follow Button für fremde Profile)
         const profileActions = document.getElementById('profileActions');
         if(profileActions) {
-            if(currentUser && currentUser.uid !== uid) {
-                profileActions.innerHTML = `<button onclick="toggleFollow('${uid}')" style="padding:10px 20px;background:rgba(255,0,255,0.3);border:2px solid #ff00ff;color:#fff;border-radius:8px;cursor:pointer;">Follow</button>`;
+            if(currentUser && !isOwnProfile) {
+                profileActions.innerHTML = `<button onclick="toggleFollow('${uid}')" style="padding:10px 20px;background:rgba(255,0,255,0.3);border:2px solid #ff00ff;color:#fff;border-radius:8px;cursor:pointer;font-family:'Orbitron',sans-serif;font-size:0.75rem;">Follow</button>`;
             } else {
                 profileActions.innerHTML = '';
             }
@@ -505,12 +556,15 @@ async function showProfilePage(uid) {
         loadProfileStats(uid);
         loadUserUploads(uid);
 
+        // Tab Navigation
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.onclick = () => {
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                 document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
                 btn.classList.add('active');
-                document.getElementById(btn.getAttribute('data-tab') + 'Tab').classList.remove('hidden');
+                const tabId = btn.getAttribute('data-tab') + 'Tab';
+                const tabContent = document.getElementById(tabId);
+                if(tabContent) tabContent.classList.remove('hidden');
             };
         });
 
@@ -560,6 +614,7 @@ async function loadUserUploads(uid) {
 
             div.appendChild(info);
 
+            // ✅ Edit + Delete nur für eigene Tracks
             if(currentUser && currentUser.uid === uid) {
                 const editBtn = document.createElement('button');
                 editBtn.innerHTML = '✏️';
@@ -601,7 +656,7 @@ function openEditModal(track) {
     }
 
     const KEYS = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-    const GENRES = ['techno','house','trance','drum-and-bass','ambient','industrial','electro','minimal','cinematics','other'];
+    const GENRES = ['techno','minimal','industrial','goa','psytrance','rap','hiphop','chillout','drumandbass','electronic','house','dubstep','trap'];
     const TYPES = ['loop','sample','track','acapella'];
     const CATEGORIES = ['bass','clap','hihats','kick','percussion','synth'];
 
@@ -662,10 +717,7 @@ async function saveEditTrack(trackId) {
         await db.collection('tracks').doc(trackId).update({
             title,
             bpm: bpm ? parseInt(bpm) : null,
-            type,
-            genre,
-            key,
-            category
+            type, genre, key, category
         });
         document.getElementById('editTrackModal').style.display = 'none';
         alert('✅ Track updated!');
