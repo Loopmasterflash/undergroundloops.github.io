@@ -504,9 +504,6 @@ function updateMiniPlayer() {
     const tot = document.getElementById('miniTotalTime');
     if(tot) tot.textContent = formatTime(currentAudio.duration);
     // Sync volume
-    const miniVol = document.getElementById('miniVolume');
-    const modalVol = document.getElementById('modalVolume');
-    if(miniVol && modalVol) miniVol.value = modalVol.value;
 }
 
 function maximizePlayer() {
