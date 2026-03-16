@@ -1,5 +1,5 @@
 // UNDERGROUNDLOOPS - Social Features
-// Like System, Follow System, Profile Page, Messages
+// Like System, Follow System, Profile Page, Messages, Playlists
 
 let currentProfileUserId = null;
 
@@ -40,45 +40,31 @@ async function incrementDownloadCount(trackId) {
 async function deleteTrack(trackId) {
     if(!currentUser) return;
     if(!confirm('Are you sure you want to delete this track? This cannot be undone!')) return;
-
     try {
         const trackDoc = await db.collection('tracks').doc(trackId).get();
         if(!trackDoc.exists) { alert('Track not found!'); return; }
         if(trackDoc.data().userId !== currentUser.uid) { alert('You can only delete your own tracks!'); return; }
-
         await db.collection('tracks').doc(trackId).delete();
-
         const likesSnap = await db.collection('likes').where('trackId', '==', trackId).get();
         const batch = db.batch();
         likesSnap.forEach(doc => batch.delete(doc.ref));
         await batch.commit();
-
         document.querySelectorAll(`[data-track-id="${trackId}"]`).forEach(el => el.remove());
-
         if(typeof allTracks !== 'undefined') {
             allTracks = allTracks.filter(t => t.id !== trackId);
             filteredTracks = filteredTracks.filter(t => t.id !== trackId);
         }
-
         if(!document.getElementById('profileContainer').classList.contains('hidden')) {
             loadUserUploads(currentUser.uid);
             loadProfileStats(currentUser.uid);
         }
-
         const modal = document.getElementById('playerModal');
         if(modal && modal.style.display === 'flex') {
             modal.style.display = 'none';
-            if(typeof currentAudio !== 'undefined' && currentAudio) {
-                currentAudio.pause();
-                currentAudio = null;
-            }
+            if(typeof currentAudio !== 'undefined' && currentAudio) { currentAudio.pause(); currentAudio = null; }
         }
-
         alert('✅ Track deleted successfully!');
-    } catch(error) {
-        console.error('Delete error:', error);
-        alert('❌ Failed to delete: ' + error.message);
-    }
+    } catch(error) { console.error('Delete error:', error); alert('❌ Failed to delete: ' + error.message); }
 }
 
 // ============================================
@@ -86,11 +72,7 @@ async function deleteTrack(trackId) {
 // ============================================
 
 async function toggleLike(trackId) {
-    if(!currentUser) {
-        alert('Please login to like tracks!');
-        document.getElementById('loginBtn').click();
-        return;
-    }
+    if(!currentUser) { alert('Please login to like tracks!'); document.getElementById('loginBtn').click(); return; }
     try {
         const likeId = `${currentUser.uid}_${trackId}`;
         const likeRef = db.collection('likes').doc(likeId);
@@ -104,9 +86,7 @@ async function toggleLike(trackId) {
             updateLikeButton(trackId, true);
             await updateTrackLikeCount(trackId, 1);
         }
-    } catch(error) {
-        console.error('Error toggling like:', error);
-    }
+    } catch(error) { console.error('Error toggling like:', error); }
 }
 
 function updateLikeButton(trackId, liked) {
@@ -122,9 +102,7 @@ async function updateTrackLikeCount(trackId, change) {
     try {
         const trackRef = db.collection('tracks').doc(trackId);
         const trackDoc = await trackRef.get();
-        if(trackDoc.exists) {
-            await trackRef.update({ likes: (trackDoc.data().likes || 0) + change });
-        }
+        if(trackDoc.exists) await trackRef.update({ likes: (trackDoc.data().likes || 0) + change });
     } catch(error) { console.error('Error updating like count:', error); }
 }
 
@@ -147,13 +125,8 @@ async function toggleFollow(userId) {
         const followId = `${currentUser.uid}_${userId}`;
         const followRef = db.collection('follows').doc(followId);
         const followDoc = await followRef.get();
-        if(followDoc.exists) {
-            await followRef.delete();
-            updateFollowButton(userId, false);
-        } else {
-            await followRef.set({ followerId: currentUser.uid, followingId: userId, createdAt: new Date().toISOString() });
-            updateFollowButton(userId, true);
-        }
+        if(followDoc.exists) { await followRef.delete(); updateFollowButton(userId, false); }
+        else { await followRef.set({ followerId: currentUser.uid, followingId: userId, createdAt: new Date().toISOString() }); updateFollowButton(userId, true); }
         if(currentProfileUserId === userId) loadProfileStats(userId);
     } catch(error) { console.error('Error toggling follow:', error); }
 }
@@ -172,6 +145,277 @@ async function checkIfFollowing(userId) {
         const followDoc = await db.collection('follows').doc(`${currentUser.uid}_${userId}`).get();
         return followDoc.exists;
     } catch(error) { return false; }
+}
+
+// ============================================
+// PLAYLIST SYSTEM
+// ============================================
+
+// Playlist Popup im Player Modal
+async function openPlaylistPopup(trackId) {
+    if(!currentUser) { alert('Please login to add to playlist!'); return; }
+
+    const old = document.getElementById('playlistPopup');
+    if(old) old.remove();
+
+    // Lade bestehende Playlists
+    const snap = await db.collection('playlists')
+        .where('userId', '==', currentUser.uid)
+        .get();
+
+    const playlists = [];
+    snap.forEach(doc => playlists.push({ id: doc.id, ...doc.data() }));
+
+    const popup = document.createElement('div');
+    popup.id = 'playlistPopup';
+    popup.style.cssText = `
+        position:fixed;inset:0;background:rgba(0,0,0,0.85);
+        z-index:10001;display:flex;align-items:center;justify-content:center;
+        backdrop-filter:blur(8px);
+    `;
+
+    const playlistItems = playlists.map(pl => `
+        <div onclick="addToPlaylist('${pl.id}','${trackId}')" style="
+            padding:12px 16px;border:1px solid #ff00ff33;border-radius:8px;
+            cursor:pointer;color:#fff;margin-bottom:8px;
+            background:rgba(255,0,255,0.05);transition:all 0.2s;
+            display:flex;align-items:center;gap:10px;
+        " onmouseover="this.style.background='rgba(255,0,255,0.2)'"
+           onmouseout="this.style.background='rgba(255,0,255,0.05)'">
+            🎵 <span>${pl.name}</span>
+            <span style="color:#666;font-size:0.75rem;margin-left:auto;">${(pl.trackIds||[]).length} tracks</span>
+        </div>
+    `).join('') || '<p style="color:#666;text-align:center;padding:10px;">Noch keine Playlists</p>';
+
+    popup.innerHTML = `
+        <div style="background:#111;border:1px solid #ff00ff;border-radius:12px;padding:28px;width:90%;max-width:420px;position:relative;">
+            <button onclick="document.getElementById('playlistPopup').remove()" style="position:absolute;top:12px;right:14px;background:none;border:none;color:#aaa;font-size:1.4rem;cursor:pointer;">✕</button>
+            <h3 style="font-family:'Orbitron',sans-serif;color:#ff00ff;font-size:0.9rem;letter-spacing:2px;margin-bottom:20px;">🎵 ZUR PLAYLIST HINZUFÜGEN</h3>
+
+            <!-- Neue Playlist erstellen -->
+            <div style="margin-bottom:16px;">
+                <div style="display:flex;gap:8px;">
+                    <input type="text" id="newPlaylistName" placeholder="Neue Playlist Name..." style="
+                        flex:1;background:#1a1a1a;border:1px solid #ff00ff44;
+                        border-radius:6px;color:#fff;font-size:0.85rem;
+                        padding:8px 12px;outline:none;
+                    ">
+                    <button onclick="createAndAddPlaylist('${trackId}')" style="
+                        background:#ff00ff;color:#000;border:none;
+                        border-radius:6px;padding:8px 14px;cursor:pointer;
+                        font-family:'Courier New',monospace;font-weight:bold;font-size:0.8rem;
+                        white-space:nowrap;
+                    ">+ Neu</button>
+                </div>
+            </div>
+
+            <div style="border-top:1px solid #ff00ff22;padding-top:16px;">
+                <p style="color:#888;font-size:0.75rem;margin-bottom:12px;font-family:'Orbitron',sans-serif;letter-spacing:1px;">BESTEHENDE PLAYLISTS:</p>
+                ${playlistItems}
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(popup);
+    popup.addEventListener('click', e => { if(e.target === popup) popup.remove(); });
+}
+
+async function createAndAddPlaylist(trackId) {
+    const name = document.getElementById('newPlaylistName').value.trim();
+    if(!name) { alert('Bitte Namen eingeben!'); return; }
+    try {
+        const ref = await db.collection('playlists').add({
+            userId: currentUser.uid,
+            name,
+            trackIds: [trackId],
+            createdAt: new Date().toISOString()
+        });
+        document.getElementById('playlistPopup').remove();
+        alert(`✅ Playlist "${name}" erstellt und Track hinzugefügt!`);
+    } catch(e) { alert('❌ Fehler: ' + e.message); }
+}
+
+async function addToPlaylist(playlistId, trackId) {
+    try {
+        const plRef = db.collection('playlists').doc(playlistId);
+        const plDoc = await plRef.get();
+        if(!plDoc.exists) return;
+        const trackIds = plDoc.data().trackIds || [];
+        if(trackIds.includes(trackId)) {
+            alert('Track ist bereits in dieser Playlist!');
+            return;
+        }
+        await plRef.update({ trackIds: [...trackIds, trackId] });
+        document.getElementById('playlistPopup').remove();
+        alert('✅ Track zur Playlist hinzugefügt!');
+    } catch(e) { alert('❌ Fehler: ' + e.message); }
+}
+
+// Playlists im Profil laden
+async function loadUserPlaylists(userId) {
+    const container = document.getElementById('playlistsTab');
+    if(!container) return;
+
+    const isOwn = currentUser && currentUser.uid === userId;
+
+    container.innerHTML = `
+        ${isOwn ? `
+        <div style="text-align:right;margin-bottom:20px;">
+            <button onclick="showCreatePlaylistForm()" style="
+                padding:10px 20px;
+                background:linear-gradient(135deg,rgba(255,0,255,0.3),rgba(0,255,255,0.2));
+                border:2px solid #ff00ff;color:#fff;border-radius:8px;
+                cursor:pointer;font-family:'Orbitron',sans-serif;font-size:0.75rem;
+            ">+ NEUE PLAYLIST</button>
+        </div>
+        <div id="createPlaylistForm" style="display:none;margin-bottom:20px;background:rgba(0,0,0,0.4);border:1px solid #ff00ff33;border-radius:8px;padding:16px;">
+            <input type="text" id="playlistNameInput" placeholder="Playlist Name..." style="
+                width:100%;background:#1a1a1a;border:1px solid #ff00ff44;
+                border-radius:6px;color:#fff;font-size:0.9rem;
+                padding:10px 14px;outline:none;box-sizing:border-box;margin-bottom:10px;
+            ">
+            <div style="display:flex;gap:8px;">
+                <button onclick="createPlaylist()" style="flex:1;padding:10px;background:#ff00ff;color:#000;border:none;border-radius:6px;cursor:pointer;font-weight:bold;">✅ Erstellen</button>
+                <button onclick="document.getElementById('createPlaylistForm').style.display='none'" style="padding:10px 16px;background:#1a1a1a;border:1px solid #333;color:#888;border-radius:6px;cursor:pointer;">Abbrechen</button>
+            </div>
+        </div>` : ''}
+        <div id="playlistsList"></div>
+    `;
+
+    try {
+        const snap = await db.collection('playlists').where('userId', '==', userId).get();
+        const listContainer = document.getElementById('playlistsList');
+
+        if(snap.empty) {
+            listContainer.innerHTML = '<p style="color:#666;text-align:center;padding:40px;">Noch keine Playlists</p>';
+            return;
+        }
+
+        const playlists = [];
+        snap.forEach(doc => playlists.push({ id: doc.id, ...doc.data() }));
+        playlists.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+
+        listContainer.innerHTML = '';
+        playlists.forEach(pl => {
+            const div = document.createElement('div');
+            div.style.cssText = 'border:1px solid #ff00ff33;border-radius:8px;margin-bottom:12px;overflow:hidden;transition:border 0.2s;';
+            div.onmouseover = () => div.style.border = '1px solid #ff00ff';
+            div.onmouseout = () => div.style.border = '1px solid #ff00ff33';
+
+            div.innerHTML = `
+                <div style="padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;background:rgba(0,0,0,0.4);" onclick="togglePlaylistTracks('${pl.id}')">
+                    <span style="font-size:1.5rem;">🎵</span>
+                    <div style="flex:1;">
+                        <div style="color:#fff;font-weight:bold;margin-bottom:2px;">${pl.name}</div>
+                        <div style="color:#888;font-size:0.75rem;">${(pl.trackIds||[]).length} Tracks</div>
+                    </div>
+                    <button onclick="event.stopPropagation();playPlaylist('${pl.id}')" style="
+                        background:rgba(255,0,255,0.3);border:1px solid #ff00ff;
+                        color:#fff;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:0.8rem;
+                    ">▶ Play</button>
+                    ${isOwn ? `<button onclick="event.stopPropagation();deletePlaylist('${pl.id}')" style="
+                        background:rgba(255,0,0,0.2);border:1px solid #ff4444;
+                        color:#ff4444;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:0.8rem;
+                    ">🗑️</button>` : ''}
+                    <span style="color:#666;">▼</span>
+                </div>
+                <div id="playlistTracks_${pl.id}" style="display:none;padding:10px 16px;background:rgba(0,0,0,0.3);"></div>
+            `;
+            listContainer.appendChild(div);
+        });
+    } catch(e) { console.error(e); }
+}
+
+function showCreatePlaylistForm() {
+    const form = document.getElementById('createPlaylistForm');
+    if(form) form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+async function createPlaylist() {
+    const name = document.getElementById('playlistNameInput').value.trim();
+    if(!name) { alert('Bitte Namen eingeben!'); return; }
+    try {
+        await db.collection('playlists').add({
+            userId: currentUser.uid,
+            name,
+            trackIds: [],
+            createdAt: new Date().toISOString()
+        });
+        document.getElementById('playlistNameInput').value = '';
+        document.getElementById('createPlaylistForm').style.display = 'none';
+        loadUserPlaylists(currentUser.uid);
+    } catch(e) { alert('❌ Fehler: ' + e.message); }
+}
+
+async function deletePlaylist(playlistId) {
+    if(!confirm('Playlist löschen?')) return;
+    try {
+        await db.collection('playlists').doc(playlistId).delete();
+        loadUserPlaylists(currentUser.uid);
+    } catch(e) { alert('❌ Fehler: ' + e.message); }
+}
+
+async function togglePlaylistTracks(playlistId) {
+    const container = document.getElementById(`playlistTracks_${playlistId}`);
+    if(!container) return;
+    if(container.style.display === 'block') { container.style.display = 'none'; return; }
+    container.style.display = 'block';
+    container.innerHTML = '<p style="color:#666;font-size:0.8rem;">Lade Tracks...</p>';
+
+    try {
+        const plDoc = await db.collection('playlists').doc(playlistId).get();
+        if(!plDoc.exists) return;
+        const trackIds = plDoc.data().trackIds || [];
+        const isOwn = currentUser && currentUser.uid === plDoc.data().userId;
+
+        if(trackIds.length === 0) { container.innerHTML = '<p style="color:#666;font-size:0.8rem;padding:8px 0;">Keine Tracks in dieser Playlist</p>'; return; }
+
+        container.innerHTML = '';
+        for(const tid of trackIds) {
+            const tDoc = await db.collection('tracks').doc(tid).get();
+            if(!tDoc.exists) continue;
+            const track = { id: tDoc.id, ...tDoc.data() };
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #ffffff11;';
+            row.innerHTML = `
+                <img src="${track.coverImage||''}" style="width:36px;height:36px;border-radius:4px;object-fit:cover;flex-shrink:0;" onerror="this.style.display='none'">
+                <div style="flex:1;cursor:pointer;min-width:0;" onclick="openPlayerModal(${JSON.stringify(track).replace(/"/g,'&quot;')})">
+                    <div style="color:#fff;font-size:0.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${track.title}</div>
+                    <div style="color:#888;font-size:0.7rem;">${track.artist||''} • ${track.genre||''}</div>
+                </div>
+                <button onclick="openPlayerModal(${JSON.stringify(track).replace(/"/g,'&quot;')})" style="background:rgba(255,0,255,0.2);border:1px solid #ff00ff;color:#fff;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:0.75rem;">▶</button>
+                ${isOwn ? `<button onclick="removeFromPlaylist('${playlistId}','${tid}')" style="background:rgba(255,0,0,0.2);border:1px solid #ff4444;color:#ff4444;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:0.7rem;">✕</button>` : ''}
+            `;
+            container.appendChild(row);
+        }
+    } catch(e) { container.innerHTML = '<p style="color:#ff4444;font-size:0.8rem;">Fehler beim Laden</p>'; }
+}
+
+async function removeFromPlaylist(playlistId, trackId) {
+    try {
+        const plRef = db.collection('playlists').doc(playlistId);
+        const plDoc = await plRef.get();
+        if(!plDoc.exists) return;
+        const trackIds = (plDoc.data().trackIds || []).filter(id => id !== trackId);
+        await plRef.update({ trackIds });
+        togglePlaylistTracks(playlistId);
+        togglePlaylistTracks(playlistId);
+    } catch(e) { alert('❌ Fehler: ' + e.message); }
+}
+
+async function playPlaylist(playlistId) {
+    try {
+        const plDoc = await db.collection('playlists').doc(playlistId).get();
+        if(!plDoc.exists) return;
+        const trackIds = plDoc.data().trackIds || [];
+        if(trackIds.length === 0) { alert('Playlist ist leer!'); return; }
+
+        // Ersten Track laden und abspielen
+        const firstDoc = await db.collection('tracks').doc(trackIds[0]).get();
+        if(firstDoc.exists) {
+            openPlayerModal({ id: firstDoc.id, ...firstDoc.data() });
+        }
+    } catch(e) { alert('❌ Fehler: ' + e.message); }
 }
 
 // ============================================
@@ -217,9 +461,8 @@ async function loadProfileData(userId) {
                 </button>
                 <button class="message-user-btn" onclick="startConversation('${userId}')">Message</button>
             `;
-        } else {
-            actionsDiv.innerHTML = '';
-        }
+        } else { actionsDiv.innerHTML = ''; }
+
         if(currentUser && userId === currentUser.uid) {
             const sa = document.getElementById('settingsAvatar');
             if(sa) sa.src = userData.avatar || '';
@@ -251,10 +494,7 @@ async function loadUserUploads(userId) {
     try {
         const snapshot = await db.collection('tracks').where('userId', '==', userId).get();
         const container = document.getElementById('userUploads');
-        if(snapshot.empty) {
-            container.innerHTML = '<p style="color:#666;text-align:center;padding:40px;">No uploads yet</p>';
-            return;
-        }
+        if(snapshot.empty) { container.innerHTML = '<p style="color:#666;text-align:center;padding:40px;">No uploads yet</p>'; return; }
         container.innerHTML = '';
         snapshot.forEach(doc => {
             const track = { id: doc.id, ...doc.data() };
@@ -273,12 +513,9 @@ async function loadUserUploads(userId) {
             info.innerHTML = `
                 <div style="font-weight:bold;margin-bottom:3px;">${track.title}</div>
                 <div style="color:#aaa;font-size:0.8rem;">${track.genre || ''} • ${track.type || 'loop'} ${track.bpm ? '• ' + track.bpm + ' BPM' : ''}</div>
-                <div style="color:#666;font-size:0.75rem;margin-top:3px;">
-                    👁️ ${track.plays || 0} plays &nbsp; ⬇️ ${track.downloads || 0} downloads &nbsp; ❤️ ${track.likes || 0} likes
-                </div>
+                <div style="color:#666;font-size:0.75rem;margin-top:3px;">👁️ ${track.plays || 0} plays &nbsp; ⬇️ ${track.downloads || 0} downloads &nbsp; ❤️ ${track.likes || 0} likes</div>
             `;
             info.onclick = () => openPlayerModal(track);
-
             div.appendChild(img);
             div.appendChild(info);
 
@@ -302,14 +539,13 @@ async function loadUserUploads(userId) {
                 div.appendChild(editBtn);
                 div.appendChild(deleteBtn);
             }
-
             container.appendChild(div);
         });
     } catch(error) { console.error('Error loading uploads:', error); }
 }
 
 // ============================================
-// EDIT MODAL (mit Cover Upload!)
+// EDIT MODAL
 // ============================================
 
 function openEditModal(track) {
@@ -317,7 +553,7 @@ function openEditModal(track) {
     if(old) old.remove();
 
     const keys = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-    const genres = ['techno','minimal','industrial','goa','psytrance','rap','hiphop','chillout','drumandbass','electronic','house'];
+    const genres = ['techno','minimal','industrial','goa','psytrance','rap','hiphop','chillout','drumandbass','electronic','house','dubstep','trap'];
 
     function pillsHTML(groupId, options, current) {
         return options.map(o => {
@@ -340,73 +576,16 @@ function openEditModal(track) {
         <div style="background:#111;border:1px solid #00ffff;border-radius:12px;padding:28px;width:90%;max-width:560px;box-shadow:0 0 40px rgba(0,255,255,0.2);position:relative;max-height:90vh;overflow-y:auto;">
             <button onclick="document.getElementById('editTrackModal').remove()" style="position:absolute;top:12px;right:14px;background:none;border:none;color:#aaa;font-size:1.4rem;cursor:pointer;">✕</button>
             <h3 style="font-family:'Orbitron',sans-serif;color:#00ffff;font-size:0.9rem;letter-spacing:2px;margin-bottom:22px;">✏️ EDIT TRACK</h3>
-
-            <!-- Titel -->
-            <div style="margin-bottom:16px;">
-                <label style="display:block;color:#888;font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Titel</label>
-                <input type="text" id="editTitle" value="${track.title || ''}" style="width:100%;background:#1a1a1a;border:1px solid #333;border-radius:4px;color:#fff;font-size:0.9rem;padding:10px 14px;outline:none;box-sizing:border-box;">
-            </div>
-
-            <!-- Typ -->
-            <div style="margin-bottom:16px;">
-                <label style="display:block;color:#888;font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Kategorie</label>
-                <div style="display:flex;flex-wrap:wrap;gap:6px;">${pillsHTML('editType', typeOptions, track.type)}</div>
-            </div>
-
-            <!-- Loop Kategorie -->
-            <div style="margin-bottom:16px;">
-                <label style="display:block;color:#888;font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Loop Typ</label>
-                <div style="display:flex;flex-wrap:wrap;gap:6px;">${pillsHTML('editCategory', catOptions, track.category)}</div>
-            </div>
-
-            <!-- Key -->
-            <div style="margin-bottom:16px;">
-                <label style="display:block;color:#888;font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Key (Tonart)</label>
-                <div style="display:flex;flex-wrap:wrap;gap:6px;">${pillsHTML('editKey', keyOptions, track.key)}</div>
-            </div>
-
-            <!-- BPM Range -->
-            <div style="margin-bottom:16px;">
-                <label style="display:block;color:#888;font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">BPM Range</label>
-                <div style="display:flex;flex-wrap:wrap;gap:6px;">${pillsHTML('editBpmRange', bpmOptions, track.bpmRange)}</div>
-            </div>
-
-            <!-- BPM exakt -->
-            <div style="margin-bottom:16px;">
-                <label style="display:block;color:#888;font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">BPM (exakt)</label>
-                <input type="number" id="editBpm" value="${track.bpm || ''}" min="40" max="300" style="width:100%;background:#1a1a1a;border:1px solid #333;border-radius:4px;color:#fff;font-size:0.9rem;padding:10px 14px;outline:none;box-sizing:border-box;">
-            </div>
-
-            <!-- Genre -->
-            <div style="margin-bottom:16px;">
-                <label style="display:block;color:#888;font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Genre</label>
-                <div style="display:flex;flex-wrap:wrap;gap:6px;">${pillsHTML('editGenre', genreOptions, track.genre)}</div>
-            </div>
-
-            <!-- Audio ersetzen -->
-            <div style="margin-bottom:16px;">
-                <label style="display:block;color:#888;font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">🎵 Audio Datei ersetzen</label>
-                <input type="file" id="editAudioFile" accept="audio/*" style="display:none">
-                <div onclick="document.getElementById('editAudioFile').click()" style="padding:12px;border:2px dashed #ff00ff44;border-radius:8px;text-align:center;cursor:pointer;color:#aaa;font-size:0.85rem;background:rgba(255,0,255,0.04);transition:all 0.2s;" onmouseover="this.style.borderColor='#ff00ff'" onmouseout="this.style.borderColor='#ff00ff44'">
-                    🎵 <span id="editAudioLabel">Neue Audio-Datei auswählen (optional)</span>
-                </div>
-            </div>
-
-            <!-- Cover -->
-            <div style="margin-bottom:20px;">
-                <label style="display:block;color:#888;font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">🖼️ Cover Bild ersetzen</label>
-                <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px;">
-                    <img id="editCoverPreview" src="${track.coverImage || ''}" style="width:65px;height:65px;object-fit:cover;border-radius:8px;border:2px solid #333;" onerror="this.style.display='none'">
-                    <span style="color:#666;font-size:0.8rem;">Aktuelles Cover</span>
-                </div>
-                <input type="file" id="editCoverFile" accept="image/*" style="display:none">
-                <div onclick="document.getElementById('editCoverFile').click()" style="padding:12px;border:2px dashed #00ffff44;border-radius:8px;text-align:center;cursor:pointer;color:#aaa;font-size:0.85rem;background:rgba(0,255,255,0.04);transition:all 0.2s;" onmouseover="this.style.borderColor='#00ffff'" onmouseout="this.style.borderColor='#00ffff44'">
-                    🖼️ <span id="editCoverLabel">Neues Cover auswählen (optional)</span>
-                </div>
-            </div>
-
+            <div style="margin-bottom:16px;"><label style="display:block;color:#888;font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Titel</label><input type="text" id="editTitle" value="${track.title || ''}" style="width:100%;background:#1a1a1a;border:1px solid #333;border-radius:4px;color:#fff;font-size:0.9rem;padding:10px 14px;outline:none;box-sizing:border-box;"></div>
+            <div style="margin-bottom:16px;"><label style="display:block;color:#888;font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Kategorie</label><div style="display:flex;flex-wrap:wrap;gap:6px;">${pillsHTML('editType', typeOptions, track.type)}</div></div>
+            <div style="margin-bottom:16px;"><label style="display:block;color:#888;font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Loop Typ</label><div style="display:flex;flex-wrap:wrap;gap:6px;">${pillsHTML('editCategory', catOptions, track.category)}</div></div>
+            <div style="margin-bottom:16px;"><label style="display:block;color:#888;font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Key (Tonart)</label><div style="display:flex;flex-wrap:wrap;gap:6px;">${pillsHTML('editKey', keyOptions, track.key)}</div></div>
+            <div style="margin-bottom:16px;"><label style="display:block;color:#888;font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">BPM Range</label><div style="display:flex;flex-wrap:wrap;gap:6px;">${pillsHTML('editBpmRange', bpmOptions, track.bpmRange)}</div></div>
+            <div style="margin-bottom:16px;"><label style="display:block;color:#888;font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">BPM (exakt)</label><input type="number" id="editBpm" value="${track.bpm || ''}" min="40" max="300" style="width:100%;background:#1a1a1a;border:1px solid #333;border-radius:4px;color:#fff;font-size:0.9rem;padding:10px 14px;outline:none;box-sizing:border-box;"></div>
+            <div style="margin-bottom:16px;"><label style="display:block;color:#888;font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Genre</label><div style="display:flex;flex-wrap:wrap;gap:6px;">${pillsHTML('editGenre', genreOptions, track.genre)}</div></div>
+            <div style="margin-bottom:16px;"><label style="display:block;color:#888;font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">🎵 Audio Datei ersetzen</label><input type="file" id="editAudioFile" accept="audio/*" style="display:none"><div onclick="document.getElementById('editAudioFile').click()" style="padding:12px;border:2px dashed #ff00ff44;border-radius:8px;text-align:center;cursor:pointer;color:#aaa;font-size:0.85rem;background:rgba(255,0,255,0.04);transition:all 0.2s;" onmouseover="this.style.borderColor='#ff00ff'" onmouseout="this.style.borderColor='#ff00ff44'">🎵 <span id="editAudioLabel">Neue Audio-Datei auswählen (optional)</span></div></div>
+            <div style="margin-bottom:20px;"><label style="display:block;color:#888;font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">🖼️ Cover Bild ersetzen</label><div style="display:flex;align-items:center;gap:14px;margin-bottom:10px;"><img id="editCoverPreview" src="${track.coverImage || ''}" style="width:65px;height:65px;object-fit:cover;border-radius:8px;border:2px solid #333;" onerror="this.style.display='none'"><span style="color:#666;font-size:0.8rem;">Aktuelles Cover</span></div><input type="file" id="editCoverFile" accept="image/*" style="display:none"><div onclick="document.getElementById('editCoverFile').click()" style="padding:12px;border:2px dashed #00ffff44;border-radius:8px;text-align:center;cursor:pointer;color:#aaa;font-size:0.85rem;background:rgba(0,255,255,0.04);transition:all 0.2s;" onmouseover="this.style.borderColor='#00ffff'" onmouseout="this.style.borderColor='#00ffff44'">🖼️ <span id="editCoverLabel">Neues Cover auswählen (optional)</span></div></div>
             <div id="editStatus" style="font-size:0.8rem;color:#888;margin-bottom:14px;min-height:18px;"></div>
-
             <div style="display:flex;gap:10px;">
                 <button id="editSaveBtn" onclick="saveEditModal('${track.id}')" style="flex:1;background:#00ffff;color:#000;border:none;border-radius:6px;font-family:'Courier New',monospace;font-weight:bold;font-size:0.9rem;padding:12px;cursor:pointer;">💾 SPEICHERN</button>
                 <button onclick="document.getElementById('editTrackModal').remove()" style="background:#1a1a1a;border:1px solid #333;color:#888;border-radius:6px;font-family:'Courier New',monospace;font-size:0.9rem;padding:12px 20px;cursor:pointer;">Abbrechen</button>
@@ -415,169 +594,84 @@ function openEditModal(track) {
     `;
 
     document.body.appendChild(modal);
-
-    // Audio Vorschau bei Auswahl
-    document.getElementById('editAudioFile').addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if(file) document.getElementById('editAudioLabel').textContent = '✅ ' + file.name;
-    });
-
-    // Cover Vorschau bei Auswahl
+    document.getElementById('editAudioFile').addEventListener('change', (e) => { const file = e.target.files[0]; if(file) document.getElementById('editAudioLabel').textContent = '✅ ' + file.name; });
     document.getElementById('editCoverFile').addEventListener('change', (e) => {
         const file = e.target.files[0];
         if(file) {
             document.getElementById('editCoverLabel').textContent = '✅ ' + file.name;
             const reader = new FileReader();
-            reader.onload = (ev) => {
-                document.getElementById('editCoverPreview').src = ev.target.result;
-                document.getElementById('editCoverPreview').style.display = 'block';
-            };
+            reader.onload = (ev) => { document.getElementById('editCoverPreview').src = ev.target.result; document.getElementById('editCoverPreview').style.display = 'block'; };
             reader.readAsDataURL(file);
         }
     });
-
-    // Klick außerhalb schließt Modal
-    modal.addEventListener('click', (e) => {
-        if(e.target === modal) modal.remove();
-    });
+    modal.addEventListener('click', (e) => { if(e.target === modal) modal.remove(); });
 }
 
 function editPillSelect(el, groupId) {
-    document.querySelectorAll(`.epill[data-group="${groupId}"]`).forEach(p => {
-        p.style.background = '#1a1a1a';
-        p.style.borderColor = '#333';
-        p.style.color = '#aaa';
-        p.style.fontWeight = 'normal';
-    });
-    el.style.background = '#cc00ff';
-    el.style.borderColor = '#cc00ff';
-    el.style.color = '#000';
-    el.style.fontWeight = 'bold';
+    document.querySelectorAll(`.epill[data-group="${groupId}"]`).forEach(p => { p.style.background = '#1a1a1a'; p.style.borderColor = '#333'; p.style.color = '#aaa'; p.style.fontWeight = 'normal'; });
+    el.style.background = '#cc00ff'; el.style.borderColor = '#cc00ff'; el.style.color = '#000'; el.style.fontWeight = 'bold';
 }
 
 function getEditPill(groupId) {
-    const el = document.querySelector(`.epill[data-group="${groupId}"]`);
-    if(!el) return '';
-    // Find the active one (bold + magenta background)
     const all = document.querySelectorAll(`.epill[data-group="${groupId}"]`);
-    for(const p of all) {
-        if(p.style.color === 'rgb(0, 0, 0)' || p.style.fontWeight === 'bold') return p.dataset.val;
-    }
+    for(const p of all) { if(p.style.color === 'rgb(0, 0, 0)' || p.style.fontWeight === 'bold') return p.dataset.val; }
     return '';
 }
 
 async function saveEditModal(trackId) {
-    const title     = document.getElementById('editTitle').value.trim();
-    const bpm       = document.getElementById('editBpm').value;
+    const title = document.getElementById('editTitle').value.trim();
+    const bpm = document.getElementById('editBpm').value;
     const coverFile = document.getElementById('editCoverFile').files[0];
     const audioFile = document.getElementById('editAudioFile').files[0];
-    const type      = getEditPill('editType');
-    const category  = getEditPill('editCategory');
-    const key       = getEditPill('editKey');
-    const bpmRange  = getEditPill('editBpmRange');
-    const genre     = getEditPill('editGenre');
+    const type = getEditPill('editType');
+    const category = getEditPill('editCategory');
+    const key = getEditPill('editKey');
+    const bpmRange = getEditPill('editBpmRange');
+    const genre = getEditPill('editGenre');
 
     if(!title) { document.getElementById('editStatus').textContent = '❌ Titel darf nicht leer sein!'; return; }
 
     const saveBtn = document.getElementById('editSaveBtn');
-    saveBtn.disabled = true;
-    saveBtn.textContent = '⏳ Speichern...';
+    saveBtn.disabled = true; saveBtn.textContent = '⏳ Speichern...';
 
     const R2_PUBLIC_URL = 'https://pub-5f696ecb59a944058dd6a3ef1b569457.r2.dev';
     const R2_WORKER_URL = 'https://undergroundloops-upload.dj-christern.workers.dev';
 
     try {
-        const updates = {
-            title,
-            genre,
-            type,
-            category,
-            key,
-            bpmRange: bpmRange || null,
-            bpm: bpm ? parseInt(bpm) : null,
-        };
+        const updates = { title, genre, type, category, key, bpmRange: bpmRange || null, bpm: bpm ? parseInt(bpm) : null };
 
-        // Audio hochladen falls neu gewählt
         if(audioFile) {
             document.getElementById('editStatus').textContent = '⏳ Audio wird hochgeladen...';
             const audioExt = audioFile.name.split('.').pop();
             const audioKey = `audio/edit_${trackId}_${Date.now()}.${audioExt}`;
-            const audioResponse = await fetch(`${R2_WORKER_URL}/upload`, {
-                method: 'POST',
-                headers: {
-                    'X-File-Key': audioKey,
-                    'Content-Type': audioFile.type || 'audio/wav',
-                },
-                body: audioFile
-            });
+            const audioResponse = await fetch(`${R2_WORKER_URL}/upload`, { method:'POST', headers:{'X-File-Key':audioKey,'Content-Type':audioFile.type||'audio/wav'}, body:audioFile });
             if(!audioResponse.ok) throw new Error('Audio Upload fehlgeschlagen');
             updates.audioFile = `${R2_PUBLIC_URL}/${audioKey}`;
         }
 
-        // Cover hochladen falls neu gewählt
         if(coverFile) {
             document.getElementById('editStatus').textContent = '⏳ Cover wird hochgeladen...';
-
-            // Komprimieren
             const compressed = await new Promise((resolve, reject) => {
                 const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        let w = img.width, h = img.height;
-                        if(w > 400) { h = Math.round(h * 400 / w); w = 400; }
-                        canvas.width = w; canvas.height = h;
-                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                        resolve(canvas.toDataURL('image/jpeg', 0.85));
-                    };
-                    img.onerror = reject;
-                    img.src = e.target.result;
-                };
-                reader.onerror = reject;
-                reader.readAsDataURL(coverFile);
+                reader.onload = (e) => { const img = new Image(); img.onload = () => { const canvas = document.createElement('canvas'); let w=img.width,h=img.height; if(w>400){h=Math.round(h*400/w);w=400;} canvas.width=w;canvas.height=h;canvas.getContext('2d').drawImage(img,0,0,w,h);resolve(canvas.toDataURL('image/jpeg',0.85)); }; img.onerror=reject; img.src=e.target.result; };
+                reader.onerror=reject; reader.readAsDataURL(coverFile);
             });
-
             const coverBlob = await (await fetch(compressed)).blob();
             const coverKey = `covers/edit_${trackId}_${Date.now()}.jpg`;
-
-            const response = await fetch(`${R2_WORKER_URL}/upload`, {
-                method: 'POST',
-                headers: {
-                    'X-File-Key': coverKey,
-                    'Content-Type': 'image/jpeg',
-                },
-                body: coverBlob
-            });
-
+            const response = await fetch(`${R2_WORKER_URL}/upload`, { method:'POST', headers:{'X-File-Key':coverKey,'Content-Type':'image/jpeg'}, body:coverBlob });
             if(!response.ok) throw new Error('Cover Upload fehlgeschlagen');
             updates.coverImage = `${R2_PUBLIC_URL}/${coverKey}`;
         }
 
-        // Firebase updaten
         await db.collection('tracks').doc(trackId).update(updates);
-
         document.getElementById('editStatus').style.color = '#00ffcc';
         document.getElementById('editStatus').textContent = '✅ Gespeichert!';
-
-        // Lokale Daten updaten
-        if(typeof allTracks !== 'undefined') {
-            const idx = allTracks.findIndex(t => t.id === trackId);
-            if(idx !== -1) Object.assign(allTracks[idx], updates);
-        }
-
-        setTimeout(() => {
-            document.getElementById('editTrackModal').remove();
-            if(typeof loadUserUploads === 'function' && typeof currentUser !== 'undefined' && currentUser) {
-                loadUserUploads(currentUser.uid);
-            }
-        }, 800);
-
+        if(typeof allTracks !== 'undefined') { const idx = allTracks.findIndex(t => t.id === trackId); if(idx !== -1) Object.assign(allTracks[idx], updates); }
+        setTimeout(() => { document.getElementById('editTrackModal').remove(); if(typeof loadUserUploads === 'function' && currentUser) loadUserUploads(currentUser.uid); }, 800);
     } catch(err) {
         document.getElementById('editStatus').style.color = '#ff4444';
         document.getElementById('editStatus').textContent = '❌ Fehler: ' + err.message;
-        saveBtn.disabled = false;
-        saveBtn.textContent = '💾 SPEICHERN';
+        saveBtn.disabled = false; saveBtn.textContent = '💾 SPEICHERN';
     }
 }
 
@@ -590,18 +684,18 @@ async function loadUserLikedTracks() {
     try {
         const likesSnap = await db.collection('likes').where('userId', '==', currentProfileUserId).get();
         const container = document.getElementById('userLikedTracks');
-        if(likesSnap.empty) {
-            container.innerHTML = '<p style="color:#666;text-align:center;padding:40px;">No liked tracks yet</p>';
-            return;
-        }
+        if(likesSnap.empty) { container.innerHTML = '<p style="color:#666;text-align:center;padding:40px;">No liked tracks yet</p>'; return; }
         container.innerHTML = '';
         for(const likeDoc of likesSnap.docs) {
             const trackId = likeDoc.data().trackId;
             const trackDoc = await db.collection('tracks').doc(trackId).get();
             if(trackDoc.exists) {
                 const track = { id: trackDoc.id, ...trackDoc.data() };
-                const trackCard = createTrackCard(track);
-                container.appendChild(trackCard);
+                const div = document.createElement('div');
+                div.style.cssText = 'padding:12px;border:1px solid #ff00ff33;border-radius:8px;margin-bottom:8px;display:flex;align-items:center;gap:10px;cursor:pointer;color:#fff;';
+                div.onclick = () => openPlayerModal(track);
+                div.innerHTML = `<img src="${track.coverImage||''}" style="width:40px;height:40px;border-radius:4px;object-fit:cover;flex-shrink:0;" onerror="this.style.display='none'"><div><div style="font-weight:bold;font-size:0.85rem;">${track.title}</div><div style="color:#888;font-size:0.75rem;">${track.artist||''} • ${track.genre||''}</div></div>`;
+                container.appendChild(div);
             }
         }
     } catch(error) { console.error('Error loading liked tracks:', error); }
@@ -617,6 +711,7 @@ function setupProfileTabs() {
             btn.classList.add('active');
             if(tab === 'uploads') document.getElementById('uploadsTab').classList.remove('hidden');
             else if(tab === 'liked') { document.getElementById('likedTab').classList.remove('hidden'); loadUserLikedTracks(); }
+            else if(tab === 'playlists') { document.getElementById('playlistsTab').classList.remove('hidden'); loadUserPlaylists(currentProfileUserId); }
             else if(tab === 'settings') document.getElementById('settingsTab').classList.remove('hidden');
         };
     });
@@ -637,9 +732,8 @@ async function showFollowing() {
 async function showFollowModal(title, snapshot, userIdField) {
     document.getElementById('followModalTitle').textContent = title;
     const content = document.getElementById('followModalContent');
-    if(snapshot.empty) {
-        content.innerHTML = '<p style="color:#666;text-align:center;padding:20px;">No users yet</p>';
-    } else {
+    if(snapshot.empty) { content.innerHTML = '<p style="color:#666;text-align:center;padding:20px;">No users yet</p>'; }
+    else {
         content.innerHTML = '';
         for(const doc of snapshot.docs) {
             const userId = doc.data()[userIdField];
@@ -675,15 +769,8 @@ async function loadConversations() {
         const sentSnap = await db.collection('messages').where('senderId', '==', currentUser.uid).get();
         const receivedSnap = await db.collection('messages').where('receiverId', '==', currentUser.uid).get();
         const conversations = new Map();
-        sentSnap.forEach(doc => {
-            const msg = doc.data();
-            if(!conversations.has(msg.receiverId)) conversations.set(msg.receiverId, { userId: msg.receiverId, lastMessage: msg.text, timestamp: msg.createdAt });
-        });
-        receivedSnap.forEach(doc => {
-            const msg = doc.data();
-            if(!conversations.has(msg.senderId) || msg.createdAt > conversations.get(msg.senderId).timestamp)
-                conversations.set(msg.senderId, { userId: msg.senderId, lastMessage: msg.text, timestamp: msg.createdAt, unread: !msg.read });
-        });
+        sentSnap.forEach(doc => { const msg = doc.data(); if(!conversations.has(msg.receiverId)) conversations.set(msg.receiverId, { userId: msg.receiverId, lastMessage: msg.text, timestamp: msg.createdAt }); });
+        receivedSnap.forEach(doc => { const msg = doc.data(); if(!conversations.has(msg.senderId) || msg.createdAt > conversations.get(msg.senderId).timestamp) conversations.set(msg.senderId, { userId: msg.senderId, lastMessage: msg.text, timestamp: msg.createdAt, unread: !msg.read }); });
         const container = document.getElementById('conversationsList');
         if(conversations.size === 0) { container.innerHTML = '<p style="color:#666;text-align:center;padding:20px;">No conversations yet</p>'; return; }
         container.innerHTML = '';
@@ -708,20 +795,9 @@ async function openConversation(userId) {
     const userData = userDoc.data();
     const messages = await loadMessages(userId);
     const messageView = document.getElementById('messageView');
-    messageView.innerHTML = `
-        <div class="messages-header">${userData.username}</div>
-        <div class="messages-body" id="messagesBody"></div>
-        <div class="message-input-area">
-            <textarea id="messageInput" placeholder="Type a message..."></textarea>
-            <button class="send-message-btn" onclick="sendMessage()">Send</button>
-        </div>`;
+    messageView.innerHTML = `<div class="messages-header">${userData.username}</div><div class="messages-body" id="messagesBody"></div><div class="message-input-area"><textarea id="messageInput" placeholder="Type a message..."></textarea><button class="send-message-btn" onclick="sendMessage()">Send</button></div>`;
     const messagesBody = document.getElementById('messagesBody');
-    messages.forEach(msg => {
-        const bubble = document.createElement('div');
-        bubble.className = `message-bubble ${msg.senderId === currentUser.uid ? 'sent' : 'received'}`;
-        bubble.innerHTML = `<div>${msg.text}</div><div class="message-time">${new Date(msg.createdAt).toLocaleTimeString()}</div>`;
-        messagesBody.appendChild(bubble);
-    });
+    messages.forEach(msg => { const bubble = document.createElement('div'); bubble.className = `message-bubble ${msg.senderId === currentUser.uid ? 'sent' : 'received'}`; bubble.innerHTML = `<div>${msg.text}</div><div class="message-time">${new Date(msg.createdAt).toLocaleTimeString()}</div>`; messagesBody.appendChild(bubble); });
     messagesBody.scrollTop = messagesBody.scrollHeight;
     await markMessagesAsRead(userId);
 }
