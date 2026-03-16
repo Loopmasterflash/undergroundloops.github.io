@@ -409,12 +409,12 @@ async function playPlaylist(playlistId) {
         if(!plDoc.exists) return;
         const trackIds = plDoc.data().trackIds || [];
         if(trackIds.length === 0) { alert('Playlist ist leer!'); return; }
-
-        // Ersten Track laden und abspielen
-        const firstDoc = await db.collection('tracks').doc(trackIds[0]).get();
-        if(firstDoc.exists) {
-            openPlayerModal({ id: firstDoc.id, ...firstDoc.data() });
+        currentPlaylistTracks = [];
+        for(const tid of trackIds) {
+            const tDoc = await db.collection('tracks').doc(tid).get();
+            if(tDoc.exists) currentPlaylistTracks.push({ id: tDoc.id, ...tDoc.data() });
         }
+        playPlaylistTrack(0);
     } catch(e) { alert('❌ Fehler: ' + e.message); }
 }
 
@@ -887,4 +887,26 @@ if(typeof firebase !== 'undefined') {
             });
         }
     }, 2000);
+}
+
+// ============================================
+// PLAYLIST AUTOPLAY
+// ============================================
+
+let currentPlaylistTracks = [];
+let currentPlaylistIndex = 0;
+
+function playPlaylistTrack(index) {
+    if(index >= currentPlaylistTracks.length) {
+        currentPlaylistTracks = [];
+        currentPlaylistIndex = 0;
+        return;
+    }
+    currentPlaylistIndex = index;
+    openPlayerModal(currentPlaylistTracks[index]);
+    setTimeout(() => {
+        if(currentAudio) {
+            currentAudio.onended = () => playPlaylistTrack(index + 1);
+        }
+    }, 800);
 }
