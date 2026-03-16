@@ -382,8 +382,156 @@ function playGridTrack(trackId, audioFile) {
 // PLAYER MODAL
 // ============================================
 
+// ============================================
+// MINI PLAYER BAR
+// ============================================
+
+let currentModalTrack = null;
+
+function createMiniPlayer() {
+    if(document.getElementById('miniPlayerBar')) return;
+    const bar = document.createElement('div');
+    bar.id = 'miniPlayerBar';
+    bar.style.cssText = `
+        position:fixed;
+        bottom:0;left:0;right:0;
+        height:64px;
+        background:rgba(0,0,0,0.95);
+        border-top:2px solid #ff00ff;
+        backdrop-filter:blur(20px);
+        z-index:9998;
+        display:none;
+        align-items:center;
+        padding:0 20px;
+        gap:16px;
+        box-shadow:0 -4px 30px rgba(255,0,255,0.3);
+    `;
+    bar.innerHTML = `
+        <!-- Cover -->
+        <img id="miniCover" src="" style="width:42px;height:42px;border-radius:6px;object-fit:cover;border:1px solid #ff00ff;flex-shrink:0;">
+
+        <!-- Title + Artist -->
+        <div style="flex:1;min-width:0;cursor:pointer;" onclick="maximizePlayer()">
+            <div id="miniTitle" style="color:#fff;font-size:0.85rem;font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+            <div id="miniArtist" style="color:#00ffff;font-size:0.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div style="flex:2;min-width:0;cursor:pointer;" onclick="miniSeek(event, this)">
+            <div style="height:4px;background:rgba(255,255,255,0.15);border-radius:2px;position:relative;">
+                <div id="miniProgress" style="height:100%;background:#ff00ff;border-radius:2px;width:0%;transition:width 0.3s;"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:4px;">
+                <span id="miniCurrentTime" style="color:#888;font-size:0.65rem;">0:00</span>
+                <span id="miniTotalTime" style="color:#888;font-size:0.65rem;">0:00</span>
+            </div>
+        </div>
+
+        <!-- Play/Pause -->
+        <button id="miniPlayBtn" onclick="miniTogglePlay()" style="
+            width:38px;height:38px;border-radius:50%;
+            background:linear-gradient(135deg,#ff00ff,#00ffff);
+            border:none;color:#000;font-size:1rem;
+            cursor:pointer;flex-shrink:0;
+        ">⏸</button>
+
+        <!-- Volume -->
+        <input type="range" id="miniVolume" min="0" max="100" value="80"
+               oninput="setVolume(this.value)"
+               style="width:80px;accent-color:#ff00ff;flex-shrink:0;">
+
+        <!-- Maximieren -->
+        <button onclick="maximizePlayer()" style="
+            background:rgba(255,0,255,0.2);border:1px solid #ff00ff;
+            color:#ff00ff;border-radius:6px;padding:6px 10px;
+            cursor:pointer;font-size:0.75rem;flex-shrink:0;
+        ">⬆ Öffnen</button>
+
+        <!-- Schließen -->
+        <button onclick="closeMiniPlayer()" style="
+            background:transparent;border:none;
+            color:#555;font-size:1.2rem;cursor:pointer;flex-shrink:0;
+        ">✕</button>
+    `;
+    document.body.appendChild(bar);
+}
+
+function showMiniPlayer() {
+    createMiniPlayer();
+    if(!currentModalTrack) return;
+    document.getElementById('miniCover').src = currentModalTrack.coverImage || '';
+    document.getElementById('miniTitle').textContent = currentModalTrack.title || '';
+    document.getElementById('miniArtist').textContent = currentModalTrack.artist || '';
+    document.getElementById('miniPlayerBar').style.display = 'flex';
+}
+
+function hideMiniPlayer() {
+    const bar = document.getElementById('miniPlayerBar');
+    if(bar) bar.style.display = 'none';
+}
+
+function closeMiniPlayer() {
+    hideMiniPlayer();
+    if(currentAudio) { currentAudio.pause(); currentAudio = null; }
+}
+
+function miniTogglePlay() {
+    if(!currentAudio) return;
+    if(currentAudio.paused) {
+        currentAudio.play();
+        document.getElementById('miniPlayBtn').textContent = '⏸';
+        document.getElementById('modalPlayBtn') && (document.getElementById('modalPlayBtn').textContent = '⏸');
+    } else {
+        currentAudio.pause();
+        document.getElementById('miniPlayBtn').textContent = '▶';
+        document.getElementById('modalPlayBtn') && (document.getElementById('modalPlayBtn').textContent = '▶');
+    }
+}
+
+function miniSeek(e, el) {
+    if(!currentAudio) return;
+    const rect = el.getBoundingClientRect();
+    const pct = (e.clientX - rect.left) / rect.offsetWidth;
+    const t = currentAudio.duration * pct;
+    if(!isNaN(t)) currentAudio.currentTime = t;
+}
+
+function updateMiniPlayer() {
+    if(!currentAudio) return;
+    const p = currentAudio.currentTime / currentAudio.duration * 100;
+    const prog = document.getElementById('miniProgress');
+    if(prog) prog.style.width = (p || 0) + '%';
+    const cur = document.getElementById('miniCurrentTime');
+    if(cur) cur.textContent = formatTime(currentAudio.currentTime);
+    const tot = document.getElementById('miniTotalTime');
+    if(tot) tot.textContent = formatTime(currentAudio.duration);
+    // Sync volume
+    const miniVol = document.getElementById('miniVolume');
+    const modalVol = document.getElementById('modalVolume');
+    if(miniVol && modalVol) miniVol.value = modalVol.value;
+}
+
+function maximizePlayer() {
+    hideMiniPlayer();
+    if(currentModalTrack) {
+        const modal = document.getElementById('playerModal');
+        if(modal) modal.style.display = 'flex';
+    }
+}
+
+function minimizePlayer() {
+    document.getElementById('playerModal').style.display = 'none';
+    showMiniPlayer();
+}
+
+// ============================================
+// PLAYER MODAL
+// ============================================
+
 function openPlayerModal(track) {
     if(!track) return;
+    currentModalTrack = track;
+    hideMiniPlayer();
     const modal = document.getElementById('playerModal');
     modal.style.display = 'flex';
     modal.style.position = 'fixed';
@@ -397,6 +545,28 @@ function openPlayerModal(track) {
         (track.bpm ? ' • ' + track.bpm + ' BPM' : '');
     document.getElementById('modalDownloadBtn').href = track.audioFile;
     document.getElementById('modalLikeCount').textContent = track.likes || 0;
+
+    // Minimieren Button hinzufügen falls nicht vorhanden
+    if(!document.getElementById('minimizeBtn')) {
+        const closeBtn = document.querySelector('#playerModal button[onclick="closePlayerModal()"]');
+        if(closeBtn) {
+            const minBtn = document.createElement('button');
+            minBtn.id = 'minimizeBtn';
+            minBtn.onclick = minimizePlayer;
+            minBtn.textContent = '—';
+            minBtn.title = 'Minimieren';
+            minBtn.style.cssText = `
+                position:absolute;top:15px;right:55px;
+                background:rgba(255,0,255,0.2);
+                border:1px solid #ff00ff;
+                color:#ff00ff;font-size:1rem;
+                cursor:pointer;border-radius:6px;
+                padding:2px 10px;
+            `;
+            closeBtn.parentNode.insertBefore(minBtn, closeBtn);
+        }
+    }
+
     if(currentAudio && currentModalTrackId !== track.id) currentAudio.pause();
     currentModalTrackId = track.id;
     currentTrackId = track.id;
@@ -409,8 +579,13 @@ function openPlayerModal(track) {
     currentAudio.addEventListener('timeupdate', () => {
         document.getElementById('modalCurrentTime').textContent = formatTime(currentAudio.currentTime);
         updateModalWaveform();
+        updateMiniPlayer();
     });
-    currentAudio.addEventListener('ended', () => { document.getElementById('modalPlayBtn').textContent = '▶'; });
+    currentAudio.addEventListener('ended', () => {
+        document.getElementById('modalPlayBtn').textContent = '▶';
+        const miniBtn = document.getElementById('miniPlayBtn');
+        if(miniBtn) miniBtn.textContent = '▶';
+    });
     currentAudio.play();
     document.getElementById('modalPlayBtn').textContent = '⏸';
     if(typeof incrementPlayCount === 'function') incrementPlayCount(track.id);
@@ -425,14 +600,24 @@ function closePlayerModal(event) {
     if(event && event.target.id !== 'playerModal') return;
     document.getElementById('playerModal').style.display = 'none';
     if(currentAudio) { currentAudio.pause(); currentAudio = null; }
+    hideMiniPlayer();
     document.getElementById('modalWaveform').innerHTML = '';
     document.getElementById('modalPlayBtn').textContent = '▶';
 }
 
 function modalTogglePlay() {
     if(!currentAudio) return;
-    if(currentAudio.paused) { currentAudio.play(); document.getElementById('modalPlayBtn').textContent = '⏸'; }
-    else { currentAudio.pause(); document.getElementById('modalPlayBtn').textContent = '▶'; }
+    if(currentAudio.paused) {
+        currentAudio.play();
+        document.getElementById('modalPlayBtn').textContent = '⏸';
+        const miniBtn = document.getElementById('miniPlayBtn');
+        if(miniBtn) miniBtn.textContent = '⏸';
+    } else {
+        currentAudio.pause();
+        document.getElementById('modalPlayBtn').textContent = '▶';
+        const miniBtn = document.getElementById('miniPlayBtn');
+        if(miniBtn) miniBtn.textContent = '▶';
+    }
 }
 
 async function modalToggleLike() {
