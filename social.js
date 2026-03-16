@@ -383,9 +383,18 @@ function openEditModal(track) {
                 <div style="display:flex;flex-wrap:wrap;gap:6px;">${pillsHTML('editGenre', genreOptions, track.genre)}</div>
             </div>
 
+            <!-- Audio ersetzen -->
+            <div style="margin-bottom:16px;">
+                <label style="display:block;color:#888;font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">🎵 Audio Datei ersetzen</label>
+                <input type="file" id="editAudioFile" accept="audio/*" style="display:none">
+                <div onclick="document.getElementById('editAudioFile').click()" style="padding:12px;border:2px dashed #ff00ff44;border-radius:8px;text-align:center;cursor:pointer;color:#aaa;font-size:0.85rem;background:rgba(255,0,255,0.04);transition:all 0.2s;" onmouseover="this.style.borderColor='#ff00ff'" onmouseout="this.style.borderColor='#ff00ff44'">
+                    🎵 <span id="editAudioLabel">Neue Audio-Datei auswählen (optional)</span>
+                </div>
+            </div>
+
             <!-- Cover -->
             <div style="margin-bottom:20px;">
-                <label style="display:block;color:#888;font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Cover Bild ersetzen</label>
+                <label style="display:block;color:#888;font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">🖼️ Cover Bild ersetzen</label>
                 <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px;">
                     <img id="editCoverPreview" src="${track.coverImage || ''}" style="width:65px;height:65px;object-fit:cover;border-radius:8px;border:2px solid #333;" onerror="this.style.display='none'">
                     <span style="color:#666;font-size:0.8rem;">Aktuelles Cover</span>
@@ -406,6 +415,12 @@ function openEditModal(track) {
     `;
 
     document.body.appendChild(modal);
+
+    // Audio Vorschau bei Auswahl
+    document.getElementById('editAudioFile').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if(file) document.getElementById('editAudioLabel').textContent = '✅ ' + file.name;
+    });
 
     // Cover Vorschau bei Auswahl
     document.getElementById('editCoverFile').addEventListener('change', (e) => {
@@ -455,6 +470,7 @@ async function saveEditModal(trackId) {
     const title     = document.getElementById('editTitle').value.trim();
     const bpm       = document.getElementById('editBpm').value;
     const coverFile = document.getElementById('editCoverFile').files[0];
+    const audioFile = document.getElementById('editAudioFile').files[0];
     const type      = getEditPill('editType');
     const category  = getEditPill('editCategory');
     const key       = getEditPill('editKey');
@@ -480,6 +496,23 @@ async function saveEditModal(trackId) {
             bpmRange: bpmRange || null,
             bpm: bpm ? parseInt(bpm) : null,
         };
+
+        // Audio hochladen falls neu gewählt
+        if(audioFile) {
+            document.getElementById('editStatus').textContent = '⏳ Audio wird hochgeladen...';
+            const audioExt = audioFile.name.split('.').pop();
+            const audioKey = `audio/edit_${trackId}_${Date.now()}.${audioExt}`;
+            const audioResponse = await fetch(`${R2_WORKER_URL}/upload`, {
+                method: 'POST',
+                headers: {
+                    'X-File-Key': audioKey,
+                    'Content-Type': audioFile.type || 'audio/wav',
+                },
+                body: audioFile
+            });
+            if(!audioResponse.ok) throw new Error('Audio Upload fehlgeschlagen');
+            updates.audioFile = `${R2_PUBLIC_URL}/${audioKey}`;
+        }
 
         // Cover hochladen falls neu gewählt
         if(coverFile) {
