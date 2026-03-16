@@ -436,9 +436,7 @@ function createMiniPlayer() {
         ">⏸</button>
 
         <!-- Volume -->
-        <input type="range" id="miniVolume" min="0" max="100" value="80"
-               oninput="setVolume(this.value)"
-               style="width:80px;accent-color:#ff00ff;flex-shrink:0;">
+        <div style="display:flex;align-items:center;gap:5px;flex-shrink:0;"><span style="color:#aaa;font-size:0.85rem;">🔊</span><input type="range" id="miniVolume" min="0" max="100" value="80" oninput="setVolume(this.value)" style="width:70px;accent-color:#ff00ff;cursor:pointer;touch-action:none;"></div>
 
         <!-- Maximieren -->
         <button onclick="maximizePlayer()" style="
