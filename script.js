@@ -387,6 +387,7 @@ function playGridTrack(trackId, audioFile) {
 // ============================================
 
 let currentModalTrack = null;
+let currentModalTrackId = null;
 
 function createMiniPlayer() {
     if(document.getElementById('miniPlayerBar')) return;
