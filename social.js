@@ -978,12 +978,19 @@ async function loadSocialLinks(userId) {
                 <div id="socialLinksList">
                     ${links.length === 0
                         ? '<p style="color:#666;text-align:center;padding:30px;">No social links yet</p>'
-                        : links.map((l, i) => `
-                            <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border:1px solid #ff00ff33;border-radius:8px;margin-bottom:8px;background:rgba(0,0,0,0.3);">
-                                <a href="${l.url}" target="_blank" rel="noopener" style="flex:1;color:#00ffff;text-decoration:none;font-size:0.9rem;font-weight:bold;" onmouseover="this.style.color='#ff00ff'" onmouseout="this.style.color='#00ffff'">${l.name}</a>
-                                <span style="color:#666;font-size:0.78rem;flex:2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${l.url}</span>
-                                ${isOwn ? `<button onclick="removeSocialLink(${i})" style="background:rgba(255,0,0,0.2);border:1px solid #ff4444;color:#ff4444;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:0.75rem;flex-shrink:0;">✕</button>` : ''}
-                            </div>`).join('')
+                        : `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:16px;">
+                            ${links.map((l, i) => `
+                                <div style="position:relative;">
+                                    <a href="${l.url}" target="_blank" rel="noopener" style="text-decoration:none;">
+                                        <div style="background:rgba(0,0,0,0.5);border:1px solid #ff00ff44;border-radius:12px;padding:24px 16px;text-align:center;cursor:pointer;transition:all 0.3s;"
+                                             onmouseover="this.style.borderColor='#ff00ff';this.style.boxShadow='0 0 20px rgba(255,0,255,0.3)'"
+                                             onmouseout="this.style.borderColor='#ff00ff44';this.style.boxShadow='none'">
+                                            <div style="font-family:'Orbitron',sans-serif;color:#ff00ff;font-size:0.85rem;font-weight:bold;letter-spacing:1px;">${l.name}</div>
+                                        </div>
+                                    </a>
+                                    ${isOwn ? `<button onclick="removeSocialLink(${i})" style="position:absolute;top:-6px;right:-6px;background:#ff4444;border:none;color:#fff;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:0.65rem;display:flex;align-items:center;justify-content:center;line-height:1;">✕</button>` : ''}
+                                </div>`).join('')}
+                           </div>`
                     }
                 </div>
             </div>
