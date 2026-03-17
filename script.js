@@ -32,14 +32,7 @@ function initNavigation() {
             currentGenre = 'all';
             if(currentPage === 'blog') { showBlogPage(); }
             else if(currentPage === 'forum') { showForumPage(); }
-            else {
-                showMainPage();
-                if(allTracks.length === 0) {
-                    loadTracksFromFirestore();
-                } else {
-                    filterTracks();
-                }
-            }
+            else { showMainPage(); filterTracks(); }
         });
     });
 }
@@ -755,6 +748,7 @@ function showMainPage() {
     document.getElementById('profileContainer')?.classList.add('hidden');
     document.getElementById('messagesContainer')?.classList.add('hidden');
     document.getElementById('uploadContainer')?.classList.add('hidden');
+    document.getElementById('mainContainer')?.classList.remove('hidden');
 }
 
 function toggleNewPostForm() {
