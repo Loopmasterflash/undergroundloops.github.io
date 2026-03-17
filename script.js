@@ -526,6 +526,48 @@ function minimizePlayer() {
 
 function openPlayerModal(track) {
     if(!track) return;
+
+    // ✅ FIX: Wenn MiniPlayer läuft und neuer Track angeklickt wird
+    // nur Modal öffnen ohne den laufenden Track zu unterbrechen
+    const miniBar = document.getElementById('miniPlayerBar');
+    const miniIsPlaying = miniBar && miniBar.style.display === 'flex' && currentAudio && !currentAudio.paused;
+
+    if(miniIsPlaying && currentModalTrack && track.id !== currentModalTrack.id) {
+        // Anderen Track angeklickt während MiniPlayer läuft
+        // Modal öffnen aber aktuellen Track NICHT stoppen
+        currentModalTrack = track;
+        const modal = document.getElementById('playerModal');
+        modal.style.display = 'flex';
+        modal.style.position = 'fixed';
+        modal.style.zIndex = '9999';
+        document.getElementById('modalCover').src = track.coverImage || '';
+        document.getElementById('modalTitle').textContent = track.title;
+        const artistEl = document.getElementById('modalArtist');
+        artistEl.textContent = track.artist || '';
+        artistEl.style.cursor = 'pointer';
+        artistEl.style.textDecoration = 'underline';
+        artistEl.onclick = () => {
+            document.getElementById('playerModal').style.display = 'none';
+            if(typeof openProfile === 'function') openProfile(track.userId);
+        };
+        document.getElementById('modalMeta').textContent =
+            (track.genre ? track.genre.toUpperCase() : '') +
+            (track.type ? ' • ' + track.type.toUpperCase() : '') +
+            (track.bpm ? ' • ' + track.bpm + ' BPM' : '');
+        document.getElementById('modalDownloadBtn').href = track.audioFile;
+        document.getElementById('modalLikeCount').textContent = track.likes || 0;
+        document.getElementById('modalPlayBtn').textContent = '▶';
+        document.getElementById('modalWaveform').innerHTML = '';
+        document.getElementById('modalCurrentTime').textContent = '0:00';
+        document.getElementById('modalTotalTime').textContent = '0:00';
+        if(typeof checkIfLiked === 'function') {
+            checkIfLiked(track.id).then(isLiked => {
+                document.getElementById('modalLikeBtn').innerHTML = (isLiked ? '❤️' : '🤍') + ' <span id="modalLikeCount">' + (track.likes || 0) + '</span>';
+            });
+        }
+        return; // Musik NICHT starten!
+    }
+
     currentModalTrack = track;
     hideMiniPlayer();
     const modal = document.getElementById('playerModal');
