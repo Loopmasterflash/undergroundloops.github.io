@@ -497,6 +497,11 @@ function miniSeek(e, el) {
 
 function updateMiniPlayer() {
     if(!currentAudio) return;
+    // ✅ MiniPlayer Bar immer sichtbar halten wenn Musik läuft
+    const miniBar = document.getElementById('miniPlayerBar');
+    if(miniBar && miniBar.style.display !== 'flex' && currentModalTrack) {
+        showMiniPlayer();
+    }
     const p = currentAudio.currentTime / currentAudio.duration * 100;
     const prog = document.getElementById('miniProgress');
     if(prog) prog.style.width = (p || 0) + '%';
@@ -504,7 +509,6 @@ function updateMiniPlayer() {
     if(cur) cur.textContent = formatTime(currentAudio.currentTime);
     const tot = document.getElementById('miniTotalTime');
     if(tot) tot.textContent = formatTime(currentAudio.duration);
-    // Sync volume
 }
 
 function maximizePlayer() {
