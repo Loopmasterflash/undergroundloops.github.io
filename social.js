@@ -904,9 +904,8 @@ async function loadUserStats(userId) {
         const playlistsSnap = await db.collection('playlists').where('userId', '==', userId).get();
         const memberSince = userData.createdAt ? new Date(userData.createdAt).toLocaleDateString('de-DE', {day:'2-digit',month:'long',year:'numeric'}) : '–';
 
-        function statCard(icon, value, label, color) {
+        function statCard(value, label, color) {
             return `<div style="background:rgba(0,0,0,0.5);border:1px solid ${color}44;border-radius:12px;padding:20px;text-align:center;transition:all 0.3s;" onmouseover="this.style.borderColor='${color}';this.style.boxShadow='0 0 20px ${color}33'" onmouseout="this.style.borderColor='${color}44';this.style.boxShadow='none'">
-                <div style="font-size:1.8rem;margin-bottom:8px;">${icon}</div>
                 <div style="font-family:'Orbitron',sans-serif;color:${color};font-size:1.6rem;font-weight:bold;text-shadow:0 0 15px ${color}66;">${value.toLocaleString('de-DE')}</div>
                 <div style="color:#888;font-size:0.75rem;margin-top:6px;font-family:'Orbitron',sans-serif;letter-spacing:1px;">${label}</div>
             </div>`;
@@ -914,26 +913,23 @@ async function loadUserStats(userId) {
 
         container.innerHTML = `
             <div style="padding:10px 0 20px 0;">
-                <h3 style="font-family:'Orbitron',sans-serif;color:#ff00ff;font-size:1rem;letter-spacing:3px;margin-bottom:25px;text-shadow:0 0 15px rgba(255,0,255,0.5);border-bottom:1px solid #ff00ff33;padding-bottom:12px;">📊 STATISTIKEN</h3>
+                <h3 style="font-family:'Orbitron',sans-serif;color:#ff00ff;font-size:1rem;letter-spacing:3px;margin-bottom:25px;text-shadow:0 0 15px rgba(255,0,255,0.5);border-bottom:1px solid #ff00ff33;padding-bottom:12px;">📊 STATISTICS</h3>
 
                 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:16px;margin-bottom:30px;">
-                    ${statCard('🎵', totalTracks, 'UPLOADS', '#ff00ff')}
-                    ${statCard('⬇️', totalDownloads, 'DOWNLOADS', '#00ffff')}
-                    ${statCard('❤️', totalLikes, 'LIKES ERHALTEN', '#ff4488')}
-                    ${statCard('▶️', totalPlays, 'PLAYS', '#ff8800')}
-                    ${statCard('👥', followersSnap.size, 'FOLLOWERS', '#00ff88')}
-                    ${statCard('➡️', followingSnap.size, 'FOLLOWING', '#8800ff')}
-                    ${statCard('💬', commentsSnap.size, 'KOMMENTARE', '#ffff00')}
-                    ${statCard('🎵', playlistsSnap.size, 'PLAYLISTS', '#ff00aa')}
+                    ${statCard(totalTracks, 'UPLOADS', '#ff00ff')}
+                    ${statCard(totalDownloads, 'DOWNLOADS', '#00ffff')}
+                    ${statCard(totalLikes, 'LIKES', '#ff4488')}
+                    ${statCard(totalPlays, 'PLAYS', '#ff8800')}
+                    ${statCard(followersSnap.size, 'FOLLOWERS', '#00ff88')}
+                    ${statCard(followingSnap.size, 'FOLLOWING', '#8800ff')}
+                    ${statCard(commentsSnap.size, 'COMMENTS', '#ffff00')}
+                    ${statCard(playlistsSnap.size, 'PLAYLISTS', '#ff00aa')}
                 </div>
 
                 <div style="background:rgba(0,0,0,0.4);border:1px solid #ff00ff22;border-radius:12px;padding:20px;">
-                    <div style="display:flex;align-items:center;gap:12px;">
-                        <span style="font-size:1.5rem;">📅</span>
-                        <div>
-                            <div style="color:#888;font-size:0.72rem;font-family:'Orbitron',sans-serif;letter-spacing:1px;margin-bottom:4px;">MITGLIED SEIT</div>
-                            <div style="color:#fff;font-size:1rem;font-weight:bold;">${memberSince}</div>
-                        </div>
+                    <div>
+                        <div style="color:#888;font-size:0.72rem;font-family:'Orbitron',sans-serif;letter-spacing:1px;margin-bottom:4px;">MEMBER SINCE</div>
+                        <div style="color:#fff;font-size:1rem;font-weight:bold;">${memberSince}</div>
                     </div>
                 </div>
             </div>
