@@ -534,7 +534,15 @@ function openPlayerModal(track) {
     modal.style.zIndex = '9999';
     document.getElementById('modalCover').src = track.coverImage || '';
     document.getElementById('modalTitle').textContent = track.title;
-    document.getElementById('modalArtist').textContent = track.artist || '';
+    const artistEl = document.getElementById('modalArtist');
+    artistEl.textContent = track.artist || '';
+    artistEl.style.cursor = 'pointer';
+    artistEl.style.textDecoration = 'underline';
+    artistEl.onclick = () => {
+        document.getElementById('playerModal').style.display = 'none';
+        if(currentAudio) { currentAudio.pause(); currentAudio = null; }
+        if(typeof openProfile === 'function') openProfile(track.userId);
+    };
     document.getElementById('modalMeta').textContent =
         (track.genre ? track.genre.toUpperCase() : '') +
         (track.type ? ' • ' + track.type.toUpperCase() : '') +
