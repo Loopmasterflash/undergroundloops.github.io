@@ -33,10 +33,13 @@ function initNavigation() {
             if(currentPage === 'blog') { showBlogPage(); }
             else if(currentPage === 'forum') { showForumPage(); }
             else {
-                // ✅ FIX: Forum + Blog verstecken wenn man zu Tracks/Loops etc navigiert
                 document.getElementById('forumContainer')?.classList.add('hidden');
                 document.getElementById('blogContainer')?.classList.add('hidden');
-                showMainPage();
+                document.getElementById('profileContainer')?.classList.add('hidden');
+                document.getElementById('messagesContainer')?.classList.add('hidden');
+                document.getElementById('uploadContainer')?.classList.add('hidden');
+                const fw = document.getElementById('mainFlexWrapper');
+                if(fw) fw.style.display = 'flex';
                 filterTracks();
             }
         });
