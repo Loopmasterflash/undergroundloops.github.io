@@ -32,7 +32,13 @@ function initNavigation() {
             currentGenre = 'all';
             if(currentPage === 'blog') { showBlogPage(); }
             else if(currentPage === 'forum') { showForumPage(); }
-            else { showMainPage(); filterTracks(); }
+            else {
+                // ✅ FIX: Forum + Blog verstecken wenn man zu Tracks/Loops etc navigiert
+                document.getElementById('forumContainer')?.classList.add('hidden');
+                document.getElementById('blogContainer')?.classList.add('hidden');
+                showMainPage();
+                filterTracks();
+            }
         });
     });
 }
