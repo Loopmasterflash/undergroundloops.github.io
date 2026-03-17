@@ -615,7 +615,10 @@ function openPlayerModal(track) {
         }
     }
 
-    if(currentAudio && currentModalTrackId !== track.id) currentAudio.pause();
+    // ✅ Nur neuen Track starten - vorherigen nur stoppen wenn MiniPlayer NICHT aktiv
+    const miniBarCheck = document.getElementById('miniPlayerBar');
+    const miniActiveCheck = miniBarCheck && miniBarCheck.style.display === 'flex' && currentAudio && !currentAudio.paused;
+    if(currentAudio && currentModalTrackId !== track.id && !miniActiveCheck) currentAudio.pause();
     currentModalTrackId = track.id;
     currentTrackId = track.id;
     currentAudio = new Audio(track.audioFile);
