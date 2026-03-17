@@ -645,8 +645,13 @@ function openPlayerModal(track) {
 function closePlayerModal(event) {
     if(event && event.target.id !== 'playerModal') return;
     document.getElementById('playerModal').style.display = 'none';
-    if(currentAudio) { currentAudio.pause(); currentAudio = null; }
-    hideMiniPlayer();
+    // ✅ FIX: Audio nur stoppen wenn MiniPlayer NICHT läuft
+    const miniBar = document.getElementById('miniPlayerBar');
+    const miniIsPlaying = miniBar && miniBar.style.display === 'flex' && currentAudio && !currentAudio.paused;
+    if(!miniIsPlaying) {
+        if(currentAudio) { currentAudio.pause(); currentAudio = null; }
+        hideMiniPlayer();
+    }
     document.getElementById('modalWaveform').innerHTML = '';
     document.getElementById('modalPlayBtn').textContent = '▶';
 }

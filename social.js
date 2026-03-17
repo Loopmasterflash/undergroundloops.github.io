@@ -429,6 +429,9 @@ async function openProfile(userId = null) {
     document.getElementById('mainContainer').classList.add('hidden');
     document.getElementById('messagesContainer').classList.add('hidden');
     document.getElementById('profileContainer').classList.remove('hidden');
+    // ✅ FIX: Modal schließen aber Audio NICHT stoppen wenn MiniPlayer läuft
+    const playerModal = document.getElementById('playerModal');
+    if(playerModal) playerModal.style.display = 'none';
     await loadProfileData(targetUserId);
     await loadProfileStats(targetUserId);
     await loadUserUploads(targetUserId);
