@@ -859,8 +859,12 @@ function showMainPage() {
     document.getElementById('mainContainer').classList.remove('hidden');
     document.getElementById('profileContainer').classList.add('hidden');
     document.getElementById('messagesContainer').classList.add('hidden');
+    document.getElementById('forumContainer')?.classList.add('hidden');
+    document.getElementById('blogContainer')?.classList.add('hidden');
     const uc = document.getElementById('uploadContainer');
     if(uc) uc.classList.add('hidden');
+    const fw = document.getElementById('mainFlexWrapper');
+    if(fw) fw.style.display = 'flex';
 }
 
 // ============================================

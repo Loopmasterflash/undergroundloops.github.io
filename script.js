@@ -32,16 +32,7 @@ function initNavigation() {
             currentGenre = 'all';
             if(currentPage === 'blog') { showBlogPage(); }
             else if(currentPage === 'forum') { showForumPage(); }
-            else {
-                document.getElementById('forumContainer')?.classList.add('hidden');
-                document.getElementById('blogContainer')?.classList.add('hidden');
-                document.getElementById('profileContainer')?.classList.add('hidden');
-                document.getElementById('messagesContainer')?.classList.add('hidden');
-                document.getElementById('uploadContainer')?.classList.add('hidden');
-                const fw = document.getElementById('mainFlexWrapper');
-                if(fw) fw.style.display = 'flex';
-                filterTracks();
-            }
+            else { showMainPage(); filterTracks(); }
         });
     });
 }
@@ -752,6 +743,7 @@ function showBlogPage() {
 function showMainPage() {
     const flexWrapper = document.getElementById('mainFlexWrapper');
     if(flexWrapper) flexWrapper.style.display = 'flex';
+    document.getElementById('forumContainer')?.classList.add('hidden');
     document.getElementById('blogContainer')?.classList.add('hidden');
     document.getElementById('profileContainer')?.classList.add('hidden');
     document.getElementById('messagesContainer')?.classList.add('hidden');
