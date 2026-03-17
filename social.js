@@ -716,6 +716,7 @@ function setupProfileTabs() {
             else if(tab === 'liked') { document.getElementById('likedTab').classList.remove('hidden'); loadUserLikedTracks(); }
             else if(tab === 'playlists') { document.getElementById('playlistsTab').classList.remove('hidden'); loadUserPlaylists(currentProfileUserId); }
             else if(tab === 'stats') { document.getElementById('statsTab').classList.remove('hidden'); loadUserStats(currentProfileUserId); }
+            else if(tab === 'sociallinks') { document.getElementById('sociallinksTab').classList.remove('hidden'); loadSocialLinks(currentProfileUserId); }
             else if(tab === 'settings') document.getElementById('settingsTab').classList.remove('hidden');
         };
     });
@@ -945,6 +946,78 @@ async function loadUserStats(userId) {
         container.innerHTML = '<p style="color:#ff4444;text-align:center;padding:40px;">❌ Fehler beim Laden</p>';
         console.error(e);
     }
+}
+
+
+// ============================================
+// SOCIAL LINKS
+// ============================================
+
+async function loadSocialLinks(userId) {
+    const container = document.getElementById('sociallinksTab');
+    if(!container) return;
+    const isOwn = currentUser && currentUser.uid === userId;
+
+    try {
+        const userDoc = await db.collection('users').doc(userId).get();
+        const links = userDoc.exists ? (userDoc.data().socialLinks || []) : [];
+
+        container.innerHTML = `
+            <div style="padding:10px 0 20px 0;">
+                <h3 style="font-family:'Orbitron',sans-serif;color:#ff00ff;font-size:1rem;letter-spacing:3px;margin-bottom:25px;text-shadow:0 0 15px rgba(255,0,255,0.5);border-bottom:1px solid #ff00ff33;padding-bottom:12px;">🔗 SOCIAL LINKS</h3>
+
+                ${isOwn ? `
+                <div style="background:rgba(0,0,0,0.4);border:1px solid #ff00ff33;border-radius:8px;padding:16px;margin-bottom:20px;">
+                    <div style="display:flex;gap:8px;margin-bottom:8px;">
+                        <input type="text" id="newLinkName" placeholder="Name (z.B. SoundCloud)" style="flex:1;background:#1a1a1a;border:1px solid #ff00ff44;border-radius:6px;color:#fff;font-size:0.85rem;padding:8px 12px;outline:none;">
+                        <input type="text" id="newLinkUrl" placeholder="URL (https://...)" style="flex:2;background:#1a1a1a;border:1px solid #ff00ff44;border-radius:6px;color:#fff;font-size:0.85rem;padding:8px 12px;outline:none;">
+                        <button onclick="addSocialLink()" style="background:#ff00ff;color:#000;border:none;border-radius:6px;padding:8px 14px;cursor:pointer;font-weight:bold;white-space:nowrap;">+ Add</button>
+                    </div>
+                </div>` : ''}
+
+                <div id="socialLinksList">
+                    ${links.length === 0
+                        ? '<p style="color:#666;text-align:center;padding:30px;">No social links yet</p>'
+                        : links.map((l, i) => `
+                            <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border:1px solid #ff00ff33;border-radius:8px;margin-bottom:8px;background:rgba(0,0,0,0.3);">
+                                <a href="${l.url}" target="_blank" rel="noopener" style="flex:1;color:#00ffff;text-decoration:none;font-size:0.9rem;font-weight:bold;" onmouseover="this.style.color='#ff00ff'" onmouseout="this.style.color='#00ffff'">${l.name}</a>
+                                <span style="color:#666;font-size:0.78rem;flex:2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${l.url}</span>
+                                ${isOwn ? `<button onclick="removeSocialLink(${i})" style="background:rgba(255,0,0,0.2);border:1px solid #ff4444;color:#ff4444;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:0.75rem;flex-shrink:0;">✕</button>` : ''}
+                            </div>`).join('')
+                    }
+                </div>
+            </div>
+        `;
+    } catch(e) { console.error(e); }
+}
+
+async function addSocialLink() {
+    if(!currentUser) return;
+    const name = document.getElementById('newLinkName').value.trim();
+    const url = document.getElementById('newLinkUrl').value.trim();
+    if(!name || !url) { alert('Bitte Name und URL eingeben!'); return; }
+    if(!url.startsWith('http')) { alert('URL muss mit http:// oder https:// beginnen!'); return; }
+    try {
+        const userRef = db.collection('users').doc(currentUser.uid);
+        const userDoc = await userRef.get();
+        const links = userDoc.data().socialLinks || [];
+        links.push({ name, url });
+        await userRef.update({ socialLinks: links });
+        loadSocialLinks(currentUser.uid);
+    } catch(e) { alert('❌ Fehler: ' + e.message); }
+}
+
+async function removeSocialLink(index) {
+    if(!currentUser) return;
+    if(!confirm('Link löschen?')) return;
+    try {
+        const userRef = db.collection('users').doc(currentUser.uid);
+        const userDoc = await userRef.get();
+        const links = userDoc.data().socialLinks || [];
+        links.splice(index, 1);
+        await userRef.update({ socialLinks: links });
+        loadSocialLinks(currentUser.uid);
+    } catch(e) { alert('❌ Fehler: ' + e.message); }
 }
 
 // ============================================
