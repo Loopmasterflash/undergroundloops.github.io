@@ -32,7 +32,14 @@ function initNavigation() {
             currentGenre = 'all';
             if(currentPage === 'blog') { showBlogPage(); }
             else if(currentPage === 'forum') { showForumPage(); }
-            else { showMainPage(); filterTracks(); }
+            else {
+                showMainPage();
+                if(allTracks.length === 0) {
+                    loadTracksFromFirestore();
+                } else {
+                    filterTracks();
+                }
+            }
         });
     });
 }
