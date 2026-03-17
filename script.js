@@ -569,7 +569,9 @@ function openPlayerModal(track) {
     }
 
     currentModalTrack = track;
-    hideMiniPlayer();
+    // Miniplayer verbergen maar audio NIET stoppen
+    const miniBar2 = document.getElementById('miniPlayerBar');
+    if(miniBar2) miniBar2.style.display = 'none';
     const modal = document.getElementById('playerModal');
     modal.style.display = 'flex';
     modal.style.position = 'fixed';

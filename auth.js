@@ -499,6 +499,9 @@ async function showProfilePage(uid) {
     document.getElementById('mainContainer').classList.add('hidden');
     document.getElementById('profileContainer').classList.remove('hidden');
     document.getElementById('messagesContainer').classList.add('hidden');
+    // ✅ PlayerModal schließen maar MiniPlayer NIET stoppen
+    const pm = document.getElementById('playerModal');
+    if(pm) pm.style.display = 'none';
 
     try {
         const userDoc = await db.collection('users').doc(uid).get();
