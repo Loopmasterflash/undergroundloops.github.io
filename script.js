@@ -527,16 +527,11 @@ function minimizePlayer() {
 
 function openPlayerModal(track) {
     if(!track) return;
-    currentModalTrack = track;
 
-    // Alten Audio stoppen
-    if(currentAudio) { currentAudio.pause(); currentAudio = null; }
-
-    // MiniPlayer verstecken
     const miniBar = document.getElementById('miniPlayerBar');
-    if(miniBar) miniBar.style.display = 'none';
+    const miniRunning = miniBar && miniBar.style.display === 'flex' && currentAudio && !currentAudio.paused;
 
-    // Modal anzeigen
+    // Modal Info immer aktualisieren
     const modal = document.getElementById('playerModal');
     modal.style.display = 'flex';
     modal.style.position = 'fixed';
@@ -558,7 +553,7 @@ function openPlayerModal(track) {
         (track.genre ? track.genre.toUpperCase() : '') +
         (track.type ? ' • ' + track.type.toUpperCase() : '') +
         (track.bpm ? ' • ' + track.bpm + ' BPM' : '');
-    document.getElementById('modalDownloadBtn').href = track.audioFile;
+    document.getElementById('modalDownloadBtn').href = track.audioFile || '#';
     document.getElementById('modalLikeCount').textContent = track.likes || 0;
 
     // Minimieren Button
@@ -574,6 +569,26 @@ function openPlayerModal(track) {
             closeBtn.parentNode.insertBefore(minBtn, closeBtn);
         }
     }
+
+    if(miniRunning && currentModalTrack && track.id !== currentModalTrack.id) {
+        // MiniPlayer läuft mit anderem Track → nur Info zeigen, NICHT autoplay
+        currentModalTrack = track;
+        document.getElementById('modalPlayBtn').textContent = '▶';
+        document.getElementById('modalWaveform').innerHTML = '';
+        document.getElementById('modalCurrentTime').textContent = '0:00';
+        document.getElementById('modalTotalTime').textContent = '0:00';
+        if(typeof checkIfLiked === 'function') {
+            checkIfLiked(track.id).then(isLiked => {
+                document.getElementById('modalLikeBtn').innerHTML = (isLiked ? '❤️' : '🤍') + ' <span id="modalLikeCount">' + (track.likes || 0) + '</span>';
+            });
+        }
+        return; // MiniPlayer läuft weiter!
+    }
+
+    // Normaler Play
+    currentModalTrack = track;
+    if(miniBar) miniBar.style.display = 'none';
+    if(currentAudio) { currentAudio.pause(); currentAudio = null; }
 
     currentModalTrackId = track.id;
     currentTrackId = track.id;
@@ -618,6 +633,32 @@ function closePlayerModal(event) {
 
 
 function modalTogglePlay() {
+    // Wenn Modal-Track anders als laufender Track → neuen starten
+    if(currentModalTrack && currentModalTrackId !== currentModalTrack.id) {
+        if(currentAudio) { currentAudio.pause(); currentAudio = null; }
+        const miniBar = document.getElementById('miniPlayerBar');
+        if(miniBar) miniBar.style.display = 'none';
+        currentModalTrackId = currentModalTrack.id;
+        currentTrackId = currentModalTrack.id;
+        currentAudio = new Audio(currentModalTrack.audioFile);
+        currentAudio.volume = document.getElementById('modalVolume').value / 100;
+        currentAudio.addEventListener('loadedmetadata', () => {
+            document.getElementById('modalTotalTime').textContent = formatTime(currentAudio.duration);
+            buildModalWaveform();
+        });
+        currentAudio.addEventListener('timeupdate', () => {
+            document.getElementById('modalCurrentTime').textContent = formatTime(currentAudio.currentTime);
+            updateModalWaveform();
+            updateMiniPlayer();
+        });
+        currentAudio.addEventListener('ended', () => {
+            document.getElementById('modalPlayBtn').textContent = '▶';
+        });
+        currentAudio.play();
+        document.getElementById('modalPlayBtn').textContent = '⏸';
+        if(typeof incrementPlayCount === 'function') incrementPlayCount(currentModalTrack.id);
+        return;
+    }
     if(!currentAudio) return;
     if(currentAudio.paused) {
         currentAudio.play();
@@ -631,6 +672,7 @@ function modalTogglePlay() {
         if(miniBtn) miniBtn.textContent = '▶';
     }
 }
+
 
 async function modalToggleLike() {
     if(!currentModalTrackId) return;
