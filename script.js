@@ -693,17 +693,16 @@ function buildModalWaveform() {
     container.innerHTML = '';
     container.style.cssText = 'position:relative;display:flex;align-items:center;gap:1px;width:100%;height:80px;cursor:pointer;overflow:hidden;';
 
-    // Klick: Seek oder Kommentar-Eingabe
+    // Klick: Seek + Kommentar-Box aktualisieren
     container.addEventListener('click', function(e) {
         if(!currentAudio) return;
         const pct = (e.clientX - container.getBoundingClientRect().left) / container.offsetWidth;
         const t = currentAudio.duration * pct;
         if(!isNaN(t)) {
-            // Shift+Klick = Kommentar hinzufügen
-            if(e.shiftKey) {
+            currentAudio.currentTime = t;
+            // Klick öffnet Kommentar-Eingabe (Position merken)
+            if(typeof currentUser !== 'undefined' && currentUser) {
                 openWaveformComment(t);
-            } else {
-                currentAudio.currentTime = t;
             }
         }
     });
@@ -721,29 +720,28 @@ function buildModalWaveform() {
 }
 
 function openWaveformComment(timestamp) {
-    if(typeof currentUser === 'undefined' || !currentUser) {
-        alert('Please login to comment!');
-        return;
-    }
+    if(typeof currentUser === 'undefined' || !currentUser) return;
+
     const existing = document.getElementById('waveformCommentInput');
     if(existing) existing.remove();
 
-    const container = document.getElementById('modalWaveform');
-    const pct = timestamp / currentAudio.duration * 100;
+    // Box UNTER der Waveform anzeigen - im modalCommentsSection Bereich
+    const commentSection = document.getElementById('modalCommentsSection');
+    if(!commentSection) return;
 
     const input = document.createElement('div');
     input.id = 'waveformCommentInput';
-    input.style.cssText = `position:absolute;left:${Math.min(pct, 80)}%;top:0;z-index:100;background:#111;border:1px solid #ff00ff;border-radius:8px;padding:10px;min-width:200px;box-shadow:0 0 20px rgba(255,0,255,0.4);`;
+    input.style.cssText = 'background:rgba(0,0,0,0.6);border:1px solid #ff00ff;border-radius:8px;padding:12px;margin-bottom:12px;';
     input.innerHTML = `
-        <div style="color:#ff00ff;font-size:0.7rem;font-family:'Orbitron',sans-serif;margin-bottom:6px;">💬 Comment at ${formatTime(timestamp)}</div>
-        <input type="text" id="waveCommentText" placeholder="Write comment..." maxlength="100"
-            style="width:100%;background:#1a1a1a;border:1px solid #ff00ff44;border-radius:4px;color:#fff;font-size:0.8rem;padding:5px 8px;outline:none;box-sizing:border-box;margin-bottom:6px;">
-        <div style="display:flex;gap:6px;">
-            <button onclick="submitWaveformComment(${timestamp})" style="flex:1;background:#ff00ff;color:#000;border:none;border-radius:4px;padding:5px;cursor:pointer;font-size:0.75rem;font-weight:bold;">Post</button>
-            <button onclick="document.getElementById('waveformCommentInput').remove()" style="background:#333;color:#aaa;border:none;border-radius:4px;padding:5px 8px;cursor:pointer;font-size:0.75rem;">✕</button>
+        <div style="color:#ff00ff;font-size:0.72rem;font-family:'Orbitron',sans-serif;margin-bottom:8px;">💬 Comment at ${formatTime(timestamp)}</div>
+        <div style="display:flex;gap:8px;">
+            <input type="text" id="waveCommentText" placeholder="Write your comment..." maxlength="120"
+                style="flex:1;background:#1a1a1a;border:1px solid #ff00ff44;border-radius:6px;color:#fff;font-size:0.82rem;padding:7px 10px;outline:none;">
+            <button onclick="submitWaveformComment(${timestamp})" style="background:#ff00ff;color:#000;border:none;border-radius:6px;padding:7px 14px;cursor:pointer;font-size:0.8rem;font-weight:bold;white-space:nowrap;">Post</button>
+            <button onclick="document.getElementById('waveformCommentInput').remove()" style="background:#222;color:#aaa;border:1px solid #333;border-radius:6px;padding:7px 10px;cursor:pointer;font-size:0.8rem;">✕</button>
         </div>
     `;
-    container.appendChild(input);
+    commentSection.insertBefore(input, commentSection.firstChild);
     setTimeout(() => document.getElementById('waveCommentText')?.focus(), 50);
 }
 
