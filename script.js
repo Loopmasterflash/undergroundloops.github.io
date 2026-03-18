@@ -598,6 +598,7 @@ function openPlayerModal(track) {
     currentAudio.addEventListener('loadedmetadata', () => {
         document.getElementById('modalTotalTime').textContent = formatTime(currentAudio.duration);
         buildModalWaveform();
+        setTimeout(() => loadWaveformComments(currentModalTrackId), 300);
     });
     currentAudio.addEventListener('timeupdate', () => {
         document.getElementById('modalCurrentTime').textContent = formatTime(currentAudio.currentTime);
@@ -619,6 +620,8 @@ function openPlayerModal(track) {
             document.getElementById('modalLikeBtn').innerHTML = (isLiked ? '❤️' : '🤍') + ' <span id="modalLikeCount">' + (track.likes || 0) + '</span>';
         });
     }
+    // Kommentare laden
+    loadModalComments(track.id);
 }
 
 
@@ -688,13 +691,23 @@ async function modalToggleLike() {
 function buildModalWaveform() {
     const container = document.getElementById('modalWaveform');
     container.innerHTML = '';
-    container.style.cssText = 'display:flex;align-items:center;gap:1px;width:100%;height:80px;cursor:pointer;overflow:hidden;';
+    container.style.cssText = 'position:relative;display:flex;align-items:center;gap:1px;width:100%;height:80px;cursor:pointer;overflow:hidden;';
+
+    // Klick: Seek oder Kommentar-Eingabe
     container.addEventListener('click', function(e) {
         if(!currentAudio) return;
         const pct = (e.clientX - container.getBoundingClientRect().left) / container.offsetWidth;
         const t = currentAudio.duration * pct;
-        if(!isNaN(t)) currentAudio.currentTime = t;
+        if(!isNaN(t)) {
+            // Shift+Klick = Kommentar hinzufügen
+            if(e.shiftKey) {
+                openWaveformComment(t);
+            } else {
+                currentAudio.currentTime = t;
+            }
+        }
     });
+
     for(let i = 0; i < 180; i++) {
         const bar = document.createElement('div');
         bar.className = 'modal-bar';
@@ -702,6 +715,128 @@ function buildModalWaveform() {
         bar.style.cssText = `width:2px;min-width:2px;height:${h}px;background:rgba(180,180,200,0.5);border-radius:1px;transition:background 0.05s;flex-shrink:0;`;
         container.appendChild(bar);
     }
+
+    // Kommentare laden und anzeigen
+    if(currentModalTrackId) loadWaveformComments(currentModalTrackId);
+}
+
+function openWaveformComment(timestamp) {
+    if(typeof currentUser === 'undefined' || !currentUser) {
+        alert('Please login to comment!');
+        return;
+    }
+    const existing = document.getElementById('waveformCommentInput');
+    if(existing) existing.remove();
+
+    const container = document.getElementById('modalWaveform');
+    const pct = timestamp / currentAudio.duration * 100;
+
+    const input = document.createElement('div');
+    input.id = 'waveformCommentInput';
+    input.style.cssText = `position:absolute;left:${Math.min(pct, 80)}%;top:0;z-index:100;background:#111;border:1px solid #ff00ff;border-radius:8px;padding:10px;min-width:200px;box-shadow:0 0 20px rgba(255,0,255,0.4);`;
+    input.innerHTML = `
+        <div style="color:#ff00ff;font-size:0.7rem;font-family:'Orbitron',sans-serif;margin-bottom:6px;">💬 Comment at ${formatTime(timestamp)}</div>
+        <input type="text" id="waveCommentText" placeholder="Write comment..." maxlength="100"
+            style="width:100%;background:#1a1a1a;border:1px solid #ff00ff44;border-radius:4px;color:#fff;font-size:0.8rem;padding:5px 8px;outline:none;box-sizing:border-box;margin-bottom:6px;">
+        <div style="display:flex;gap:6px;">
+            <button onclick="submitWaveformComment(${timestamp})" style="flex:1;background:#ff00ff;color:#000;border:none;border-radius:4px;padding:5px;cursor:pointer;font-size:0.75rem;font-weight:bold;">Post</button>
+            <button onclick="document.getElementById('waveformCommentInput').remove()" style="background:#333;color:#aaa;border:none;border-radius:4px;padding:5px 8px;cursor:pointer;font-size:0.75rem;">✕</button>
+        </div>
+    `;
+    container.appendChild(input);
+    setTimeout(() => document.getElementById('waveCommentText')?.focus(), 50);
+}
+
+async function submitWaveformComment(timestamp) {
+    const text = document.getElementById('waveCommentText')?.value.trim();
+    if(!text) return;
+    try {
+        const userDoc = await db.collection('users').doc(currentUser.uid).get();
+        const userData = userDoc.data();
+        await db.collection('comments').add({
+            trackId: currentModalTrackId,
+            userId: currentUser.uid,
+            username: userData.username || 'Unknown',
+            avatar: userData.avatar || '',
+            text,
+            timestamp,
+            createdAt: new Date().toISOString()
+        });
+        document.getElementById('waveformCommentInput')?.remove();
+        loadWaveformComments(currentModalTrackId);
+        loadModalComments(currentModalTrackId);
+    } catch(e) { alert('Error: ' + e.message); }
+}
+
+async function loadWaveformComments(trackId) {
+    if(!currentAudio || !currentAudio.duration) return;
+    const container = document.getElementById('modalWaveform');
+    // Alte Marker entfernen
+    container.querySelectorAll('.wave-comment-marker').forEach(m => m.remove());
+
+    try {
+        const snap = await db.collection('comments').where('trackId', '==', trackId).get();
+        snap.forEach(doc => {
+            const c = doc.data();
+            if(c.timestamp == null) return;
+            const pct = c.timestamp / currentAudio.duration * 100;
+            const marker = document.createElement('div');
+            marker.className = 'wave-comment-marker';
+            marker.style.cssText = `position:absolute;left:${Math.min(pct, 99)}%;top:0;width:2px;height:100%;background:#ff00ff;cursor:pointer;z-index:10;`;
+            marker.title = `${c.username}: ${c.text}`;
+
+            // Tooltip
+            const tip = document.createElement('div');
+            tip.style.cssText = 'position:absolute;bottom:100%;left:0;background:#111;border:1px solid #ff00ff;border-radius:6px;padding:6px 10px;white-space:nowrap;font-size:0.72rem;color:#fff;display:none;z-index:20;max-width:200px;white-space:normal;min-width:120px;';
+            tip.innerHTML = `<span style="color:#ff00ff;">${c.username}</span> <span style="color:#666;font-size:0.65rem;">${formatTime(c.timestamp)}</span><br>${c.text}`;
+            marker.appendChild(tip);
+            marker.onmouseenter = () => tip.style.display = 'block';
+            marker.onmouseleave = () => tip.style.display = 'none';
+            marker.onclick = (e) => { e.stopPropagation(); currentAudio.currentTime = c.timestamp; };
+
+            container.appendChild(marker);
+        });
+    } catch(e) { console.error(e); }
+}
+
+async function loadModalComments(trackId) {
+    const container = document.getElementById('modalCommentsSection');
+    if(!container) return;
+    try {
+        const snap = await db.collection('comments').where('trackId', '==', trackId).get();
+        let comments = [];
+        snap.forEach(doc => comments.push({ id: doc.id, ...doc.data() }));
+        comments.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+
+        if(comments.length === 0) {
+            container.innerHTML = '<p style="color:#666;font-size:0.78rem;text-align:center;padding:10px;">No comments yet — Shift+Click on waveform to add one!</p>';
+            return;
+        }
+        container.innerHTML = '';
+        comments.forEach(c => {
+            const div = document.createElement('div');
+            div.style.cssText = 'display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid #ffffff11;';
+            div.innerHTML = `
+                <img src="${c.avatar||''}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid #ff00ff44;flex-shrink:0;" onerror="this.style.display='none'">
+                <div style="flex:1;min-width:0;">
+                    <span style="color:#ff00ff;font-size:0.75rem;font-weight:bold;">${c.username}</span>
+                    ${c.timestamp != null ? `<span style="color:#666;font-size:0.65rem;margin-left:6px;cursor:pointer;" onclick="if(currentAudio) currentAudio.currentTime=${c.timestamp}">${formatTime(c.timestamp)}</span>` : ''}
+                    <p style="color:#ccc;font-size:0.8rem;margin:2px 0 0 0;">${c.text}</p>
+                </div>
+                ${(typeof currentUser !== 'undefined' && currentUser && currentUser.uid === c.userId) ? `<button onclick="deleteWaveformComment('${c.id}')" style="background:none;border:none;color:#ff4444;cursor:pointer;font-size:0.75rem;flex-shrink:0;">🗑️</button>` : ''}
+            `;
+            container.appendChild(div);
+        });
+    } catch(e) { console.error(e); }
+}
+
+async function deleteWaveformComment(commentId) {
+    if(!confirm('Delete comment?')) return;
+    try {
+        await db.collection('comments').doc(commentId).delete();
+        loadWaveformComments(currentModalTrackId);
+        loadModalComments(currentModalTrackId);
+    } catch(e) { alert('Error: ' + e.message); }
 }
 
 function updateModalWaveform() {

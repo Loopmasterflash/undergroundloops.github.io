@@ -448,6 +448,15 @@
                 <button id="modalPlaylistBtn" onclick="openPlaylistPopup(currentModalTrackId)" style="padding:10px 20px;background:rgba(255,165,0,0.2);border:1px solid #ffa500;color:#ffa500;border-radius:8px;cursor:pointer;font-size:0.9rem;transition:all 0.3s;" title="Zur Playlist hinzufügen">🎵 + Playlist</button>
                 <a id="modalDownloadBtn" href="#" download onclick="if(currentModalTrackId && typeof incrementDownloadCount==='function') incrementDownloadCount(currentModalTrackId)" style="padding:10px 20px;background:rgba(0,255,255,0.2);border:1px solid #00ffff;color:#fff;border-radius:8px;cursor:pointer;font-size:0.9rem;text-decoration:none;">⬇ Download</a>
             </div>
+
+            <!-- COMMENTS SECTION -->
+            <div style="margin-top:20px;border-top:1px solid #ff00ff22;padding-top:16px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                    <span style="font-family:'Orbitron',sans-serif;color:#ff00ff;font-size:0.75rem;letter-spacing:2px;">💬 COMMENTS</span>
+                    <span style="color:#666;font-size:0.7rem;">Shift+Click on waveform to comment</span>
+                </div>
+                <div id="modalCommentsSection" style="max-height:150px;overflow-y:auto;"></div>
+            </div>
         </div>
     </div>
 
