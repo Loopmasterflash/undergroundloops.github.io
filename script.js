@@ -691,7 +691,7 @@ async function modalToggleLike() {
 function buildModalWaveform() {
     const container = document.getElementById('modalWaveform');
     container.innerHTML = '';
-    container.style.cssText = 'position:relative;display:flex;align-items:center;gap:1px;width:100%;height:80px;cursor:pointer;overflow:hidden;';
+    container.style.cssText = 'position:relative;display:flex;align-items:center;gap:1px;width:100%;height:80px;cursor:pointer;overflow:visible;margin-top:20px;';
 
     // Klick: Seek + Kommentar-Box aktualisieren
     container.addEventListener('click', function(e) {
@@ -778,15 +778,26 @@ async function loadWaveformComments(trackId) {
             const c = doc.data();
             if(c.timestamp == null) return;
             const pct = c.timestamp / currentAudio.duration * 100;
+
+            // Wrapper
             const marker = document.createElement('div');
             marker.className = 'wave-comment-marker';
-            marker.style.cssText = `position:absolute;left:${Math.min(pct, 99)}%;top:0;width:2px;height:100%;background:#ff00ff;cursor:pointer;z-index:10;`;
-            marker.title = `${c.username}: ${c.text}`;
+            marker.style.cssText = `position:absolute;left:${Math.min(pct, 97)}%;top:0;width:2px;height:100%;background:#ff00ff88;cursor:pointer;z-index:10;`;
+
+            // Avatar auf der Waveform
+            const avatar = document.createElement('div');
+            avatar.style.cssText = 'position:absolute;top:-18px;left:50%;transform:translateX(-50%);width:24px;height:24px;border-radius:50%;border:2px solid #ff00ff;overflow:hidden;background:#111;flex-shrink:0;box-shadow:0 0 6px rgba(255,0,255,0.6);';
+            const img = document.createElement('img');
+            img.src = c.avatar || '';
+            img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+            img.onerror = () => { img.style.display='none'; avatar.style.background='#ff00ff'; avatar.innerHTML += '<span style="color:#000;font-size:0.55rem;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);">👤</span>'; };
+            avatar.appendChild(img);
+            marker.appendChild(avatar);
 
             // Tooltip
             const tip = document.createElement('div');
-            tip.style.cssText = 'position:absolute;bottom:100%;left:0;background:#111;border:1px solid #ff00ff;border-radius:6px;padding:6px 10px;white-space:nowrap;font-size:0.72rem;color:#fff;display:none;z-index:20;max-width:200px;white-space:normal;min-width:120px;';
-            tip.innerHTML = `<span style="color:#ff00ff;">${c.username}</span> <span style="color:#666;font-size:0.65rem;">${formatTime(c.timestamp)}</span><br>${c.text}`;
+            tip.style.cssText = 'position:absolute;top:14px;left:50%;transform:translateX(-50%);background:#111;border:1px solid #ff00ff;border-radius:6px;padding:7px 10px;font-size:0.72rem;color:#fff;display:none;z-index:20;min-width:140px;max-width:200px;white-space:normal;box-shadow:0 0 15px rgba(255,0,255,0.3);';
+            tip.innerHTML = `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;"><img src="${c.avatar||''}" style="width:18px;height:18px;border-radius:50%;object-fit:cover;" onerror="this.style.display='none'"><span style="color:#ff00ff;font-weight:bold;">${c.username}</span><span style="color:#666;font-size:0.65rem;">${formatTime(c.timestamp)}</span></div><div>${c.text}</div>`;
             marker.appendChild(tip);
             marker.onmouseenter = () => tip.style.display = 'block';
             marker.onmouseleave = () => tip.style.display = 'none';
