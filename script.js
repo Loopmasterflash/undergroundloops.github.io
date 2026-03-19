@@ -629,6 +629,10 @@ function initWaveSurfer(track) {
     }
 
     try {
+        // Container Höhe explizit setzen bevor WaveSurfer erstellt wird
+        const waveContainer = document.getElementById('modalWaveform');
+        waveContainer.style.height = '110px';
+
         wavesurfer = WaveSurfer.create({
             container: '#modalWaveform',
             waveColor: 'rgba(180,180,200,0.5)',
@@ -640,17 +644,23 @@ function initWaveSurfer(track) {
             barRadius: 2,
             height: 110,
             normalize: true,
-            backend: 'WebAudio',
+            backend: 'MediaElement',
             hideScrollbar: true,
             interact: true,
             fillParent: true,
-            minPxPerSec: 1,
+            pixelRatio: 1,
+            responsive: true,
         });
 
         wavesurfer.load(track.audioFile);
 
         wavesurfer.on('ready', () => {
             document.getElementById('modalTotalTime').textContent = formatTime(wavesurfer.getDuration());
+
+            // Volume setzen
+            const vol = document.getElementById('modalVolume').value / 100;
+            wavesurfer.setVolume(vol);
+
             wavesurfer.play();
             document.getElementById('modalPlayBtn').textContent = '⏸';
 
@@ -659,12 +669,16 @@ function initWaveSurfer(track) {
                 paused: false,
                 currentTime: 0,
                 duration: wavesurfer.getDuration(),
-                volume: document.getElementById('modalVolume').value / 100,
+                volume: vol,
                 play: () => wavesurfer.play(),
                 pause: () => wavesurfer.pause(),
             };
 
-            setTimeout(() => loadWaveformComments(currentModalTrackId), 300);
+            // WaveSurfer neu zeichnen damit Skalierung stimmt
+            setTimeout(() => {
+                if(wavesurfer) wavesurfer.drawBuffer();
+                loadWaveformComments(currentModalTrackId);
+            }, 100);
         });
 
         wavesurfer.on('audioprocess', () => {
