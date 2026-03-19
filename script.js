@@ -657,14 +657,12 @@ function initWaveSurfer(track) {
         wavesurfer.on('ready', () => {
             document.getElementById('modalTotalTime').textContent = formatTime(wavesurfer.getDuration());
 
-            // Volume setzen
             const vol = document.getElementById('modalVolume').value / 100;
             wavesurfer.setVolume(vol);
 
             wavesurfer.play();
             document.getElementById('modalPlayBtn').textContent = '⏸';
 
-            // Fake currentAudio für MiniPlayer Kompatibilität
             currentAudio = {
                 paused: false,
                 currentTime: 0,
@@ -674,11 +672,17 @@ function initWaveSurfer(track) {
                 pause: () => wavesurfer.pause(),
             };
 
-            // WaveSurfer neu zeichnen damit Skalierung stimmt
+            // Waveform auf volle Breite neu zeichnen
             setTimeout(() => {
-                if(wavesurfer) wavesurfer.drawBuffer();
+                if(wavesurfer) {
+                    const container = document.getElementById('modalWaveform');
+                    const width = container ? container.offsetWidth : 800;
+                    // Zoom auf 1px pro Sekunde = volle Breite
+                    const pxPerSec = Math.floor(width / wavesurfer.getDuration());
+                    wavesurfer.zoom(pxPerSec);
+                }
                 loadWaveformComments(currentModalTrackId);
-            }, 100);
+            }, 200);
         });
 
         wavesurfer.on('audioprocess', () => {
