@@ -380,18 +380,24 @@ const waveformCache = {};
 // ============================================
 
 async function analyzeAudioWaveform(audioUrl, numBars) {
-    // Cache prüfen - URL als eindeutiger Key
-    if(waveformCache[audioUrl]) return waveformCache[audioUrl];
+    // Cache prüfen
+    if(waveformCache[audioUrl]) {
+        console.log('✅ Waveform from cache:', audioUrl.split('/').pop());
+        return waveformCache[audioUrl];
+    }
 
+    console.log('🔍 Fetching for analysis:', audioUrl.split('/').pop());
     try {
-        const response = await fetch(audioUrl, { mode: 'cors' });
-        if(!response.ok) throw new Error('Fetch failed: ' + response.status);
+        const response = await fetch(audioUrl);
+        if(!response.ok) throw new Error('HTTP ' + response.status);
+        console.log('✅ Fetch OK! Size:', response.headers.get('content-length'), 'bytes');
         const arrayBuffer = await response.arrayBuffer();
+        console.log('✅ Buffer:', arrayBuffer.byteLength, 'bytes');
 
-        // Eigener AudioContext NUR für Analyse - nicht für Wiedergabe!
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer.slice(0));
-        audioCtx.close(); // sofort schließen nach Analyse
+        audioCtx.close();
+        console.log('✅ Decoded! Duration:', audioBuffer.duration.toFixed(1), 'sec, Samples:', audioBuffer.length);
 
         const channelData = audioBuffer.getChannelData(0);
         const length = channelData.length;
@@ -408,16 +414,15 @@ async function analyzeAudioWaveform(audioUrl, numBars) {
             peaks.push(max);
         }
 
-        // Normalisieren
         const maxPeak = Math.max(...peaks, 0.001);
         const normalized = peaks.map(p => p / maxPeak);
 
-        // Unter der echten URL cachen
         waveformCache[audioUrl] = normalized;
+        console.log('✅ REAL waveform ready!');
         return normalized;
 
     } catch(e) {
-        console.warn('Web Audio API analysis failed, using fallback:', e.message);
+        console.warn('❌ Analysis failed:', e.message, '| URL:', audioUrl.split('/').pop());
         return null;
     }
 }
