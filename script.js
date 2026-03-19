@@ -619,7 +619,7 @@ function initWaveSurfer(track) {
     const container = document.getElementById('modalWaveform');
     container.innerHTML = '';
     // Kein margin-top, overflow hidden damit nichts überlagert
-    container.style.cssText = 'position:relative;width:100%;height:90px;cursor:pointer;overflow:hidden;border-radius:8px;background:rgba(0,0,0,0.4);';
+    container.style.cssText = 'position:relative;width:100%;height:110px;cursor:pointer;overflow:hidden;border-radius:8px;background:rgba(0,0,0,0.4);';
 
     if(typeof WaveSurfer === 'undefined') {
         // Fallback wenn WaveSurfer nicht geladen
@@ -635,14 +635,16 @@ function initWaveSurfer(track) {
             progressColor: '#ff00ff',
             cursorColor: '#00ffff',
             cursorWidth: 2,
-            barWidth: 2,
+            barWidth: 3,
             barGap: 1,
-            barRadius: 1,
-            height: 80,
+            barRadius: 2,
+            height: 110,
             normalize: true,
             backend: 'WebAudio',
             hideScrollbar: true,
             interact: true,
+            fillParent: true,
+            minPxPerSec: 1,
         });
 
         wavesurfer.load(track.audioFile);
