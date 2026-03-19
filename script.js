@@ -175,7 +175,7 @@ function filterTracks() {
 }
 
 // ============================================
-// RENDER TRACKS - ALLE SEITEN ALS GRID! ✅
+// RENDER TRACKS
 // ============================================
 
 function renderTracks() {
@@ -185,7 +185,6 @@ function renderTracks() {
         return;
     }
 
-    // Titel je nach Seite
     const pageTitles = {
         latest:    '⚡ LATEST MEMBER UPLOADS',
         loops:     '🔁 LOOPS',
@@ -220,7 +219,7 @@ function renderTracks() {
 }
 
 // ============================================
-// GRID CARD - für alle Seiten
+// GRID CARD
 // ============================================
 
 function createGridCard(track) {
@@ -312,10 +311,6 @@ function filterLoopKey(key) {
     filterTracks();
 }
 
-// ============================================
-// FILTER FUNCTIONS - SAMPLES
-// ============================================
-
 function filterSampleCategory(cat) {
     currentSampleCategory = cat;
     ['all','bass','clap','hihats','kick','percussion','synth'].forEach(c => {
@@ -341,10 +336,6 @@ function filterSampleKey(key) {
     });
     filterTracks();
 }
-
-// ============================================
-// FILTER FUNCTIONS - ACAPELLAS
-// ============================================
 
 function filterAcapellaKey(key) {
     currentAcapellaKey = key;
@@ -379,8 +370,172 @@ function playGridTrack(trackId, audioFile) {
 }
 
 // ============================================
-// PLAYER MODAL
+// WAVEFORM CACHE - speichert analysierte Daten
 // ============================================
+
+const waveformCache = {};
+
+// ============================================
+// WEB AUDIO API - ECHTE WAVEFORM ANALYSE
+// ============================================
+
+async function analyzeAudioWaveform(audioUrl, numBars) {
+    // Cache prüfen
+    const cacheKey = audioUrl + '_' + numBars;
+    if(waveformCache[cacheKey]) return waveformCache[cacheKey];
+
+    try {
+        const response = await fetch(audioUrl, { mode: 'cors' });
+        if(!response.ok) throw new Error('Fetch failed');
+        const arrayBuffer = await response.arrayBuffer();
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+        await audioCtx.close();
+
+        // Kanaldaten holen (Mono oder Stereo zusammenrechnen)
+        const channelData = audioBuffer.getChannelData(0);
+        const length = channelData.length;
+        const samplesPerBar = Math.floor(length / numBars);
+
+        const peaks = [];
+        for(let i = 0; i < numBars; i++) {
+            const start = i * samplesPerBar;
+            let max = 0;
+            for(let j = 0; j < samplesPerBar; j++) {
+                const abs = Math.abs(channelData[start + j] || 0);
+                if(abs > max) max = abs;
+            }
+            peaks.push(max);
+        }
+
+        // Normalisieren: höchster Wert = 1.0
+        const maxPeak = Math.max(...peaks, 0.001);
+        const normalized = peaks.map(p => p / maxPeak);
+
+        waveformCache[cacheKey] = normalized;
+        return normalized;
+
+    } catch(e) {
+        console.warn('Web Audio API analysis failed, using fallback:', e);
+        return null;
+    }
+}
+
+// ============================================
+// WAVEFORM ZEICHNEN (Canvas-basiert)
+// ============================================
+
+function drawWaveformCanvas(container, peaks, progress, height) {
+    container.innerHTML = '';
+    const numBars = peaks.length;
+    const containerWidth = container.offsetWidth || 860;
+    const barWidth = Math.max(2, Math.floor((containerWidth - numBars) / numBars));
+    const gap = 1;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = containerWidth;
+    canvas.height = height;
+    canvas.style.cssText = 'width:100%;height:100%;display:block;border-radius:8px;';
+    canvas.id = 'waveCanvas';
+    container.appendChild(canvas);
+
+    const ctx = canvas.getContext('2d');
+    const centerY = height / 2;
+
+    function draw(prog) {
+        ctx.clearRect(0, 0, canvas.width, height);
+
+        for(let i = 0; i < numBars; i++) {
+            const x = i * (barWidth + gap);
+            const barHeight = Math.max(3, peaks[i] * (height * 0.85));
+            const y = centerY - barHeight / 2;
+            const played = (i / numBars) <= prog;
+
+            if(played) {
+                // Gespielter Teil: Pink/Magenta
+                const gradient = ctx.createLinearGradient(0, y, 0, y + barHeight);
+                gradient.addColorStop(0, 'rgba(255, 0, 255, 1)');
+                gradient.addColorStop(0.5, 'rgba(255, 80, 255, 1)');
+                gradient.addColorStop(1, 'rgba(200, 0, 200, 1)');
+                ctx.fillStyle = gradient;
+                ctx.shadowColor = 'rgba(255,0,255,0.8)';
+                ctx.shadowBlur = 6;
+            } else {
+                // Ungespielter Teil: Grau/Blau
+                ctx.fillStyle = 'rgba(160, 160, 200, 0.45)';
+                ctx.shadowBlur = 0;
+            }
+
+            // Abgerundete Balken
+            const radius = Math.min(barWidth / 2, 2);
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + barWidth - radius, y);
+            ctx.quadraticCurveTo(x + barWidth, y, x + barWidth, y + radius);
+            ctx.lineTo(x + barWidth, y + barHeight - radius);
+            ctx.quadraticCurveTo(x + barWidth, y + barHeight, x + barWidth - radius, y + barHeight);
+            ctx.lineTo(x + radius, y + barHeight);
+            ctx.quadraticCurveTo(x, y + barHeight, x, y + barHeight - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        ctx.shadowBlur = 0;
+
+        // Cursor-Linie
+        const cursorX = prog * containerWidth;
+        ctx.beginPath();
+        ctx.moveTo(cursorX, 0);
+        ctx.lineTo(cursorX, height);
+        ctx.strokeStyle = 'rgba(0, 255, 255, 0.9)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+
+    draw(progress || 0);
+
+    // Klick-Event für Seek
+    canvas.addEventListener('click', function(e) {
+        if(!currentAudio) return;
+        const rect = canvas.getBoundingClientRect();
+        const pct = (e.clientX - rect.left) / rect.width;
+        if(wavesurfer) {
+            wavesurfer.seekTo(Math.max(0, Math.min(1, pct)));
+        } else if(currentAudio && currentAudio.duration) {
+            currentAudio.currentTime = pct * currentAudio.duration;
+        }
+        if(typeof currentUser !== 'undefined' && currentUser) {
+            const t = (currentAudio.duration || 0) * pct;
+            openWaveformComment(t);
+        }
+    });
+
+    return draw;
+}
+
+// ============================================
+// FALLBACK WAVEFORM (wenn Analyse fehlschlägt)
+// ============================================
+
+function generateFallbackPeaks(numBars) {
+    const peaks = [];
+    for(let i = 0; i < numBars; i++) {
+        // Realistische Simulation: mehrere überlagerte Sinuswellen + Rauschen
+        const base = Math.abs(Math.sin(i * 0.07)) * 0.5;
+        const mid  = Math.abs(Math.sin(i * 0.19 + 1.2)) * 0.25;
+        const high = Math.abs(Math.sin(i * 0.41 + 2.5)) * 0.15;
+        const noise = Math.random() * 0.1;
+        // Intro/Outro simulieren: leiser am Anfang und Ende
+        const envelope = Math.sin((i / numBars) * Math.PI);
+        peaks.push(Math.max(0.05, (base + mid + high + noise) * envelope));
+    }
+    // Normalisieren
+    const max = Math.max(...peaks, 0.001);
+    return peaks.map(p => p / max);
+}
 
 // ============================================
 // MINI PLAYER BAR
@@ -388,8 +543,9 @@ function playGridTrack(trackId, audioFile) {
 
 let currentModalTrack = null;
 let currentModalTrackId = null;
-let currentPlayingTrack = null; // Der Track der wirklich spielt
-let wavesurfer = null; // WaveSurfer Instanz
+let currentPlayingTrack = null;
+let wavesurfer = null;
+let waveDrawFn = null; // Funktion zum Neu-Zeichnen der Waveform
 
 function createMiniPlayer() {
     if(document.getElementById('miniPlayerBar')) return;
@@ -410,16 +566,11 @@ function createMiniPlayer() {
         box-shadow:0 -4px 30px rgba(255,0,255,0.3);
     `;
     bar.innerHTML = `
-        <!-- Cover -->
         <img id="miniCover" src="" style="width:42px;height:42px;border-radius:6px;object-fit:cover;border:1px solid #ff00ff;flex-shrink:0;">
-
-        <!-- Title + Artist -->
         <div style="flex:1;min-width:0;cursor:pointer;" onclick="maximizePlayer()">
             <div id="miniTitle" style="color:#fff;font-size:0.85rem;font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
             <div id="miniArtist" style="color:#00ffff;font-size:0.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
         </div>
-
-        <!-- Progress Bar -->
         <div style="flex:2;min-width:0;cursor:pointer;" onclick="miniSeek(event, this)">
             <div style="height:4px;background:rgba(255,255,255,0.15);border-radius:2px;position:relative;">
                 <div id="miniProgress" style="height:100%;background:#ff00ff;border-radius:2px;width:0%;transition:width 0.3s;"></div>
@@ -429,26 +580,21 @@ function createMiniPlayer() {
                 <span id="miniTotalTime" style="color:#888;font-size:0.65rem;">0:00</span>
             </div>
         </div>
-
-        <!-- Play/Pause -->
         <button id="miniPlayBtn" onclick="miniTogglePlay()" style="
             width:38px;height:38px;border-radius:50%;
             background:linear-gradient(135deg,#ff00ff,#00ffff);
             border:none;color:#000;font-size:1rem;
             cursor:pointer;flex-shrink:0;
         ">⏸</button>
-
-        <!-- Volume -->
-        <div style="display:flex;align-items:center;gap:5px;flex-shrink:0;"><span style="color:#aaa;font-size:0.85rem;">🔊</span><input type="range" id="miniVolume" min="0" max="100" value="80" oninput="setVolume(this.value)" style="width:70px;accent-color:#ff00ff;cursor:pointer;touch-action:none;"></div>
-
-        <!-- Maximieren -->
+        <div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">
+            <span style="color:#aaa;font-size:0.85rem;">🔊</span>
+            <input type="range" id="miniVolume" min="0" max="100" value="80" oninput="setVolume(this.value)" style="width:70px;accent-color:#ff00ff;cursor:pointer;touch-action:none;">
+        </div>
         <button onclick="maximizePlayer()" style="
             background:rgba(255,0,255,0.2);border:1px solid #ff00ff;
             color:#ff00ff;border-radius:6px;padding:6px 10px;
             cursor:pointer;font-size:0.75rem;flex-shrink:0;
         ">⬆ Öffnen</button>
-
-        <!-- Schließen -->
         <button onclick="closeMiniPlayer()" style="
             background:transparent;border:none;
             color:#555;font-size:1.2rem;cursor:pointer;flex-shrink:0;
@@ -522,7 +668,6 @@ function maximizePlayer() {
 
 function minimizePlayer() {
     document.getElementById('playerModal').style.display = 'none';
-    // WaveSurfer läuft weiter im Hintergrund
     showMiniPlayer();
 }
 
@@ -536,7 +681,6 @@ function openPlayerModal(track) {
     const miniBar = document.getElementById('miniPlayerBar');
     const miniRunning = miniBar && miniBar.style.display === 'flex' && currentAudio && !currentAudio.paused;
 
-    // Modal Info immer aktualisieren
     const modal = document.getElementById('playerModal');
     modal.style.display = 'flex';
     modal.style.position = 'fixed';
@@ -576,10 +720,9 @@ function openPlayerModal(track) {
     }
 
     if(miniRunning && currentModalTrack && track.id !== currentModalTrack.id) {
-        // MiniPlayer läuft mit anderem Track → nur Info zeigen, NICHT autoplay
         currentModalTrack = track;
         document.getElementById('modalPlayBtn').textContent = '▶';
-        document.getElementById('modalWaveform').innerHTML = '';
+        document.getElementById('modalWaveform').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:110px;color:#666;font-family:Orbitron,sans-serif;font-size:0.75rem;">▶ Press play to load waveform</div>';
         document.getElementById('modalCurrentTime').textContent = '0:00';
         document.getElementById('modalTotalTime').textContent = '0:00';
         if(typeof checkIfLiked === 'function') {
@@ -587,10 +730,9 @@ function openPlayerModal(track) {
                 document.getElementById('modalLikeBtn').innerHTML = (isLiked ? '❤️' : '🤍') + ' <span id="modalLikeCount">' + (track.likes || 0) + '</span>';
             });
         }
-        return; // MiniPlayer läuft weiter!
+        return;
     }
 
-    // Normaler Play
     currentModalTrack = track;
     currentPlayingTrack = track;
     if(miniBar) miniBar.style.display = 'none';
@@ -599,7 +741,6 @@ function openPlayerModal(track) {
     currentModalTrackId = track.id;
     currentTrackId = track.id;
 
-    // WaveSurfer initialisieren
     initWaveSurfer(track);
 
     if(typeof incrementPlayCount === 'function') incrementPlayCount(track.id);
@@ -612,130 +753,178 @@ function openPlayerModal(track) {
     if(typeof loadRepostCount === 'function') loadRepostCount(track.id);
 }
 
+// ============================================
+// INIT WAVESURFER - MIT WEB AUDIO FALLBACK
+// ============================================
+
 function initWaveSurfer(track) {
-    // Alles stoppen und aufräumen
     if(wavesurfer) { try { wavesurfer.destroy(); } catch(e) {} wavesurfer = null; }
     if(currentAudio) { try { currentAudio.pause(); } catch(e) {} currentAudio = null; }
+    waveDrawFn = null;
 
     const container = document.getElementById('modalWaveform');
     container.innerHTML = '';
     container.style.cssText = 'position:relative;width:100%;height:110px;cursor:pointer;overflow:hidden;border-radius:8px;background:rgba(0,0,0,0.4);';
 
-    if(typeof WaveSurfer === 'undefined') {
-        buildModalWaveform();
-        startFallbackAudio(track);
-        return;
-    }
+    // Lade-Indikator
+    const loader = document.createElement('div');
+    loader.id = 'waveLoader';
+    loader.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#ff00ff;font-family:Orbitron,sans-serif;font-size:0.75rem;letter-spacing:2px;z-index:10;background:rgba(0,0,0,0.4);border-radius:8px;';
+    loader.innerHTML = '<span>⚡ ANALYZING WAVEFORM...</span>';
+    container.appendChild(loader);
 
-    try {
-        wavesurfer = WaveSurfer.create({
-            container: '#modalWaveform',
-            waveColor: 'rgba(180,180,200,0.5)',
-            progressColor: '#ff00ff',
-            cursorColor: '#00ffff',
-            cursorWidth: 2,
-            barWidth: 3,
-            barGap: 1,
-            barRadius: 2,
-            height: 110,
-            normalize: true,
-            backend: 'WebAudio',
-            hideScrollbar: true,
-            interact: true,
-            fillParent: true,
-            pixelRatio: 1,
-            xhr: { cache: 'default', mode: 'cors', credentials: 'omit' },
-        });
+    if(typeof WaveSurfer !== 'undefined') {
+        // WaveSurfer vorhanden → echte Waveform via WaveSurfer
+        try {
+            wavesurfer = WaveSurfer.create({
+                container: '#modalWaveform',
+                waveColor: 'rgba(160,160,200,0.45)',
+                progressColor: '#ff00ff',
+                cursorColor: 'rgba(0,255,255,0.9)',
+                cursorWidth: 2,
+                barWidth: 3,
+                barGap: 1,
+                barRadius: 2,
+                height: 110,
+                normalize: true,
+                backend: 'WebAudio',
+                hideScrollbar: true,
+                interact: true,
+                fillParent: true,
+                pixelRatio: 1,
+                xhr: { cache: 'default', mode: 'cors', credentials: 'omit' },
+            });
 
-        wavesurfer.load(track.audioFile);
+            wavesurfer.load(track.audioFile);
 
-        wavesurfer.on('ready', () => {
-            const vol = document.getElementById('modalVolume').value / 100;
-            wavesurfer.setVolume(vol);
-            document.getElementById('modalTotalTime').textContent = formatTime(wavesurfer.getDuration());
-            wavesurfer.play();
-            document.getElementById('modalPlayBtn').textContent = '⏸';
+            wavesurfer.on('ready', () => {
+                const loaderEl = document.getElementById('waveLoader');
+                if(loaderEl) loaderEl.remove();
 
-            // currentAudio als Proxy für MiniPlayer - kein echtes Audio!
-            currentAudio = {
-                _ws: wavesurfer,
-                get paused() { return !wavesurfer || !wavesurfer.isPlaying(); },
-                get currentTime() { return wavesurfer ? wavesurfer.getCurrentTime() : 0; },
-                set currentTime(t) { if(wavesurfer) wavesurfer.seekTo(t / wavesurfer.getDuration()); },
-                get duration() { return wavesurfer ? wavesurfer.getDuration() : 0; },
-                get volume() { return vol; },
-                set volume(v) { if(wavesurfer) wavesurfer.setVolume(v); },
-                play() { if(wavesurfer) wavesurfer.play(); },
-                pause() { if(wavesurfer) wavesurfer.pause(); },
-            };
+                const vol = document.getElementById('modalVolume').value / 100;
+                wavesurfer.setVolume(vol);
+                document.getElementById('modalTotalTime').textContent = formatTime(wavesurfer.getDuration());
+                wavesurfer.play();
+                document.getElementById('modalPlayBtn').textContent = '⏸';
 
-            setTimeout(() => loadWaveformComments(currentModalTrackId), 300);
-        });
+                currentAudio = {
+                    _ws: wavesurfer,
+                    get paused() { return !wavesurfer || !wavesurfer.isPlaying(); },
+                    get currentTime() { return wavesurfer ? wavesurfer.getCurrentTime() : 0; },
+                    set currentTime(t) { if(wavesurfer) wavesurfer.seekTo(t / wavesurfer.getDuration()); },
+                    get duration() { return wavesurfer ? wavesurfer.getDuration() : 0; },
+                    get volume() { return vol; },
+                    set volume(v) { if(wavesurfer) wavesurfer.setVolume(v); },
+                    play() { if(wavesurfer) wavesurfer.play(); },
+                    pause() { if(wavesurfer) wavesurfer.pause(); },
+                };
 
-        wavesurfer.on('audioprocess', () => {
-            if(!wavesurfer) return;
-            const t = wavesurfer.getCurrentTime();
-            document.getElementById('modalCurrentTime').textContent = formatTime(t);
-            updateMiniPlayer();
-        });
+                setTimeout(() => loadWaveformComments(currentModalTrackId), 300);
+            });
 
-        wavesurfer.on('finish', () => {
-            document.getElementById('modalPlayBtn').textContent = '▶';
-            const miniBtn = document.getElementById('miniPlayBtn');
-            if(miniBtn) miniBtn.textContent = '▶';
-        });
+            wavesurfer.on('audioprocess', () => {
+                if(!wavesurfer) return;
+                const t = wavesurfer.getCurrentTime();
+                document.getElementById('modalCurrentTime').textContent = formatTime(t);
+                updateMiniPlayer();
+            });
 
-        wavesurfer.on('error', (e) => {
-            console.error('WaveSurfer error:', e);
+            wavesurfer.on('finish', () => {
+                document.getElementById('modalPlayBtn').textContent = '▶';
+                const miniBtn = document.getElementById('miniPlayBtn');
+                if(miniBtn) miniBtn.textContent = '▶';
+            });
+
+            wavesurfer.on('error', (e) => {
+                console.warn('WaveSurfer error, switching to Web Audio API:', e);
+                if(wavesurfer) { try { wavesurfer.destroy(); } catch(ex) {} wavesurfer = null; }
+                startWebAudioPlayer(track);
+            });
+
+        } catch(e) {
+            console.warn('WaveSurfer init failed:', e);
             if(wavesurfer) { try { wavesurfer.destroy(); } catch(ex) {} wavesurfer = null; }
-            buildModalWaveform();
-            startFallbackAudio(track);
-        });
+            startWebAudioPlayer(track);
+        }
 
-    } catch(e) {
-        console.error('WaveSurfer init error:', e);
-        if(wavesurfer) { try { wavesurfer.destroy(); } catch(ex) {} wavesurfer = null; }
-        buildModalWaveform();
-        startFallbackAudio(track);
+    } else {
+        // Kein WaveSurfer → direkt Web Audio API
+        startWebAudioPlayer(track);
     }
 }
 
+// ============================================
+// WEB AUDIO PLAYER - mit echter Waveform
+// ============================================
 
-function startFallbackAudio(track) {
-    currentAudio = new Audio(track.audioFile);
-    currentAudio.volume = document.getElementById('modalVolume').value / 100;
+async function startWebAudioPlayer(track) {
+    const container = document.getElementById('modalWaveform');
+    const NUM_BARS = 300;
+
+    // Audio Element erstellen
+    currentAudio = new Audio();
+    currentAudio.crossOrigin = 'anonymous';
+    currentAudio.src = track.audioFile;
+    currentAudio.volume = (document.getElementById('modalVolume').value || 80) / 100;
+
+    // Waveform analysieren (parallel zum Laden)
+    let peaks = await analyzeAudioWaveform(track.audioFile, NUM_BARS);
+    if(!peaks) {
+        peaks = generateFallbackPeaks(NUM_BARS);
+    }
+
+    // Loader entfernen
+    const loaderEl = document.getElementById('waveLoader');
+    if(loaderEl) loaderEl.remove();
+
+    // Canvas Waveform zeichnen
+    waveDrawFn = drawWaveformCanvas(container, peaks, 0, 110);
+
+    // Kommentar-Marker laden
+    setTimeout(() => loadWaveformComments(currentModalTrackId), 300);
+
+    // Audio Events
     currentAudio.addEventListener('loadedmetadata', () => {
         document.getElementById('modalTotalTime').textContent = formatTime(currentAudio.duration);
-        setTimeout(() => loadWaveformComments(currentModalTrackId), 300);
     });
+
     currentAudio.addEventListener('timeupdate', () => {
+        const progress = currentAudio.currentTime / currentAudio.duration || 0;
         document.getElementById('modalCurrentTime').textContent = formatTime(currentAudio.currentTime);
-        updateModalWaveform();
+
+        // Waveform Fortschritt aktualisieren
+        if(waveDrawFn) waveDrawFn(progress);
         updateMiniPlayer();
     });
+
     currentAudio.addEventListener('ended', () => {
         document.getElementById('modalPlayBtn').textContent = '▶';
         const miniBtn = document.getElementById('miniPlayBtn');
         if(miniBtn) miniBtn.textContent = '▶';
+        if(waveDrawFn) waveDrawFn(0);
     });
-    currentAudio.play();
-    document.getElementById('modalPlayBtn').textContent = '⏸';
-}
 
+    // Autoplay
+    currentAudio.play().then(() => {
+        document.getElementById('modalPlayBtn').textContent = '⏸';
+    }).catch(e => {
+        console.warn('Autoplay blocked:', e);
+        document.getElementById('modalPlayBtn').textContent = '▶';
+    });
+}
 
 function closePlayerModal(event) {
     if(event && event.target.id !== 'playerModal') return;
     document.getElementById('playerModal').style.display = 'none';
     if(wavesurfer) { try { wavesurfer.stop(); wavesurfer.destroy(); } catch(e) {} wavesurfer = null; }
     if(currentAudio) { try { currentAudio.pause(); } catch(e) {} currentAudio = null; }
+    waveDrawFn = null;
     hideMiniPlayer();
     document.getElementById('modalWaveform').innerHTML = '';
     document.getElementById('modalPlayBtn').textContent = '▶';
 }
 
-
 function modalTogglePlay() {
-    // Wenn Modal-Track anders als laufender Track → neuen starten
     if(currentModalTrack && currentModalTrackId !== currentModalTrack.id) {
         if(wavesurfer) { try { wavesurfer.stop(); wavesurfer.destroy(); } catch(e) {} wavesurfer = null; }
         if(currentAudio) { currentAudio.pause(); currentAudio = null; }
@@ -748,23 +937,22 @@ function modalTogglePlay() {
         if(typeof incrementPlayCount === 'function') incrementPlayCount(currentModalTrack.id);
         return;
     }
-    // Play/Pause
+
     if(wavesurfer) {
         if(wavesurfer.isPlaying()) {
             wavesurfer.pause();
             document.getElementById('modalPlayBtn').textContent = '▶';
-            if(currentAudio) currentAudio.paused = true;
             const miniBtn = document.getElementById('miniPlayBtn');
             if(miniBtn) miniBtn.textContent = '▶';
         } else {
             wavesurfer.play();
             document.getElementById('modalPlayBtn').textContent = '⏸';
-            if(currentAudio) currentAudio.paused = false;
             const miniBtn = document.getElementById('miniPlayBtn');
             if(miniBtn) miniBtn.textContent = '⏸';
         }
         return;
     }
+
     if(!currentAudio) return;
     if(currentAudio.paused) {
         currentAudio.play();
@@ -779,7 +967,6 @@ function modalTogglePlay() {
     }
 }
 
-
 async function modalToggleLike() {
     if(!currentModalTrackId) return;
     await toggleLike(currentModalTrackId);
@@ -791,36 +978,9 @@ async function modalToggleLike() {
     }
 }
 
-function buildModalWaveform() {
-    const container = document.getElementById('modalWaveform');
-    container.innerHTML = '';
-    container.style.cssText = 'position:relative;display:flex;align-items:center;gap:1px;width:100%;height:110px;cursor:pointer;overflow:hidden;border-radius:8px;background:rgba(0,0,0,0.4);';
-
-    // Klick: Seek + Kommentar-Box aktualisieren
-    container.addEventListener('click', function(e) {
-        if(!currentAudio) return;
-        const pct = (e.clientX - container.getBoundingClientRect().left) / container.offsetWidth;
-        const t = currentAudio.duration * pct;
-        if(!isNaN(t)) {
-            currentAudio.currentTime = t;
-            // Klick öffnet Kommentar-Eingabe (Position merken)
-            if(typeof currentUser !== 'undefined' && currentUser) {
-                openWaveformComment(t);
-            }
-        }
-    });
-
-    for(let i = 0; i < 320; i++) {
-        const bar = document.createElement('div');
-        bar.className = 'modal-bar';
-        const h = Math.max(4, Math.abs(Math.sin(i*0.08))*45 + Math.abs(Math.sin(i*0.2+1))*25 + Math.abs(Math.sin(i*0.35+2))*15 + Math.random()*12);
-        bar.style.cssText = `width:2px;min-width:2px;height:${h}px;background:rgba(180,180,200,0.5);border-radius:1px;transition:background 0.05s;flex-shrink:0;`;
-        container.appendChild(bar);
-    }
-
-    // Kommentare laden und anzeigen
-    if(currentModalTrackId) loadWaveformComments(currentModalTrackId);
-}
+// ============================================
+// WAVEFORM KOMMENTARE
+// ============================================
 
 function openWaveformComment(timestamp) {
     if(typeof currentUser === 'undefined' || !currentUser) return;
@@ -828,7 +988,6 @@ function openWaveformComment(timestamp) {
     const existing = document.getElementById('waveformCommentInput');
     if(existing) existing.remove();
 
-    // Box UNTER der Waveform anzeigen - im modalCommentsSection Bereich
     const commentSection = document.getElementById('modalCommentsSection');
     if(!commentSection) return;
 
@@ -872,7 +1031,6 @@ async function submitWaveformComment(timestamp) {
 async function loadWaveformComments(trackId) {
     if(!currentAudio || !currentAudio.duration) return;
     const container = document.getElementById('modalWaveform');
-    // Alte Marker entfernen
     container.querySelectorAll('.wave-comment-marker').forEach(m => m.remove());
 
     try {
@@ -882,22 +1040,19 @@ async function loadWaveformComments(trackId) {
             if(c.timestamp == null) return;
             const pct = c.timestamp / currentAudio.duration * 100;
 
-            // Wrapper
             const marker = document.createElement('div');
             marker.className = 'wave-comment-marker';
             marker.style.cssText = `position:absolute;left:${Math.min(pct, 97)}%;top:0;width:2px;height:100%;background:#ff00ff88;cursor:pointer;z-index:10;`;
 
-            // Avatar auf der Waveform
             const avatar = document.createElement('div');
-            avatar.style.cssText = 'position:absolute;top:2px;left:50%;transform:translateX(-50%);width:20px;height:20px;border-radius:50%;border:2px solid #ff00ff;overflow:hidden;background:#111;flex-shrink:0;box-shadow:0 0 6px rgba(255,0,255,0.6);';
+            avatar.style.cssText = 'position:absolute;top:2px;left:50%;transform:translateX(-50%);width:20px;height:20px;border-radius:50%;border:2px solid #ff00ff;overflow:hidden;background:#111;box-shadow:0 0 6px rgba(255,0,255,0.6);';
             const img = document.createElement('img');
             img.src = c.avatar || '';
             img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
-            img.onerror = () => { img.style.display='none'; avatar.style.background='#ff00ff'; avatar.innerHTML += '<span style="color:#000;font-size:0.55rem;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);">👤</span>'; };
+            img.onerror = () => { img.style.display='none'; avatar.style.background='#ff00ff'; };
             avatar.appendChild(img);
             marker.appendChild(avatar);
 
-            // Tooltip
             const tip = document.createElement('div');
             tip.style.cssText = 'position:absolute;top:25px;left:50%;transform:translateX(-50%);background:#111;border:1px solid #ff00ff;border-radius:6px;padding:7px 10px;font-size:0.72rem;color:#fff;display:none;z-index:9999;min-width:140px;max-width:200px;white-space:normal;box-shadow:0 0 15px rgba(255,0,255,0.3);';
             tip.innerHTML = `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;"><img src="${c.avatar||''}" style="width:18px;height:18px;border-radius:50%;object-fit:cover;" onerror="this.style.display='none'"><span style="color:#ff00ff;font-weight:bold;">${c.username}</span><span style="color:#666;font-size:0.65rem;">${formatTime(c.timestamp)}</span></div><div>${c.text}</div>`;
@@ -921,7 +1076,7 @@ async function loadModalComments(trackId) {
         comments.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
 
         if(comments.length === 0) {
-            container.innerHTML = '<p style="color:#666;font-size:0.78rem;text-align:center;padding:10px;">No comments yet — Shift+Click on waveform to add one!</p>';
+            container.innerHTML = '<p style="color:#666;font-size:0.78rem;text-align:center;padding:10px;">No comments yet — Click on waveform to add one!</p>';
             return;
         }
         container.innerHTML = '';
@@ -951,20 +1106,13 @@ async function deleteWaveformComment(commentId) {
     } catch(e) { alert('Error: ' + e.message); }
 }
 
-function updateModalWaveform() {
-    if(!currentAudio) return;
-    const bars = document.querySelectorAll('.modal-bar');
-    const p = currentAudio.currentTime / currentAudio.duration;
-    bars.forEach((bar, i) => {
-        if(i / bars.length <= p) { bar.style.background = 'rgba(255,0,255,1)'; bar.style.boxShadow = '0 0 4px rgba(255,0,255,0.9)'; }
-        else { bar.style.background = 'rgba(180,180,200,0.5)'; bar.style.boxShadow = 'none'; }
-    });
+function setVolume(v) {
+    if(wavesurfer) wavesurfer.setVolume(v / 100);
+    if(currentAudio && !currentAudio._ws) currentAudio.volume = v / 100;
 }
 
-function setVolume(v) { if(wavesurfer) wavesurfer.setVolume(v / 100); if(currentAudio && currentAudio.volume !== undefined) currentAudio.volume = v / 100; }
-
 function formatTime(s) {
-    if(isNaN(s)) return '0:00';
+    if(isNaN(s) || s === undefined) return '0:00';
     return Math.floor(s/60) + ':' + (Math.floor(s%60) < 10 ? '0' : '') + Math.floor(s%60);
 }
 
