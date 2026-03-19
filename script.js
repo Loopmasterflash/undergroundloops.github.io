@@ -644,6 +644,7 @@ function initWaveSurfer(track) {
             interact: true,
             fillParent: true,
             pixelRatio: 1,
+            xhr: { cache: 'default', mode: 'cors', credentials: 'omit' },
         });
 
         wavesurfer.load(track.audioFile);
@@ -793,7 +794,7 @@ async function modalToggleLike() {
 function buildModalWaveform() {
     const container = document.getElementById('modalWaveform');
     container.innerHTML = '';
-    container.style.cssText = 'position:relative;display:flex;align-items:center;gap:1px;width:100%;height:80px;cursor:pointer;overflow:visible;margin-top:20px;';
+    container.style.cssText = 'position:relative;display:flex;align-items:center;gap:1px;width:100%;height:110px;cursor:pointer;overflow:hidden;border-radius:8px;background:rgba(0,0,0,0.4);';
 
     // Klick: Seek + Kommentar-Box aktualisieren
     container.addEventListener('click', function(e) {
@@ -809,7 +810,7 @@ function buildModalWaveform() {
         }
     });
 
-    for(let i = 0; i < 180; i++) {
+    for(let i = 0; i < 320; i++) {
         const bar = document.createElement('div');
         bar.className = 'modal-bar';
         const h = Math.max(4, Math.abs(Math.sin(i*0.08))*45 + Math.abs(Math.sin(i*0.2+1))*25 + Math.abs(Math.sin(i*0.35+2))*15 + Math.random()*12);
