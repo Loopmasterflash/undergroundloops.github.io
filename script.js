@@ -380,20 +380,19 @@ const waveformCache = {};
 // ============================================
 
 async function analyzeAudioWaveform(audioUrl, numBars) {
-    // Cache prüfen
-    const cacheKey = audioUrl + '_' + numBars;
-    if(waveformCache[cacheKey]) return waveformCache[cacheKey];
+    // Cache prüfen - URL als eindeutiger Key
+    if(waveformCache[audioUrl]) return waveformCache[audioUrl];
 
     try {
         const response = await fetch(audioUrl, { mode: 'cors' });
-        if(!response.ok) throw new Error('Fetch failed');
+        if(!response.ok) throw new Error('Fetch failed: ' + response.status);
         const arrayBuffer = await response.arrayBuffer();
 
+        // Eigener AudioContext NUR für Analyse - nicht für Wiedergabe!
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-        await audioCtx.close();
+        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer.slice(0));
+        audioCtx.close(); // sofort schließen nach Analyse
 
-        // Kanaldaten holen (Mono oder Stereo zusammenrechnen)
         const channelData = audioBuffer.getChannelData(0);
         const length = channelData.length;
         const samplesPerBar = Math.floor(length / numBars);
@@ -409,15 +408,16 @@ async function analyzeAudioWaveform(audioUrl, numBars) {
             peaks.push(max);
         }
 
-        // Normalisieren: höchster Wert = 1.0
+        // Normalisieren
         const maxPeak = Math.max(...peaks, 0.001);
         const normalized = peaks.map(p => p / maxPeak);
 
-        waveformCache[cacheKey] = normalized;
+        // Unter der echten URL cachen
+        waveformCache[audioUrl] = normalized;
         return normalized;
 
     } catch(e) {
-        console.warn('Web Audio API analysis failed, using fallback:', e);
+        console.warn('Web Audio API analysis failed, using fallback:', e.message);
         return null;
     }
 }
@@ -857,42 +857,21 @@ function initWaveSurfer(track) {
 // WEB AUDIO PLAYER - mit echter Waveform
 // ============================================
 
-async function startWebAudioPlayer(track) {
+function startWebAudioPlayer(track) {
     const container = document.getElementById('modalWaveform');
     const NUM_BARS = 300;
 
-    // Audio Element erstellen
-    currentAudio = new Audio();
-    currentAudio.crossOrigin = 'anonymous';
-    currentAudio.src = track.audioFile;
+    // Audio SOFORT starten - KEIN crossOrigin, KEIN await!
+    currentAudio = new Audio(track.audioFile);
     currentAudio.volume = (document.getElementById('modalVolume').value || 80) / 100;
 
-    // Waveform analysieren (parallel zum Laden)
-    let peaks = await analyzeAudioWaveform(track.audioFile, NUM_BARS);
-    if(!peaks) {
-        peaks = generateFallbackPeaks(NUM_BARS);
-    }
-
-    // Loader entfernen
-    const loaderEl = document.getElementById('waveLoader');
-    if(loaderEl) loaderEl.remove();
-
-    // Canvas Waveform zeichnen
-    waveDrawFn = drawWaveformCanvas(container, peaks, 0, 110);
-
-    // Kommentar-Marker laden
-    setTimeout(() => loadWaveformComments(currentModalTrackId), 300);
-
-    // Audio Events
     currentAudio.addEventListener('loadedmetadata', () => {
         document.getElementById('modalTotalTime').textContent = formatTime(currentAudio.duration);
     });
 
     currentAudio.addEventListener('timeupdate', () => {
-        const progress = currentAudio.currentTime / currentAudio.duration || 0;
+        const progress = currentAudio.currentTime / (currentAudio.duration || 1);
         document.getElementById('modalCurrentTime').textContent = formatTime(currentAudio.currentTime);
-
-        // Waveform Fortschritt aktualisieren
         if(waveDrawFn) waveDrawFn(progress);
         updateMiniPlayer();
     });
@@ -904,12 +883,27 @@ async function startWebAudioPlayer(track) {
         if(waveDrawFn) waveDrawFn(0);
     });
 
-    // Autoplay
     currentAudio.play().then(() => {
         document.getElementById('modalPlayBtn').textContent = '⏸';
     }).catch(e => {
         console.warn('Autoplay blocked:', e);
         document.getElementById('modalPlayBtn').textContent = '▶';
+    });
+
+    // Waveform SEPARAT analysieren - stoert Audio nicht!
+    const trackUrl = track.audioFile;
+    analyzeAudioWaveform(trackUrl, NUM_BARS).then(peaks => {
+        if(!peaks) peaks = generateFallbackPeaks(NUM_BARS);
+        const loaderEl = document.getElementById('waveLoader');
+        if(loaderEl) loaderEl.remove();
+        const currentProgress = currentAudio ? (currentAudio.currentTime / (currentAudio.duration || 1)) : 0;
+        waveDrawFn = drawWaveformCanvas(container, peaks, currentProgress, 110);
+        setTimeout(() => loadWaveformComments(currentModalTrackId), 300);
+    }).catch(() => {
+        const peaks = generateFallbackPeaks(NUM_BARS);
+        const loaderEl = document.getElementById('waveLoader');
+        if(loaderEl) loaderEl.remove();
+        waveDrawFn = drawWaveformCanvas(container, peaks, 0, 110);
     });
 }
 
