@@ -626,6 +626,8 @@ function openPlayerModal(track) {
     }
     // Kommentare laden
     loadModalComments(track.id);
+    // Repost Status laden
+    if(typeof loadRepostCount === 'function') loadRepostCount(track.id);
 }
 
 

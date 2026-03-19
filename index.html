@@ -235,6 +235,7 @@
                 <button class="tab-btn active" data-tab="uploads">My Uploads</button>
                 <button class="tab-btn" data-tab="liked">Liked Tracks</button>
                 <button class="tab-btn" data-tab="playlists">🎵 Playlists</button>
+                <button class="tab-btn" data-tab="reposts">🔁 Reposts</button>
                 <button class="tab-btn" data-tab="stats">📊 Stats</button>
                 <button class="tab-btn" data-tab="sociallinks">🔗 Social Links</button>
                 <button class="tab-btn" data-tab="settings">Settings</button>
@@ -254,6 +255,9 @@
 
                 <!-- PLAYLISTS TAB NEU! -->
                 <div id="playlistsTab" class="tab-content hidden"></div>
+
+                <!-- REPOSTS TAB -->
+                <div id="repostsTab" class="tab-content hidden"></div>
 
                 <!-- STATS TAB -->
                 <div id="statsTab" class="tab-content hidden"></div>
@@ -446,6 +450,7 @@
             <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
                 <button id="modalLikeBtn" onclick="modalToggleLike()" style="padding:10px 20px;background:rgba(255,0,255,0.2);border:1px solid #ff00ff;color:#fff;border-radius:8px;cursor:pointer;font-size:0.9rem;transition:all 0.3s;">🤍 <span id="modalLikeCount">0</span></button>
                 <button id="modalPlaylistBtn" onclick="openPlaylistPopup(currentModalTrackId)" style="padding:10px 20px;background:rgba(255,165,0,0.2);border:1px solid #ffa500;color:#ffa500;border-radius:8px;cursor:pointer;font-size:0.9rem;transition:all 0.3s;" title="Zur Playlist hinzufügen">🎵 + Playlist</button>
+                <button id="modalRepostBtn" onclick="toggleRepost(currentModalTrackId)" style="padding:10px 20px;background:rgba(0,255,136,0.2);border:1px solid #00ff88;color:#00ff88;border-radius:8px;cursor:pointer;font-size:0.9rem;transition:all 0.3s;">🔁 Repost</button>
                 <a id="modalDownloadBtn" href="#" download onclick="if(currentModalTrackId && typeof incrementDownloadCount==='function') incrementDownloadCount(currentModalTrackId)" style="padding:10px 20px;background:rgba(0,255,255,0.2);border:1px solid #00ffff;color:#fff;border-radius:8px;cursor:pointer;font-size:0.9rem;text-decoration:none;">⬇ Download</a>
             </div>
 

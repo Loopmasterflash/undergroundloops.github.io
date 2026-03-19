@@ -717,6 +717,7 @@ function setupProfileTabs() {
             else if(tab === 'playlists') { document.getElementById('playlistsTab').classList.remove('hidden'); loadUserPlaylists(currentProfileUserId); }
             else if(tab === 'stats') { document.getElementById('statsTab').classList.remove('hidden'); loadUserStats(currentProfileUserId); }
             else if(tab === 'sociallinks') { document.getElementById('sociallinksTab').classList.remove('hidden'); loadSocialLinks(currentProfileUserId); }
+            else if(tab === 'reposts') { document.getElementById('repostsTab').classList.remove('hidden'); loadUserReposts(currentProfileUserId); }
             else if(tab === 'settings') document.getElementById('settingsTab').classList.remove('hidden');
         };
     });
@@ -1025,6 +1026,99 @@ async function removeSocialLink(index) {
         await userRef.update({ socialLinks: links });
         loadSocialLinks(currentUser.uid);
     } catch(e) { alert('❌ Fehler: ' + e.message); }
+}
+
+
+// ============================================
+// REPOST SYSTEM
+// ============================================
+
+async function toggleRepost(trackId) {
+    if(!currentUser) { alert('Please login to repost!'); return; }
+    try {
+        const repostId = `${currentUser.uid}_${trackId}`;
+        const repostRef = db.collection('reposts').doc(repostId);
+        const repostDoc = await repostRef.get();
+        const btn = document.getElementById('modalRepostBtn');
+
+        if(repostDoc.exists) {
+            await repostRef.delete();
+            if(btn) { btn.style.background = 'rgba(0,255,136,0.2)'; btn.style.color = '#00ff88'; btn.innerHTML = '🔁 Repost'; }
+        } else {
+            const userDoc = await db.collection('users').doc(currentUser.uid).get();
+            const userData = userDoc.data();
+            await repostRef.set({
+                userId: currentUser.uid,
+                username: userData.username || 'Unknown',
+                avatar: userData.avatar || '',
+                trackId,
+                createdAt: new Date().toISOString()
+            });
+            if(btn) { btn.style.background = 'rgba(0,255,136,0.4)'; btn.style.color = '#fff'; btn.innerHTML = '🔁 Reposted!'; }
+        }
+        // Zähler aktualisieren
+        loadRepostCount(trackId);
+    } catch(e) { console.error('Repost error:', e); }
+}
+
+async function checkIfReposted(trackId) {
+    if(!currentUser) return false;
+    try {
+        const doc = await db.collection('reposts').doc(`${currentUser.uid}_${trackId}`).get();
+        return doc.exists;
+    } catch(e) { return false; }
+}
+
+async function loadRepostCount(trackId) {
+    try {
+        const snap = await db.collection('reposts').where('trackId', '==', trackId).get();
+        const btn = document.getElementById('modalRepostBtn');
+        if(btn) {
+            const isReposted = await checkIfReposted(trackId);
+            btn.innerHTML = `🔁 ${snap.size > 0 ? snap.size : ''} ${isReposted ? 'Reposted!' : 'Repost'}`.trim();
+            if(isReposted) { btn.style.background = 'rgba(0,255,136,0.4)'; btn.style.color = '#fff'; }
+            else { btn.style.background = 'rgba(0,255,136,0.2)'; btn.style.color = '#00ff88'; }
+        }
+    } catch(e) { console.error(e); }
+}
+
+async function loadUserReposts(userId) {
+    const container = document.getElementById('repostsTab');
+    if(!container) return;
+    container.innerHTML = '<p style="color:#666;text-align:center;padding:20px;font-family:Orbitron,sans-serif;font-size:0.8rem;">⏳ Loading...</p>';
+
+    try {
+        const snap = await db.collection('reposts').where('userId', '==', userId).get();
+        if(snap.empty) {
+            container.innerHTML = '<p style="color:#666;text-align:center;padding:40px;">No reposts yet</p>';
+            return;
+        }
+        let reposts = [];
+        snap.forEach(doc => reposts.push(doc.data()));
+        reposts.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+
+        container.innerHTML = '<h3 style="font-family:Orbitron,sans-serif;color:#00ff88;font-size:1rem;letter-spacing:3px;margin-bottom:20px;border-bottom:1px solid #00ff8833;padding-bottom:12px;">🔁 REPOSTS</h3>';
+
+        for(const r of reposts) {
+            const trackDoc = await db.collection('tracks').doc(r.trackId).get();
+            if(!trackDoc.exists) continue;
+            const track = { id: trackDoc.id, ...trackDoc.data() };
+            const div = document.createElement('div');
+            div.style.cssText = 'padding:12px;border:1px solid #00ff8833;border-radius:8px;margin-bottom:8px;display:flex;align-items:center;gap:10px;cursor:pointer;color:#fff;transition:border 0.2s;';
+            div.onmouseover = () => div.style.borderColor = '#00ff88';
+            div.onmouseout = () => div.style.borderColor = '#00ff8833';
+            div.onclick = () => openPlayerModal(track);
+            div.innerHTML = `
+                <img src="${track.coverImage||''}" style="width:44px;height:44px;border-radius:6px;object-fit:cover;flex-shrink:0;border:1px solid #00ff8844;" onerror="this.style.display='none'">
+                <div style="flex:1;min-width:0;">
+                    <div style="font-weight:bold;font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${track.title}</div>
+                    <div style="color:#888;font-size:0.75rem;">${track.artist||''} • ${track.genre||''}</div>
+                </div>
+                <span style="color:#00ff88;font-size:0.75rem;">🔁</span>
+            `;
+            container.appendChild(div);
+        }
+    } catch(e) { container.innerHTML = '<p style="color:#ff4444;text-align:center;padding:40px;">❌ Error loading reposts</p>'; }
 }
 
 // ============================================
