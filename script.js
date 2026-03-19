@@ -613,26 +613,21 @@ function openPlayerModal(track) {
 }
 
 function initWaveSurfer(track) {
-    // Alten WaveSurfer zerstören
+    // Alles stoppen und aufräumen
     if(wavesurfer) { try { wavesurfer.destroy(); } catch(e) {} wavesurfer = null; }
+    if(currentAudio) { try { currentAudio.pause(); } catch(e) {} currentAudio = null; }
 
     const container = document.getElementById('modalWaveform');
     container.innerHTML = '';
-    // Kein margin-top, overflow hidden damit nichts überlagert
     container.style.cssText = 'position:relative;width:100%;height:110px;cursor:pointer;overflow:hidden;border-radius:8px;background:rgba(0,0,0,0.4);';
 
     if(typeof WaveSurfer === 'undefined') {
-        // Fallback wenn WaveSurfer nicht geladen
         buildModalWaveform();
         startFallbackAudio(track);
         return;
     }
 
     try {
-        // Container Höhe explizit setzen bevor WaveSurfer erstellt wird
-        const waveContainer = document.getElementById('modalWaveform');
-        waveContainer.style.height = '110px';
-
         wavesurfer = WaveSurfer.create({
             container: '#modalWaveform',
             waveColor: 'rgba(180,180,200,0.5)',
@@ -644,80 +639,66 @@ function initWaveSurfer(track) {
             barRadius: 2,
             height: 110,
             normalize: true,
-            backend: 'MediaElement',
+            backend: 'WebAudio',
             hideScrollbar: true,
             interact: true,
             fillParent: true,
             pixelRatio: 1,
-            responsive: true,
         });
 
         wavesurfer.load(track.audioFile);
 
         wavesurfer.on('ready', () => {
-            document.getElementById('modalTotalTime').textContent = formatTime(wavesurfer.getDuration());
-
             const vol = document.getElementById('modalVolume').value / 100;
             wavesurfer.setVolume(vol);
-
+            document.getElementById('modalTotalTime').textContent = formatTime(wavesurfer.getDuration());
             wavesurfer.play();
             document.getElementById('modalPlayBtn').textContent = '⏸';
 
+            // currentAudio als Proxy für MiniPlayer - kein echtes Audio!
             currentAudio = {
-                paused: false,
-                currentTime: 0,
-                duration: wavesurfer.getDuration(),
-                volume: vol,
-                play: () => wavesurfer.play(),
-                pause: () => wavesurfer.pause(),
+                _ws: wavesurfer,
+                get paused() { return !wavesurfer || !wavesurfer.isPlaying(); },
+                get currentTime() { return wavesurfer ? wavesurfer.getCurrentTime() : 0; },
+                set currentTime(t) { if(wavesurfer) wavesurfer.seekTo(t / wavesurfer.getDuration()); },
+                get duration() { return wavesurfer ? wavesurfer.getDuration() : 0; },
+                get volume() { return vol; },
+                set volume(v) { if(wavesurfer) wavesurfer.setVolume(v); },
+                play() { if(wavesurfer) wavesurfer.play(); },
+                pause() { if(wavesurfer) wavesurfer.pause(); },
             };
 
-            // Waveform auf volle Breite neu zeichnen
-            setTimeout(() => {
-                if(wavesurfer) {
-                    const container = document.getElementById('modalWaveform');
-                    const width = container ? container.offsetWidth : 800;
-                    // Zoom auf 1px pro Sekunde = volle Breite
-                    const pxPerSec = Math.floor(width / wavesurfer.getDuration());
-                    wavesurfer.zoom(pxPerSec);
-                }
-                loadWaveformComments(currentModalTrackId);
-            }, 200);
+            setTimeout(() => loadWaveformComments(currentModalTrackId), 300);
         });
 
         wavesurfer.on('audioprocess', () => {
+            if(!wavesurfer) return;
             const t = wavesurfer.getCurrentTime();
-            const d = wavesurfer.getDuration();
             document.getElementById('modalCurrentTime').textContent = formatTime(t);
-            if(currentAudio) { currentAudio.currentTime = t; currentAudio.duration = d; currentAudio.paused = !wavesurfer.isPlaying(); }
             updateMiniPlayer();
         });
 
         wavesurfer.on('finish', () => {
             document.getElementById('modalPlayBtn').textContent = '▶';
-            if(currentAudio) currentAudio.paused = true;
             const miniBtn = document.getElementById('miniPlayBtn');
             if(miniBtn) miniBtn.textContent = '▶';
         });
 
-        wavesurfer.on('seek', () => {
-            const t = wavesurfer.getCurrentTime();
-            document.getElementById('modalCurrentTime').textContent = formatTime(t);
-            if(currentAudio) currentAudio.currentTime = t;
-        });
-
         wavesurfer.on('error', (e) => {
             console.error('WaveSurfer error:', e);
+            if(wavesurfer) { try { wavesurfer.destroy(); } catch(ex) {} wavesurfer = null; }
             buildModalWaveform();
             startFallbackAudio(track);
         });
 
     } catch(e) {
         console.error('WaveSurfer init error:', e);
+        if(wavesurfer) { try { wavesurfer.destroy(); } catch(ex) {} wavesurfer = null; }
         buildModalWaveform();
         startFallbackAudio(track);
     }
 }
+
 
 function startFallbackAudio(track) {
     currentAudio = new Audio(track.audioFile);
