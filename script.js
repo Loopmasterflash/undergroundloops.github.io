@@ -795,7 +795,7 @@ function startDirectAudioWithRealWaveform(track) {
     const NUM_BARS = 300;
     const trackSeed = (track.id || track.title || 'x').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
 
-    // Audio sofort starten
+    // Audio sofort starten - einfach und sauber, KEIN AudioContext
     currentAudio = new Audio(track.audioFile);
     currentAudio.volume = (document.getElementById('modalVolume').value || 80) / 100;
 
@@ -823,91 +823,51 @@ function startDirectAudioWithRealWaveform(track) {
         document.getElementById('modalPlayBtn').textContent = '▶';
     });
 
-    // Echte Waveform: AudioContext mit dem laufenden Audio-Element verbinden!
-    // Das umgeht CORS weil wir das Audio-Element nutzen, nicht fetch()
-    try {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        const audioCtx = new AudioCtx();
-        const source = audioCtx.createMediaElementSource(currentAudio);
-        const analyser = audioCtx.createAnalyser();
-        analyser.fftSize = 2048;
-        source.connect(analyser);
-        analyser.connect(audioCtx.destination);
-
-        const bufferLength = analyser.frequencyBinCount;
-        const dataArray = new Uint8Array(bufferLength);
-        const peaksLive = new Array(NUM_BARS).fill(0);
-        let frameCount = 0;
-        let analysisComplete = false;
-        let animId = null;
-
-        // Live-Analyse waehrend Wiedergabe - sammelt echte Peaks
-        function collectPeaks() {
-            if(analysisComplete || !currentAudio || currentAudio.paused) {
-                if(!currentAudio || currentAudio.paused) {
-                    animId = requestAnimationFrame(collectPeaks);
-                    return;
+    // Waveform: fetch mit no-cors geht nicht, also offline-Analyse via ArrayBuffer
+    // Firebase erlaubt fetch wenn wir die richtige URL mit Token nutzen
+    // Wir versuchen fetch, falls CORS blockiert → einzigartiger Seed-Fallback
+    fetch(track.audioFile)
+        .then(r => {
+            if(!r.ok) throw new Error('fetch failed');
+            return r.arrayBuffer();
+        })
+        .then(buffer => {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            const offlineCtx = new OfflineAudioContext(1, 44100 * 30, 44100);
+            return offlineCtx.decodeAudioData(buffer).then(decoded => {
+                const channelData = decoded.getChannelData(0);
+                const length = channelData.length;
+                const samplesPerBar = Math.floor(length / NUM_BARS);
+                const peaks = [];
+                for(let i = 0; i < NUM_BARS; i++) {
+                    const start = i * samplesPerBar;
+                    let max = 0;
+                    for(let j = 0; j < samplesPerBar; j++) {
+                        const abs = Math.abs(channelData[start + j] || 0);
+                        if(abs > max) max = abs;
+                    }
+                    peaks.push(max);
                 }
-            }
-
-            analyser.getByteFrequencyData(dataArray);
-            const duration = currentAudio.duration || 1;
-            const progress = currentAudio.currentTime / duration;
-            const barIndex = Math.floor(progress * NUM_BARS);
-
-            // Durchschnitt der Frequenzdaten als Peak
-            let sum = 0;
-            for(let i = 0; i < bufferLength; i++) sum += dataArray[i];
-            const avg = sum / bufferLength / 255;
-            if(barIndex < NUM_BARS) peaksLive[barIndex] = Math.max(peaksLive[barIndex], avg);
-
-            frameCount++;
-
-            // Nach 2 Sekunden: statische Waveform aus gesammelten Daten rendern
-            if(frameCount === 60) {
-                // Erste grobe Waveform zeigen mit bisherigen Daten + Fallback fuer Rest
-                const fallback = generateFallbackPeaks(NUM_BARS, trackSeed);
-                const mixed = peaksLive.map((p, i) => p > 0.01 ? p : fallback[i] * 0.7);
-                const maxP = Math.max(...mixed, 0.001);
-                const normalized = mixed.map(v => v / maxP);
-                const loaderEl = document.getElementById('waveLoader');
-                if(loaderEl) loaderEl.remove();
-                const currentProgress = currentAudio ? (currentAudio.currentTime / duration) : 0;
-                waveDrawFn = drawWaveformCanvas(container, normalized, currentProgress, 110);
-                setTimeout(() => loadWaveformComments(currentModalTrackId), 300);
-            }
-
-            animId = requestAnimationFrame(collectPeaks);
-
-            // Analyse stoppen wenn Track zuende
-            if(currentAudio.ended || currentAudio.currentTime >= duration - 0.1) {
-                cancelAnimationFrame(animId);
-                analysisComplete = true;
-            }
-        }
-
-        // Kurz warten bis Audio laeuft, dann Analyse starten
-        setTimeout(() => {
-            if(audioCtx.state === 'suspended') audioCtx.resume();
-            collectPeaks();
-        }, 200);
-
-        // AudioContext beim Schliessen aufraumen
-        currentAudio.addEventListener('ended', () => {
-            if(animId) cancelAnimationFrame(animId);
-            try { audioCtx.close(); } catch(e) {}
-        });
-
-    } catch(e) {
-        console.warn('Live analysis failed:', e);
-        // Fallback mit seed
-        setTimeout(() => {
+                const maxP = Math.max(...peaks, 0.001);
+                return peaks.map(p => p / maxP);
+            });
+        })
+        .then(normalized => {
+            waveformCache[track.audioFile] = normalized;
+            const loaderEl = document.getElementById('waveLoader');
+            if(loaderEl) loaderEl.remove();
+            const prog = currentAudio ? (currentAudio.currentTime / (currentAudio.duration || 1)) : 0;
+            waveDrawFn = drawWaveformCanvas(container, normalized, prog, 110);
+            setTimeout(() => loadWaveformComments(currentModalTrackId), 300);
+        })
+        .catch(() => {
+            // CORS blockiert → einzigartiger Fallback per Seed
             const loaderEl = document.getElementById('waveLoader');
             if(loaderEl) loaderEl.remove();
             const peaks = generateFallbackPeaks(NUM_BARS, trackSeed);
             waveDrawFn = drawWaveformCanvas(container, peaks, 0, 110);
-        }, 500);
-    }
+            setTimeout(() => loadWaveformComments(currentModalTrackId), 300);
+        });
 }
 
 // DUMMY - wird nicht mehr aufgerufen, aber fuer Kompatibilitaet behalten
