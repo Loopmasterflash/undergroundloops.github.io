@@ -800,9 +800,7 @@ function startDirectAudioWithRealWaveform(track) {
     const NUM_BARS = 300;
     const trackSeed = (track.id || track.title || 'x').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
 
-    // =============================================
-    // AUDIO: komplett normal, NICHTS dran haengen
-    // =============================================
+    // SCHRITT 1: Audio sofort starten
     currentAudio = new Audio(track.audioFile);
     currentAudio.volume = (document.getElementById('modalVolume').value || 80) / 100;
 
@@ -827,80 +825,27 @@ function startDirectAudioWithRealWaveform(track) {
         document.getElementById('modalPlayBtn').textContent = '▶';
     });
 
-    // =============================================
-    // WAVEFORM: separates zweites Audio-Objekt NUR fuer Analyse
-    // Ladet die Datei ein zweites Mal - nur fuer die Peaks
-    // =============================================
+    // SCHRITT 2: Sofort Fallback Waveform zeigen (Ton läuft schon!)
     const loaderEl = document.getElementById('waveLoader');
-
-    // Zuerst sofort einzigartigen Fallback zeigen (Ton laeuft schon!)
     if(loaderEl) loaderEl.remove();
     const fallbackPeaks = generateFallbackPeaks(NUM_BARS, trackSeed);
     waveDrawFn = drawWaveformCanvas(container, fallbackPeaks, 0, 110);
     setTimeout(() => loadWaveformComments(currentModalTrackId), 300);
 
-    // Dann im Hintergrund echte Analyse versuchen mit separatem fetch
-    // Zweites Audio-Element nur fuer Analyse - wird nie abgespielt
-    const analyzeAudio = new Audio();
-    analyzeAudio.crossOrigin = 'anonymous';
-    analyzeAudio.src = track.audioFile;
-    analyzeAudio.preload = 'auto';
-    analyzeAudio.volume = 0; // kein Ton - nur Analyse!
-    analyzeAudio.muted = true;
-
-    analyzeAudio.addEventListener('canplaythrough', () => {
-        try {
-            const AudioCtx = window.AudioContext || window.webkitAudioContext;
-            const ctx = new AudioCtx();
-            const src = ctx.createMediaElementSource(analyzeAudio);
-            const analyser = ctx.createAnalyser();
-            analyser.fftSize = 256;
-            src.connect(analyser);
-            // NICHT mit destination verbinden -> kein Ton!
-
-            const bufLen = analyser.frequencyBinCount;
-            const dataArr = new Uint8Array(bufLen);
-            const collectedPeaks = new Array(NUM_BARS).fill(0);
-
-            analyzeAudio.play().catch(() => {});
-
-            let frameId;
-            function grab() {
-                if(analyzeAudio.ended || analyzeAudio.paused) {
-                    cancelAnimationFrame(frameId);
-                    ctx.close();
-                    return;
-                }
-                analyser.getByteFrequencyData(dataArr);
-                const dur = analyzeAudio.duration || 1;
-                const barIdx = Math.min(Math.floor((analyzeAudio.currentTime / dur) * NUM_BARS), NUM_BARS - 1);
-                let sum = 0;
-                for(let i = 0; i < bufLen; i++) sum += dataArr[i];
-                const avg = (sum / bufLen) / 255;
-                if(avg > collectedPeaks[barIdx]) collectedPeaks[barIdx] = avg;
-
-                // Alle 30 Frames Waveform aktualisieren
-                if(Math.floor(analyzeAudio.currentTime * 30) % 10 === 0) {
-                    const filled = collectedPeaks.filter(p => p > 0.01).length;
-                    if(filled > NUM_BARS * 0.1) {
-                        // Luecken mit Fallback fuellen
-                        const fb = generateFallbackPeaks(NUM_BARS, trackSeed);
-                        const mixed = collectedPeaks.map((p, i) => p > 0.01 ? p : fb[i] * 0.5);
-                        const maxP = Math.max(...mixed, 0.001);
-                        const norm = mixed.map(v => v / maxP);
-                        const prog = currentAudio ? (currentAudio.currentTime / (currentAudio.duration || 1)) : 0;
-                        waveDrawFn = drawWaveformCanvas(container, norm, prog, 110);
-                    }
-                }
-                frameId = requestAnimationFrame(grab);
-            }
-            if(ctx.state === 'suspended') ctx.resume().then(grab);
-            else grab();
-
-        } catch(e) {
-            console.warn('Analysis audio failed:', e);
-            // Fallback bleibt - kein Problem
+    // SCHRITT 3: Echte Analyse im Hintergrund via fetch
+    // R2 CORS ist jetzt erlaubt - fetch sollte klappen!
+    const audioUrl = track.audioFile;
+    analyzeAudioWaveform(audioUrl, NUM_BARS).then(peaks => {
+        if(!peaks) {
+            console.log('❌ Analyse fehlgeschlagen, Fallback bleibt');
+            return;
         }
+        console.log('✅ Echte Waveform wird gezeichnet!');
+        // Aktuellen Progress vom laufenden Audio holen
+        const prog = (currentAudio && currentAudio.duration) 
+            ? (currentAudio.currentTime / currentAudio.duration) 
+            : 0;
+        waveDrawFn = drawWaveformCanvas(container, peaks, prog, 110);
     });
 }
 
