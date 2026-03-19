@@ -423,7 +423,7 @@
 
     <!-- ===== PLAYER MODAL ===== -->
     <div id="playerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(10px);" onclick="closePlayerModal(event)">
-        <div style="background:linear-gradient(135deg,#0a0a0a,#1a0a2e);border:1px solid #ff00ff;border-radius:20px;padding:30px;max-width:550px;width:90%;box-shadow:0 0 60px rgba(255,0,255,0.3);position:relative;" onclick="event.stopPropagation()">
+        <div style="background:linear-gradient(135deg,#0a0a0a,#1a0a2e);border:1px solid #ff00ff;border-radius:20px;padding:30px;max-width:720px;width:95%;box-shadow:0 0 60px rgba(255,0,255,0.3);position:relative;" onclick="event.stopPropagation()">
             <button onclick="closePlayerModal()" style="position:absolute;top:15px;right:15px;background:none;border:none;color:#aaa;font-size:1.5rem;cursor:pointer;">✕</button>
             <div style="display:flex;gap:20px;align-items:center;margin-bottom:25px;">
                 <img id="modalCover" src="" style="width:120px;height:120px;object-fit:cover;border-radius:12px;border:2px solid #ff00ff;box-shadow:0 0 20px rgba(255,0,255,0.4);flex-shrink:0;">
@@ -447,11 +447,11 @@
             </div>
 
             <!-- ✅ Buttons: Like + Playlist + Download -->
-            <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
-                <button id="modalLikeBtn" onclick="modalToggleLike()" style="padding:10px 20px;background:rgba(255,0,255,0.2);border:1px solid #ff00ff;color:#fff;border-radius:8px;cursor:pointer;font-size:0.9rem;transition:all 0.3s;">🤍 <span id="modalLikeCount">0</span></button>
-                <button id="modalPlaylistBtn" onclick="openPlaylistPopup(currentModalTrackId)" style="padding:10px 20px;background:rgba(255,165,0,0.2);border:1px solid #ffa500;color:#ffa500;border-radius:8px;cursor:pointer;font-size:0.9rem;transition:all 0.3s;" title="Zur Playlist hinzufügen">🎵 + Playlist</button>
-                <button id="modalRepostBtn" onclick="toggleRepost(currentModalTrackId)" style="padding:10px 20px;background:rgba(0,255,136,0.2);border:1px solid #00ff88;color:#00ff88;border-radius:8px;cursor:pointer;font-size:0.9rem;transition:all 0.3s;">🔁 Repost</button>
-                <a id="modalDownloadBtn" href="#" download onclick="if(currentModalTrackId && typeof incrementDownloadCount==='function') incrementDownloadCount(currentModalTrackId)" style="padding:10px 20px;background:rgba(0,255,255,0.2);border:1px solid #00ffff;color:#fff;border-radius:8px;cursor:pointer;font-size:0.9rem;text-decoration:none;">⬇ Download</a>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;">
+                <button id="modalLikeBtn" onclick="modalToggleLike()" style="padding:10px;background:rgba(255,0,255,0.2);border:1px solid #ff00ff;color:#fff;border-radius:8px;cursor:pointer;font-size:0.85rem;transition:all 0.3s;text-align:center;">🤍 <span id="modalLikeCount">0</span></button>
+                <button id="modalPlaylistBtn" onclick="openPlaylistPopup(currentModalTrackId)" style="padding:10px;background:rgba(255,165,0,0.2);border:1px solid #ffa500;color:#ffa500;border-radius:8px;cursor:pointer;font-size:0.85rem;transition:all 0.3s;text-align:center;" title="Zur Playlist hinzufügen">🎵 + Playlist</button>
+                <button id="modalRepostBtn" onclick="toggleRepost(currentModalTrackId)" style="padding:10px;background:rgba(0,255,136,0.2);border:1px solid #00ff88;color:#00ff88;border-radius:8px;cursor:pointer;font-size:0.85rem;transition:all 0.3s;text-align:center;">🔁 Repost</button>
+                <a id="modalDownloadBtn" href="#" download onclick="if(currentModalTrackId && typeof incrementDownloadCount==='function') incrementDownloadCount(currentModalTrackId)" style="padding:10px;background:rgba(0,255,255,0.2);border:1px solid #00ffff;color:#fff;border-radius:8px;cursor:pointer;font-size:0.85rem;text-decoration:none;text-align:center;display:flex;align-items:center;justify-content:center;">⬇ Download</a>
             </div>
 
             <!-- COMMENTS SECTION -->
