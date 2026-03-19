@@ -520,19 +520,31 @@ function drawWaveformCanvas(container, peaks, progress, height) {
 // FALLBACK WAVEFORM (wenn Analyse fehlschlägt)
 // ============================================
 
-function generateFallbackPeaks(numBars) {
-    const peaks = [];
-    for(let i = 0; i < numBars; i++) {
-        // Realistische Simulation: mehrere überlagerte Sinuswellen + Rauschen
-        const base = Math.abs(Math.sin(i * 0.07)) * 0.5;
-        const mid  = Math.abs(Math.sin(i * 0.19 + 1.2)) * 0.25;
-        const high = Math.abs(Math.sin(i * 0.41 + 2.5)) * 0.15;
-        const noise = Math.random() * 0.1;
-        // Intro/Outro simulieren: leiser am Anfang und Ende
-        const envelope = Math.sin((i / numBars) * Math.PI);
-        peaks.push(Math.max(0.05, (base + mid + high + noise) * envelope));
+function generateFallbackPeaks(numBars, seed) {
+    // Seeded pseudo-random damit jeder Track anders aussieht
+    seed = seed || 12345;
+    function seededRand(s) {
+        s = Math.sin(s * 9301 + 49297) * 233280;
+        return s - Math.floor(s);
     }
-    // Normalisieren
+
+    const peaks = [];
+    // Zufaellige Parameter basierend auf seed - jeder Track hat andere Frequenzen
+    const freq1 = 0.04 + seededRand(seed) * 0.06;
+    const freq2 = 0.12 + seededRand(seed + 1) * 0.15;
+    const freq3 = 0.3 + seededRand(seed + 2) * 0.2;
+    const phase1 = seededRand(seed + 3) * Math.PI * 2;
+    const phase2 = seededRand(seed + 4) * Math.PI * 2;
+    const phase3 = seededRand(seed + 5) * Math.PI * 2;
+
+    for(let i = 0; i < numBars; i++) {
+        const base = Math.abs(Math.sin(i * freq1 + phase1)) * 0.5;
+        const mid  = Math.abs(Math.sin(i * freq2 + phase2)) * 0.3;
+        const high = Math.abs(Math.sin(i * freq3 + phase3)) * 0.15;
+        const noise = seededRand(seed + i + 10) * 0.08;
+        const envelope = Math.sin((i / numBars) * Math.PI);
+        peaks.push(Math.max(0.04, (base + mid + high + noise) * (0.3 + envelope * 0.7)));
+    }
     const max = Math.max(...peaks, 0.001);
     return peaks.map(p => p / max);
 }
@@ -819,6 +831,37 @@ function initWaveSurfer(track) {
                     pause() { if(wavesurfer) wavesurfer.pause(); },
                 };
 
+                // WaveSurfer peaks direkt auslesen und als Canvas zeichnen
+                try {
+                    const backend = wavesurfer.backend;
+                    const NUM_BARS = 300;
+                    if(backend && backend.buffer) {
+                        const channelData = backend.buffer.getChannelData(0);
+                        const length = channelData.length;
+                        const samplesPerBar = Math.floor(length / NUM_BARS);
+                        const peaks = [];
+                        for(let i = 0; i < NUM_BARS; i++) {
+                            const start = i * samplesPerBar;
+                            let max = 0;
+                            for(let j = 0; j < samplesPerBar; j++) {
+                                const abs = Math.abs(channelData[start + j] || 0);
+                                if(abs > max) max = abs;
+                            }
+                            peaks.push(max);
+                        }
+                        const maxPeak = Math.max(...peaks, 0.001);
+                        const normalized = peaks.map(p => p / maxPeak);
+                        // WaveSurfer canvas verstecken, eigenes Canvas drüber
+                        const wsCanvas = document.querySelector('#modalWaveform canvas');
+                        if(wsCanvas) wsCanvas.style.display = 'none';
+                        const container = document.getElementById('modalWaveform');
+                        waveDrawFn = drawWaveformCanvas(container, normalized, 0, 110);
+                        waveformCache[currentModalTrackId + '_ws'] = normalized;
+                    }
+                } catch(peakErr) {
+                    console.warn('Peak extraction failed:', peakErr);
+                }
+
                 setTimeout(() => loadWaveformComments(currentModalTrackId), 300);
             });
 
@@ -890,17 +933,20 @@ function startWebAudioPlayer(track) {
         document.getElementById('modalPlayBtn').textContent = '▶';
     });
 
+    // Seed aus Track-ID generieren damit jeder Track anders aussieht
+    const trackSeed = (track.id || track.title || 'x').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+
     // Waveform SEPARAT analysieren - stoert Audio nicht!
     const trackUrl = track.audioFile;
     analyzeAudioWaveform(trackUrl, NUM_BARS).then(peaks => {
-        if(!peaks) peaks = generateFallbackPeaks(NUM_BARS);
+        if(!peaks) peaks = generateFallbackPeaks(NUM_BARS, trackSeed);
         const loaderEl = document.getElementById('waveLoader');
         if(loaderEl) loaderEl.remove();
         const currentProgress = currentAudio ? (currentAudio.currentTime / (currentAudio.duration || 1)) : 0;
         waveDrawFn = drawWaveformCanvas(container, peaks, currentProgress, 110);
         setTimeout(() => loadWaveformComments(currentModalTrackId), 300);
     }).catch(() => {
-        const peaks = generateFallbackPeaks(NUM_BARS);
+        const peaks = generateFallbackPeaks(NUM_BARS, trackSeed);
         const loaderEl = document.getElementById('waveLoader');
         if(loaderEl) loaderEl.remove();
         waveDrawFn = drawWaveformCanvas(container, peaks, 0, 110);
