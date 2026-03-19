@@ -613,15 +613,13 @@ function openPlayerModal(track) {
 }
 
 function initWaveSurfer(track) {
-    const container = document.getElementById('modalWaveform');
-    container.innerHTML = '';
-    container.style.cssText = 'position:relative;width:100%;height:80px;cursor:pointer;overflow:visible;margin-top:10px;';
-
     // Alten WaveSurfer zerstören
     if(wavesurfer) { try { wavesurfer.destroy(); } catch(e) {} wavesurfer = null; }
 
-    // Loading Indicator
-    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:80px;color:#666;font-size:0.8rem;font-family:Orbitron,sans-serif;">⏳ Loading waveform...</div>';
+    const container = document.getElementById('modalWaveform');
+    container.innerHTML = '';
+    // Kein margin-top, overflow hidden damit nichts überlagert
+    container.style.cssText = 'position:relative;width:100%;height:90px;cursor:pointer;overflow:hidden;border-radius:8px;background:rgba(0,0,0,0.4);';
 
     if(typeof WaveSurfer === 'undefined') {
         // Fallback wenn WaveSurfer nicht geladen
@@ -889,7 +887,7 @@ async function loadWaveformComments(trackId) {
 
             // Avatar auf der Waveform
             const avatar = document.createElement('div');
-            avatar.style.cssText = 'position:absolute;top:-18px;left:50%;transform:translateX(-50%);width:24px;height:24px;border-radius:50%;border:2px solid #ff00ff;overflow:hidden;background:#111;flex-shrink:0;box-shadow:0 0 6px rgba(255,0,255,0.6);';
+            avatar.style.cssText = 'position:absolute;top:2px;left:50%;transform:translateX(-50%);width:20px;height:20px;border-radius:50%;border:2px solid #ff00ff;overflow:hidden;background:#111;flex-shrink:0;box-shadow:0 0 6px rgba(255,0,255,0.6);';
             const img = document.createElement('img');
             img.src = c.avatar || '';
             img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
@@ -899,7 +897,7 @@ async function loadWaveformComments(trackId) {
 
             // Tooltip
             const tip = document.createElement('div');
-            tip.style.cssText = 'position:absolute;top:14px;left:50%;transform:translateX(-50%);background:#111;border:1px solid #ff00ff;border-radius:6px;padding:7px 10px;font-size:0.72rem;color:#fff;display:none;z-index:20;min-width:140px;max-width:200px;white-space:normal;box-shadow:0 0 15px rgba(255,0,255,0.3);';
+            tip.style.cssText = 'position:absolute;top:25px;left:50%;transform:translateX(-50%);background:#111;border:1px solid #ff00ff;border-radius:6px;padding:7px 10px;font-size:0.72rem;color:#fff;display:none;z-index:9999;min-width:140px;max-width:200px;white-space:normal;box-shadow:0 0 15px rgba(255,0,255,0.3);';
             tip.innerHTML = `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;"><img src="${c.avatar||''}" style="width:18px;height:18px;border-radius:50%;object-fit:cover;" onerror="this.style.display='none'"><span style="color:#ff00ff;font-weight:bold;">${c.username}</span><span style="color:#666;font-size:0.65rem;">${formatTime(c.timestamp)}</span></div><div>${c.text}</div>`;
             marker.appendChild(tip);
             marker.onmouseenter = () => tip.style.display = 'block';
