@@ -388,6 +388,7 @@ function playGridTrack(trackId, audioFile) {
 
 let currentModalTrack = null;
 let currentModalTrackId = null;
+let currentPlayingTrack = null; // Der Track der wirklich spielt
 
 function createMiniPlayer() {
     if(document.getElementById('miniPlayerBar')) return;
@@ -457,10 +458,11 @@ function createMiniPlayer() {
 
 function showMiniPlayer() {
     createMiniPlayer();
-    if(!currentModalTrack) return;
-    document.getElementById('miniCover').src = currentModalTrack.coverImage || '';
-    document.getElementById('miniTitle').textContent = currentModalTrack.title || '';
-    document.getElementById('miniArtist').textContent = currentModalTrack.artist || '';
+    const track = currentPlayingTrack || currentModalTrack;
+    if(!track) return;
+    document.getElementById('miniCover').src = track.coverImage || '';
+    document.getElementById('miniTitle').textContent = track.title || '';
+    document.getElementById('miniArtist').textContent = track.artist || '';
     document.getElementById('miniPlayerBar').style.display = 'flex';
 }
 
@@ -472,6 +474,7 @@ function hideMiniPlayer() {
 function closeMiniPlayer() {
     hideMiniPlayer();
     if(currentAudio) { currentAudio.pause(); currentAudio = null; }
+    currentPlayingTrack = null;
 }
 
 function miniTogglePlay() {
@@ -587,6 +590,7 @@ function openPlayerModal(track) {
 
     // Normaler Play
     currentModalTrack = track;
+    currentPlayingTrack = track; // Dieser Track spielt wirklich
     if(miniBar) miniBar.style.display = 'none';
     if(currentAudio) { currentAudio.pause(); currentAudio = null; }
 
@@ -657,6 +661,7 @@ function modalTogglePlay() {
         currentAudio.addEventListener('ended', () => {
             document.getElementById('modalPlayBtn').textContent = '▶';
         });
+        currentPlayingTrack = currentModalTrack;
         currentAudio.play();
         document.getElementById('modalPlayBtn').textContent = '⏸';
         if(typeof incrementPlayCount === 'function') incrementPlayCount(currentModalTrack.id);
