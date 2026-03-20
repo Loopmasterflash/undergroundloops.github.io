@@ -590,9 +590,9 @@ function createMiniPlayer() {
             <div id="miniTitle" style="color:#fff;font-size:0.85rem;font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
             <div id="miniArtist" style="color:#00ffff;font-size:0.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
         </div>
-        <div style="flex:2;min-width:0;cursor:pointer;" onclick="miniSeek(event, this)">
-            <div style="height:4px;background:rgba(255,255,255,0.15);border-radius:2px;position:relative;">
-                <div id="miniProgress" style="height:100%;background:#ff00ff;border-radius:2px;width:0%;transition:width 0.3s;"></div>
+        <div style="flex:2;min-width:0;cursor:pointer;" id="miniProgressWrapper" onclick="miniSeek(event, this)">
+            <div id="miniProgressBar" style="height:8px;background:rgba(255,255,255,0.15);border-radius:4px;position:relative;">
+                <div id="miniProgress" style="height:100%;background:#ff00ff;border-radius:4px;width:0%;transition:width 0.1s;"></div>
             </div>
             <div style="display:flex;justify-content:space-between;margin-top:4px;">
                 <span id="miniCurrentTime" style="color:#888;font-size:0.65rem;">0:00</span>
@@ -673,10 +673,15 @@ function miniTogglePlay() {
 
 function miniSeek(e, el) {
     if(!currentAudio) return;
-    const rect = el.getBoundingClientRect();
-    const pct = (e.clientX - rect.left) / rect.offsetWidth;
-    const t = currentAudio.duration * pct;
-    if(!isNaN(t)) currentAudio.currentTime = t;
+    // Den eigentlichen Progressbar nehmen (nicht den ganzen Wrapper)
+    const bar = document.getElementById('miniProgressBar') || el;
+    const rect = bar.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.offsetWidth));
+    const t = (currentAudio.duration || 0) * pct;
+    if(!isNaN(t) && t >= 0) {
+        if(wavesurfer) wavesurfer.seekTo(pct);
+        else currentAudio.currentTime = t;
+    }
 }
 
 function updateMiniPlayer() {
@@ -1166,6 +1171,10 @@ async function loadWaveformComments(trackId) {
     const container = document.getElementById('modalWaveform');
     container.querySelectorAll('.wave-comment-marker').forEach(m => m.remove());
 
+    // Marker auch im MiniPlayer entfernen
+    const miniBar = document.getElementById('miniProgressBar');
+    if(miniBar) miniBar.querySelectorAll('.mini-comment-marker').forEach(m => m.remove());
+
     try {
         const snap = await db.collection('comments').where('trackId', '==', trackId).get();
         snap.forEach(doc => {
@@ -1195,6 +1204,32 @@ async function loadWaveformComments(trackId) {
             marker.onclick = (e) => { e.stopPropagation(); currentAudio.currentTime = c.timestamp; };
 
             container.appendChild(marker);
+
+            // Gleichen Marker auch im MiniPlayer Progressbar anzeigen
+            if(miniBar) {
+                const miniMarker = document.createElement('div');
+                miniMarker.className = 'mini-comment-marker';
+                miniMarker.style.cssText = `position:absolute;left:${Math.min(pct, 97)}%;top:50%;transform:translate(-50%,-50%);width:10px;height:10px;border-radius:50%;background:#ff00ff;border:2px solid #fff;cursor:pointer;z-index:10;box-shadow:0 0 6px rgba(255,0,255,0.8);`;
+                miniMarker.title = c.username + ': ' + c.text;
+
+                miniMarker.onclick = (e) => {
+                    e.stopPropagation();
+                    if(wavesurfer) wavesurfer.seekTo(c.timestamp / currentAudio.duration);
+                    else currentAudio.currentTime = c.timestamp;
+                };
+
+                // Tooltip beim Hover
+                miniMarker.onmouseenter = () => {
+                    miniMarker.style.transform = 'translate(-50%,-50%) scale(1.4)';
+                    miniMarker.style.zIndex = '20';
+                };
+                miniMarker.onmouseleave = () => {
+                    miniMarker.style.transform = 'translate(-50%,-50%) scale(1)';
+                    miniMarker.style.zIndex = '10';
+                };
+
+                miniBar.appendChild(miniMarker);
+            }
         });
     } catch(e) { console.error(e); }
 }
