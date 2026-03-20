@@ -590,9 +590,9 @@ function createMiniPlayer() {
             <div id="miniTitle" style="color:#fff;font-size:0.85rem;font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
             <div id="miniArtist" style="color:#00ffff;font-size:0.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
         </div>
-        <div style="flex:2;min-width:0;cursor:pointer;" id="miniProgressWrapper" onclick="miniSeek(event, this)">
-            <div id="miniProgressBar" style="height:8px;background:rgba(255,255,255,0.15);border-radius:4px;position:relative;">
-                <div id="miniProgress" style="height:100%;background:#ff00ff;border-radius:4px;width:0%;transition:width 0.1s;"></div>
+        <div style="flex:2;min-width:0;" id="miniProgressWrapper">
+            <div id="miniProgressBar" onclick="miniSeek(event, this)" style="height:8px;background:rgba(255,255,255,0.15);border-radius:4px;position:relative;cursor:pointer;">
+                <div id="miniProgress" style="height:100%;background:#ff00ff;border-radius:4px;width:0%;pointer-events:none;"></div>
             </div>
             <div style="display:flex;justify-content:space-between;margin-top:4px;">
                 <span id="miniCurrentTime" style="color:#888;font-size:0.65rem;">0:00</span>
@@ -673,16 +673,13 @@ function miniTogglePlay() {
 
 function miniSeek(e, el) {
     if(!currentAudio) return;
-    e.stopPropagation();
-    const bar = document.getElementById('miniProgressBar') || el;
-    const rect = bar.getBoundingClientRect();
+    const rect = el.getBoundingClientRect();
     const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.offsetWidth));
-    const duration = wavesurfer ? wavesurfer.getDuration() : currentAudio.duration;
-    const t = (duration || 0) * pct;
+    const duration = wavesurfer ? wavesurfer.getDuration() : (currentAudio.duration || 0);
+    const t = duration * pct;
     if(!isNaN(t) && t >= 0) {
         if(wavesurfer) wavesurfer.seekTo(pct);
         else currentAudio.currentTime = t;
-        // Progress sofort visuell updaten
         const prog = document.getElementById('miniProgress');
         if(prog) prog.style.width = (pct * 100) + '%';
     }
