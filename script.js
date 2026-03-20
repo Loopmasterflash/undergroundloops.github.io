@@ -673,14 +673,18 @@ function miniTogglePlay() {
 
 function miniSeek(e, el) {
     if(!currentAudio) return;
-    // Den eigentlichen Progressbar nehmen (nicht den ganzen Wrapper)
+    e.stopPropagation();
     const bar = document.getElementById('miniProgressBar') || el;
     const rect = bar.getBoundingClientRect();
     const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.offsetWidth));
-    const t = (currentAudio.duration || 0) * pct;
+    const duration = wavesurfer ? wavesurfer.getDuration() : currentAudio.duration;
+    const t = (duration || 0) * pct;
     if(!isNaN(t) && t >= 0) {
         if(wavesurfer) wavesurfer.seekTo(pct);
         else currentAudio.currentTime = t;
+        // Progress sofort visuell updaten
+        const prog = document.getElementById('miniProgress');
+        if(prog) prog.style.width = (pct * 100) + '%';
     }
 }
 
