@@ -12,7 +12,7 @@
 <body>
     <div class="cyberpunk-bg"></div>
 
-    <header class="main-header">
+    <header class="main-header" style="padding-bottom:0;">
         <div class="header-content">
             <div class="logo" style="font-size:1.2rem;letter-spacing:2px;" onclick="window.location.href='index.html'">UNDERGROUNDLOOPS</div>
             <nav class="main-nav" style="gap:4px;">
@@ -57,10 +57,11 @@
                     <button id="logoutBtn" class="logout-btn-small">Logout</button>
                 </div>
             </div>
-            <!-- ===== SEARCH BAR ===== -->
-        <div style="display:flex;align-items:center;gap:8px;margin-left:8px;">
-            <div style="display:flex;align-items:center;background:rgba(0,0,0,0.5);border:1px solid #ff00ff44;border-radius:25px;overflow:hidden;transition:all 0.3s;" onmouseover="this.style.borderColor='#ff00ff'" onmouseout="this.style.borderColor='#ff00ff44'">
-                <select id="searchFilter" style="background:rgba(0,0,0,0.8);border:none;color:#aaa;font-family:'Orbitron',sans-serif;font-size:0.62rem;padding:7px 6px;cursor:pointer;outline:none;">
+        </div>
+        <!-- ===== SEARCH BAR - EIGENE ZEILE ===== -->
+        <div style="display:flex;align-items:center;justify-content:center;padding:10px 20px;border-top:1px solid #ff00ff22;">
+            <div style="display:flex;align-items:center;background:rgba(0,0,0,0.5);border:1px solid #ff00ff55;border-radius:30px;overflow:hidden;transition:all 0.3s;max-width:600px;width:100%;" onmouseover="this.style.borderColor='#ff00ff'" onmouseout="this.style.borderColor='#ff00ff55'">
+                <select id="searchFilter" style="background:rgba(0,0,0,0.8);border:none;border-right:1px solid #ff00ff33;color:#aaa;font-family:'Orbitron',sans-serif;font-size:0.65rem;padding:10px 10px;cursor:pointer;outline:none;flex-shrink:0;">
                     <option value="all">All</option>
                     <option value="tracks">Tracks</option>
                     <option value="loops">Loops</option>
@@ -68,12 +69,11 @@
                     <option value="acapellas">Acapellas</option>
                     <option value="artists">Artists</option>
                 </select>
-                <input id="searchInput" type="text" placeholder="Search..." 
-                    style="background:transparent;border:none;color:#fff;font-size:0.78rem;padding:7px 10px;width:140px;outline:none;"
+                <input id="searchInput" type="text" placeholder="Search for tracks, loops, artists..." 
+                    style="background:transparent;border:none;color:#fff;font-size:0.85rem;padding:10px 16px;flex:1;outline:none;min-width:0;"
                     onkeydown="if(event.key==='Enter') performSearch()">
-                <button onclick="performSearch()" style="background:rgba(255,0,255,0.3);border:none;border-left:1px solid #ff00ff44;color:#ff00ff;padding:7px 12px;cursor:pointer;font-size:0.9rem;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,0,255,0.5)'" onmouseout="this.style.background='rgba(255,0,255,0.3)'">🔍</button>
+                <button onclick="performSearch()" style="background:linear-gradient(135deg,rgba(255,0,255,0.4),rgba(0,255,255,0.2));border:none;border-left:1px solid #ff00ff44;color:#fff;padding:10px 20px;cursor:pointer;font-size:0.85rem;font-family:'Orbitron',sans-serif;letter-spacing:1px;transition:all 0.2s;flex-shrink:0;" onmouseover="this.style.background='linear-gradient(135deg,rgba(255,0,255,0.6),rgba(0,255,255,0.4))'" onmouseout="this.style.background='linear-gradient(135deg,rgba(255,0,255,0.4),rgba(0,255,255,0.2))'">🔍 SEARCH</button>
             </div>
-        </div>
         </div>
     </header>
 
