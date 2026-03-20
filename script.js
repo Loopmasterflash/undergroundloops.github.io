@@ -563,6 +563,8 @@ let currentModalTrackId = null;
 let currentPlayingTrack = null;
 let wavesurfer = null;
 let waveDrawFn = null; // Funktion zum Neu-Zeichnen der Waveform
+let trackHistory = []; // History fuer Backward Button
+let trackHistoryIndex = -1; // Aktueller Index in der History
 
 function createMiniPlayer() {
     if(document.getElementById('miniPlayerBar')) return;
@@ -597,12 +599,27 @@ function createMiniPlayer() {
                 <span id="miniTotalTime" style="color:#888;font-size:0.65rem;">0:00</span>
             </div>
         </div>
+        <!-- PREV -->
+        <button onclick="playPrevTrack()" title="Vorheriger Track" style="
+            width:30px;height:30px;border-radius:50%;
+            background:rgba(255,0,255,0.15);border:1px solid #ff00ff55;
+            color:#ff00ff;font-size:0.8rem;cursor:pointer;flex-shrink:0;
+        ">⏮</button>
+
         <button id="miniPlayBtn" onclick="miniTogglePlay()" style="
             width:38px;height:38px;border-radius:50%;
             background:linear-gradient(135deg,#ff00ff,#00ffff);
             border:none;color:#000;font-size:1rem;
             cursor:pointer;flex-shrink:0;
         ">⏸</button>
+
+        <!-- NEXT -->
+        <button onclick="playNextTrack()" title="Nächster Track (Genre Shuffle)" style="
+            width:30px;height:30px;border-radius:50%;
+            background:rgba(255,0,255,0.15);border:1px solid #ff00ff55;
+            color:#ff00ff;font-size:0.8rem;cursor:pointer;flex-shrink:0;
+        ">⏭</button>
+
         <div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">
             <span style="color:#aaa;font-size:0.85rem;">🔊</span>
             <input type="range" id="miniVolume" min="0" max="100" value="80" oninput="setVolume(this.value)" style="width:70px;accent-color:#ff00ff;cursor:pointer;touch-action:none;">
@@ -761,6 +778,13 @@ function openPlayerModal(track) {
 
     currentModalTrackId = track.id;
     currentTrackId = track.id;
+
+    // Track History aufzeichnen
+    if(trackHistory.length === 0 || trackHistory[trackHistory.length - 1].id !== track.id) {
+        trackHistory.push(track);
+        if(trackHistory.length > 50) trackHistory.shift(); // Max 50 Tracks
+        trackHistoryIndex = trackHistory.length - 1;
+    }
 
     initWaveSurfer(track);
 
@@ -1229,6 +1253,79 @@ function showError(msg) {
     document.getElementById('trackListContainer').innerHTML = `<div style="text-align:center;color:#ff0000;padding:40px;"><p style="font-size:1.5rem;">❌ ${msg}</p><button onclick="location.reload()" style="margin-top:20px;padding:10px 20px;background:rgba(255,0,255,0.3);border:2px solid #ff00ff;color:#fff;border-radius:8px;cursor:pointer;">Reload</button></div>`;
 }
 
+
+
+// ============================================
+// SKIP FUNKTIONEN - NEXT / PREV
+// ============================================
+
+function playNextTrack() {
+    if(!currentPlayingTrack) return;
+    const genre = currentPlayingTrack.genre || '';
+
+    // Tracks vom gleichen Genre suchen (ohne aktuellen)
+    let genreTracks = filteredTracks.filter(t =>
+        t.id !== currentPlayingTrack.id &&
+        t.genre && t.genre.toLowerCase() === genre.toLowerCase()
+    );
+
+    // Falls kein anderer Track im Genre -> alle filteredTracks nehmen
+    if(genreTracks.length === 0) {
+        genreTracks = filteredTracks.filter(t => t.id !== currentPlayingTrack.id);
+    }
+
+    // Falls immer noch nix -> allTracks nehmen
+    if(genreTracks.length === 0) {
+        genreTracks = allTracks.filter(t => t.id !== currentPlayingTrack.id);
+    }
+
+    if(genreTracks.length === 0) return;
+
+    // Zufaelligen Track aus Genre waehlen
+    const nextTrack = genreTracks[Math.floor(Math.random() * genreTracks.length)];
+
+    // Modal schliessen falls offen, dann neuen Track oeffnen
+    const modal = document.getElementById('playerModal');
+    const modalVisible = modal && modal.style.display === 'flex';
+
+    openPlayerModal(nextTrack);
+    if(!modalVisible) {
+        // Modal wieder verstecken wenn MiniPlayer aktiv war
+        setTimeout(() => {
+            if(modal) modal.style.display = 'none';
+            showMiniPlayer();
+        }, 100);
+    }
+}
+
+function playPrevTrack() {
+    if(trackHistory.length < 2) return;
+
+    // Einen Schritt zurueck in der History
+    trackHistoryIndex = Math.max(0, trackHistoryIndex - 1);
+    // Verhindere dass der aktuelle nochmal gezaehlt wird
+    if(trackHistoryIndex === trackHistory.length - 1) {
+        trackHistoryIndex = Math.max(0, trackHistoryIndex - 1);
+    }
+
+    const prevTrack = trackHistory[trackHistoryIndex];
+    if(!prevTrack || prevTrack.id === currentPlayingTrack?.id) return;
+
+    const modal = document.getElementById('playerModal');
+    const modalVisible = modal && modal.style.display === 'flex';
+
+    // History-Index merken damit openPlayerModal nicht nochmal pusht
+    const savedIndex = trackHistoryIndex;
+    openPlayerModal(prevTrack);
+    trackHistoryIndex = savedIndex;
+
+    if(!modalVisible) {
+        setTimeout(() => {
+            if(modal) modal.style.display = 'none';
+            showMiniPlayer();
+        }, 100);
+    }
+}
 
 // ============================================
 // SHARE TRACK
