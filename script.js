@@ -703,6 +703,10 @@ function openPlayerModal(track) {
     modal.style.position = 'fixed';
     modal.style.zIndex = '9999';
 
+    // Share Popup immer schliessen beim Oeffnen eines Tracks
+    const sp = document.getElementById('sharePopup');
+    if(sp) sp.style.display = 'none';
+
     document.getElementById('modalCover').src = track.coverImage || '';
     document.getElementById('modalTitle').textContent = track.title;
 
