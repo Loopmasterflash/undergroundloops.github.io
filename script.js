@@ -1483,6 +1483,172 @@ async function downloadTrack() {
     }
 }
 
+
+// ============================================
+// SEARCH FUNKTIONEN
+// ============================================
+
+async function performSearch() {
+    const query = document.getElementById('searchInput')?.value.trim().toLowerCase();
+    const filter = document.getElementById('searchFilter')?.value || 'all';
+    
+    if(!query) return;
+    
+    showSearchPage();
+    
+    const container = document.getElementById('searchResultsContainer');
+    container.innerHTML = '<div style="text-align:center;color:#ff00ff;font-family:Orbitron,sans-serif;font-size:0.85rem;padding:40px;">🔍 Searching...</div>';
+    
+    try {
+        let trackResults = [];
+        let artistResults = [];
+        
+        // Tracks/Loops/Samples/Acapellas suchen
+        if(filter === 'all' || filter === 'tracks' || filter === 'loops' || filter === 'samples' || filter === 'acapellas') {
+            const snap = await db.collection('tracks').get();
+            snap.forEach(doc => {
+                const t = { id: doc.id, ...doc.data() };
+                const titleMatch = (t.title || '').toLowerCase().includes(query);
+                const artistMatch = (t.artist || '').toLowerCase().includes(query);
+                const genreMatch = (t.genre || '').toLowerCase().includes(query);
+                
+                if(!titleMatch && !artistMatch && !genreMatch) return;
+                
+                // Filter anwenden
+                if(filter === 'tracks' && t.type !== 'track') return;
+                if(filter === 'loops' && t.type !== 'loop') return;
+                if(filter === 'samples' && t.type !== 'sample') return;
+                if(filter === 'acapellas' && t.type !== 'acapella') return;
+                
+                trackResults.push(t);
+            });
+        }
+        
+        // Artists suchen
+        if(filter === 'all' || filter === 'artists') {
+            const snap = await db.collection('users').get();
+            snap.forEach(doc => {
+                const u = { id: doc.id, ...doc.data() };
+                if((u.username || '').toLowerCase().includes(query)) {
+                    artistResults.push(u);
+                }
+            });
+        }
+        
+        // Ergebnisse anzeigen
+        renderSearchResults(query, filter, trackResults, artistResults);
+        
+    } catch(e) {
+        container.innerHTML = `<div style="text-align:center;color:#ff4444;padding:40px;">❌ Search failed: ${e.message}</div>`;
+    }
+}
+
+function renderSearchResults(query, filter, trackResults, artistResults) {
+    const container = document.getElementById('searchResultsContainer');
+    const total = trackResults.length + artistResults.length;
+    
+    if(total === 0) {
+        container.innerHTML = `
+            <div style="text-align:center;padding:60px 20px;">
+                <div style="font-size:3rem;margin-bottom:20px;">🔍</div>
+                <p style="color:#aaa;font-family:'Orbitron',sans-serif;font-size:0.9rem;letter-spacing:2px;">NO RESULTS FOR "${query.toUpperCase()}"</p>
+                <p style="color:#555;font-size:0.85rem;margin-top:10px;">Try a different search term or filter</p>
+            </div>`;
+        return;
+    }
+    
+    let html = `<div style="margin-bottom:20px;color:#aaa;font-family:'Orbitron',sans-serif;font-size:0.75rem;letter-spacing:1px;">
+        🔍 ${total} RESULT${total !== 1 ? 'S' : ''} FOR "<span style="color:#ff00ff;">${query.toUpperCase()}</span>"
+    </div>`;
+    
+    // Artists Section
+    if(artistResults.length > 0) {
+        html += `<h3 style="font-family:'Orbitron',sans-serif;color:#00ffff;font-size:0.85rem;letter-spacing:2px;margin-bottom:16px;border-bottom:1px solid #00ffff33;padding-bottom:8px;">👤 ARTISTS (${artistResults.length})</h3>`;
+        html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:30px;">';
+        
+        artistResults.forEach(user => {
+            const defaultAvatar = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect fill='%23200020' width='80' height='80' rx='40'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23ff00ff' font-size='30'%3E👤%3C/text%3E%3C/svg%3E";
+            html += `
+                <div onclick="showProfilePage('${user.id}')" style="
+                    background:rgba(0,0,0,0.6);border:1px solid #00ffff33;border-radius:12px;
+                    padding:20px;text-align:center;cursor:pointer;transition:all 0.3s;
+                " onmouseover="this.style.border='1px solid #00ffff';this.style.boxShadow='0 0 20px rgba(0,255,255,0.2)';this.style.transform='translateY(-3px)'"
+                   onmouseout="this.style.border='1px solid #00ffff33';this.style.boxShadow='none';this.style.transform='translateY(0)'">
+                    <img src="${user.avatar || defaultAvatar}" 
+                         onerror="this.src='${defaultAvatar}'"
+                         style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid #00ffff;margin-bottom:10px;">
+                    <div style="color:#fff;font-weight:bold;font-size:0.85rem;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${user.username || 'Unknown'}</div>
+                    <div style="color:#00ffff;font-size:0.7rem;font-family:'Orbitron',sans-serif;">ARTIST</div>
+                </div>`;
+        });
+        html += '</div>';
+    }
+    
+    // Tracks Section
+    if(trackResults.length > 0) {
+        const typeColors = { loop: '#00ffff', sample: '#ff00ff', acapella: '#ffff00', track: '#ff8800' };
+        const typeLabel = filter === 'all' ? 'TRACKS & LOOPS' : filter.toUpperCase();
+        html += `<h3 style="font-family:'Orbitron',sans-serif;color:#ff00ff;font-size:0.85rem;letter-spacing:2px;margin-bottom:16px;border-bottom:1px solid #ff00ff33;padding-bottom:8px;">🎵 ${typeLabel} (${trackResults.length})</h3>`;
+        html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;">';
+        
+        const defaultImg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23200020' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23ff00ff' font-size='40'%3E🎵%3C/text%3E%3C/svg%3E";
+        
+        trackResults.forEach(track => {
+            const typeColor = typeColors[track.type] || '#ff8800';
+            html += `
+                <div onclick="openPlayerModal(allTracks.find(t=>t.id==='${track.id}') || ${JSON.stringify(track).replace(/"/g,'&quot;')})" style="
+                    background:rgba(0,0,0,0.6);border:1px solid #ff00ff33;border-radius:12px;
+                    overflow:hidden;cursor:pointer;transition:all 0.3s;position:relative;
+                " onmouseover="this.style.border='1px solid #ff00ff';this.style.boxShadow='0 0 20px rgba(255,0,255,0.2)';this.style.transform='translateY(-3px)'"
+                   onmouseout="this.style.border='1px solid #ff00ff33';this.style.boxShadow='none';this.style.transform='translateY(0)'">
+                    <div style="position:relative;">
+                        <img src="${track.coverImage || defaultImg}" 
+                             onerror="this.src='${defaultImg}'"
+                             style="width:100%;aspect-ratio:1;object-fit:cover;display:block;">
+                        <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.3s;"
+                             onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0'">
+                            <div style="width:50px;height:50px;background:rgba(255,0,255,0.9);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.3rem;">▶</div>
+                        </div>
+                        <div style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.85);border:1px solid ${typeColor};color:${typeColor};padding:2px 8px;border-radius:20px;font-size:0.6rem;font-family:'Orbitron',sans-serif;">${(track.type || 'loop').toUpperCase()}</div>
+                    </div>
+                    <div style="padding:10px;">
+                        <div style="color:#fff;font-weight:bold;font-size:0.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;">${track.title || 'Untitled'}</div>
+                        <div style="color:#00ffff;font-size:0.72rem;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${track.artist || 'Unknown'}</div>
+                        <div style="display:flex;justify-content:space-between;">
+                            <span style="color:#666;font-size:0.65rem;">${(track.genre || '').toUpperCase()}</span>
+                            <span style="color:#888;font-size:0.65rem;">${track.bpm ? track.bpm + ' BPM' : ''}</span>
+                        </div>
+                    </div>
+                </div>`;
+        });
+        html += '</div>';
+    }
+    
+    container.innerHTML = html;
+}
+
+function showSearchPage() {
+    // Alle anderen Seiten verstecken
+    document.getElementById('mainFlexWrapper').style.display = 'none';
+    document.getElementById('blogContainer')?.classList.add('hidden');
+    document.getElementById('forumContainer')?.classList.add('hidden');
+    document.getElementById('profileContainer')?.classList.add('hidden');
+    document.getElementById('messagesContainer')?.classList.add('hidden');
+    document.getElementById('uploadContainer')?.classList.add('hidden');
+    document.getElementById('searchContainer')?.classList.remove('hidden');
+    
+    // Nav Links deaktivieren
+    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+}
+
+function closeSearchPage() {
+    document.getElementById('searchContainer')?.classList.add('hidden');
+    showMainPage();
+    // Search input leeren
+    const input = document.getElementById('searchInput');
+    if(input) input.value = '';
+}
+
 // ============================================
 // BLOG
 // ============================================
