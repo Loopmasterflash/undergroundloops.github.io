@@ -591,8 +591,8 @@ function createMiniPlayer() {
             <div id="miniArtist" style="color:#00ffff;font-size:0.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
         </div>
         <div style="flex:2;min-width:0;" id="miniProgressWrapper">
-            <div id="miniProgressBar" onclick="miniSeek(event, this)" style="height:8px;background:rgba(255,255,255,0.15);border-radius:4px;position:relative;cursor:pointer;">
-                <div id="miniProgress" style="height:100%;background:#ff00ff;border-radius:4px;width:0%;pointer-events:none;"></div>
+            <div id="miniProgressBar" style="height:12px;background:rgba(255,255,255,0.15);border-radius:6px;position:relative;cursor:pointer;">
+                <div id="miniProgress" style="height:100%;background:#ff00ff;border-radius:6px;width:0%;pointer-events:none;transition:width 0.1s;"></div>
             </div>
             <div style="display:flex;justify-content:space-between;margin-top:4px;">
                 <span id="miniCurrentTime" style="color:#888;font-size:0.65rem;">0:00</span>
@@ -635,6 +635,21 @@ function createMiniPlayer() {
         ">✕</button>
     `;
     document.body.appendChild(bar);
+
+    // Seekbar Click Handler - direkt nach dem Erstellen
+    const progressBar = document.getElementById('miniProgressBar');
+    progressBar.addEventListener('click', function(e) {
+        if(!currentAudio) return;
+        const rect = this.getBoundingClientRect();
+        const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        const duration = wavesurfer ? wavesurfer.getDuration() : (currentAudio.duration || 0);
+        const t = duration * pct;
+        if(!isNaN(t) && t >= 0) {
+            if(wavesurfer) wavesurfer.seekTo(pct);
+            else currentAudio.currentTime = t;
+            document.getElementById('miniProgress').style.width = (pct * 100) + '%';
+        }
+    }, true); // true = capture phase, ignoriert stopPropagation von Kindern
 }
 
 function showMiniPlayer() {
