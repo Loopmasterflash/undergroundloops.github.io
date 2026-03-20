@@ -1225,6 +1225,112 @@ function showError(msg) {
     document.getElementById('trackListContainer').innerHTML = `<div style="text-align:center;color:#ff0000;padding:40px;"><p style="font-size:1.5rem;">❌ ${msg}</p><button onclick="location.reload()" style="margin-top:20px;padding:10px 20px;background:rgba(255,0,255,0.3);border:2px solid #ff00ff;color:#fff;border-radius:8px;cursor:pointer;">Reload</button></div>`;
 }
 
+
+// ============================================
+// SHARE TRACK
+// ============================================
+
+function shareTrack() {
+    const popup = document.getElementById('sharePopup');
+    if(!popup) return;
+    
+    // Toggle Popup
+    if(popup.style.display === 'block') {
+        popup.style.display = 'none';
+        return;
+    }
+    
+    // Share URL generieren
+    const trackId = currentModalTrackId;
+    const shareUrl = window.location.origin + window.location.pathname + '?track=' + trackId;
+    document.getElementById('shareUrl').value = shareUrl;
+    popup.style.display = 'block';
+}
+
+function copyShareUrl() {
+    const input = document.getElementById('shareUrl');
+    input.select();
+    navigator.clipboard.writeText(input.value).then(() => {
+        const btn = event.target;
+        btn.textContent = '✅ Kopiert!';
+        btn.style.color = '#00ff88';
+        setTimeout(() => { btn.textContent = '📋 Kopieren'; btn.style.color = '#aaaaff'; }, 2000);
+    }).catch(() => {
+        document.execCommand('copy');
+    });
+}
+
+function shareVia(platform) {
+    const url = encodeURIComponent(document.getElementById('shareUrl').value);
+    const track = currentModalTrack;
+    const text = encodeURIComponent('🎵 Check this out: ' + (track ? track.title : '') + ' on UNDERGROUNDLOOPS!');
+    
+    let shareLink = '';
+    if(platform === 'whatsapp') shareLink = 'https://wa.me/?text=' + text + '%20' + url;
+    else if(platform === 'telegram') shareLink = 'https://t.me/share/url?url=' + url + '&text=' + text;
+    else if(platform === 'twitter') shareLink = 'https://twitter.com/intent/tweet?text=' + text + '&url=' + url;
+    else if(platform === 'copy') {
+        navigator.clipboard.writeText(decodeURIComponent(url));
+        alert('✅ Link kopiert!');
+        return;
+    }
+    
+    if(shareLink) window.open(shareLink, '_blank');
+}
+
+// ============================================
+// DOWNLOAD TRACK - direkt downloaden!
+// ============================================
+
+async function downloadTrack() {
+    const track = currentModalTrack;
+    if(!track || !track.audioFile) return;
+    
+    const btn = document.getElementById('modalDownloadBtn');
+    const origText = btn.textContent;
+    btn.textContent = '⏳ Loading...';
+    btn.disabled = true;
+    
+    try {
+        // Fetch als Blob und dann direkt downloaden
+        const response = await fetch(track.audioFile);
+        if(!response.ok) throw new Error('Download failed');
+        const blob = await response.blob();
+        
+        // Dateiname aus Track-Titel
+        const ext = track.audioFile.includes('.wav') ? '.wav' : '.mp3';
+        const filename = (track.artist || 'Unknown') + ' - ' + (track.title || 'Track') + ext;
+        
+        // Blob URL erstellen und klicken
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = filename.replace(/[^a-zA-Z0-9\-_. ]/g, '_');
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(blobUrl);
+        
+        if(typeof incrementDownloadCount === 'function') incrementDownloadCount(track.id);
+        
+        btn.textContent = '✅ Downloaded!';
+        btn.style.color = '#00ff88';
+        setTimeout(() => { 
+            btn.textContent = origText; 
+            btn.style.color = '#fff';
+            btn.disabled = false;
+        }, 3000);
+        
+    } catch(e) {
+        console.error('Download error:', e);
+        btn.textContent = '❌ Error';
+        setTimeout(() => { 
+            btn.textContent = origText; 
+            btn.disabled = false;
+        }, 2000);
+    }
+}
+
 // ============================================
 // BLOG
 // ============================================

@@ -229,8 +229,6 @@
                 <div class="stat-box clickable" onclick="showFollowing()"><div class="stat-number" id="followingCount">0</div><div class="stat-label">Following</div></div>
                 <div class="stat-box"><div class="stat-number" id="likesCount">0</div><div class="stat-label">Likes Received</div></div>
             </div>
-
-            <!-- TABS - mit Playlists! -->
             <div class="profile-tabs">
                 <button class="tab-btn active" data-tab="uploads">My Uploads</button>
                 <button class="tab-btn" data-tab="liked">Liked Tracks</button>
@@ -240,7 +238,6 @@
                 <button class="tab-btn" data-tab="sociallinks">🔗 Social Links</button>
                 <button class="tab-btn" data-tab="settings">Settings</button>
             </div>
-
             <div class="profile-content">
                 <div id="uploadsTab" class="tab-content active">
                     <div style="text-align:right;margin-bottom:20px;">
@@ -248,23 +245,11 @@
                     </div>
                     <div id="userUploads"></div>
                 </div>
-
-                <div id="likedTab" class="tab-content hidden">
-                    <div id="userLikedTracks"></div>
-                </div>
-
-                <!-- PLAYLISTS TAB NEU! -->
+                <div id="likedTab" class="tab-content hidden"><div id="userLikedTracks"></div></div>
                 <div id="playlistsTab" class="tab-content hidden"></div>
-
-                <!-- REPOSTS TAB -->
                 <div id="repostsTab" class="tab-content hidden"></div>
-
-                <!-- STATS TAB -->
                 <div id="statsTab" class="tab-content hidden"></div>
-
-                <!-- SOCIAL LINKS TAB -->
                 <div id="sociallinksTab" class="tab-content hidden"></div>
-
                 <div id="settingsTab" class="tab-content hidden">
                     <div class="settings-section">
                         <h3>Avatar</h3>
@@ -335,20 +320,13 @@
                 <div style="flex:2;">
                     <label style="color:#00ffff;font-family:'Orbitron',sans-serif;font-size:0.85rem;display:block;margin-bottom:8px;">GENRE</label>
                     <select id="uploadGenre" style="width:100%;padding:12px 16px;background:rgba(0,0,0,0.5);border:1px solid #ff00ff44;border-radius:8px;color:#fff;font-size:1rem;box-sizing:border-box;">
-                        <option value="techno">Techno</option>
-                        <option value="minimal">Minimal</option>
-                        <option value="industrial">Industrial</option>
-                        <option value="goa">Goa</option>
-                        <option value="psytrance">Psytrance</option>
-                        <option value="rap">Rap</option>
-                        <option value="hiphop">Hip Hop</option>
-                        <option value="chillout">Chillout</option>
-                        <option value="cinematics">Cinematics</option>
-                        <option value="drumandbass">Drum and Bass</option>
-                        <option value="electronic">Electronic</option>
-                        <option value="house">House</option>
-                        <option value="dubstep">Dubstep</option>
-                        <option value="trap">Trap</option>
+                        <option value="techno">Techno</option><option value="minimal">Minimal</option>
+                        <option value="industrial">Industrial</option><option value="goa">Goa</option>
+                        <option value="psytrance">Psytrance</option><option value="rap">Rap</option>
+                        <option value="hiphop">Hip Hop</option><option value="chillout">Chillout</option>
+                        <option value="cinematics">Cinematics</option><option value="drumandbass">Drum and Bass</option>
+                        <option value="electronic">Electronic</option><option value="house">House</option>
+                        <option value="dubstep">Dubstep</option><option value="trap">Trap</option>
                     </select>
                 </div>
                 <div style="flex:1;">
@@ -446,12 +424,28 @@
                 </div>
             </div>
 
-            <!-- ✅ Buttons: Like + Playlist + Download -->
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;">
+            <!-- ✅ Buttons: Like + Playlist + Repost + Teilen + Download -->
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:8px;">
                 <button id="modalLikeBtn" onclick="modalToggleLike()" style="padding:10px;background:rgba(255,0,255,0.2);border:1px solid #ff00ff;color:#fff;border-radius:8px;cursor:pointer;font-size:0.85rem;transition:all 0.3s;text-align:center;">🤍 <span id="modalLikeCount">0</span></button>
-                <button id="modalPlaylistBtn" onclick="openPlaylistPopup(currentModalTrackId)" style="padding:10px;background:rgba(255,165,0,0.2);border:1px solid #ffa500;color:#ffa500;border-radius:8px;cursor:pointer;font-size:0.85rem;transition:all 0.3s;text-align:center;" title="Zur Playlist hinzufügen">🎵 + Playlist</button>
+                <button id="modalPlaylistBtn" onclick="openPlaylistPopup(currentModalTrackId)" style="padding:10px;background:rgba(255,165,0,0.2);border:1px solid #ffa500;color:#ffa500;border-radius:8px;cursor:pointer;font-size:0.85rem;transition:all 0.3s;text-align:center;">🎵 Playlist</button>
                 <button id="modalRepostBtn" onclick="toggleRepost(currentModalTrackId)" style="padding:10px;background:rgba(0,255,136,0.2);border:1px solid #00ff88;color:#00ff88;border-radius:8px;cursor:pointer;font-size:0.85rem;transition:all 0.3s;text-align:center;">🔁 Repost</button>
-                <a id="modalDownloadBtn" href="#" download onclick="if(currentModalTrackId && typeof incrementDownloadCount==='function') incrementDownloadCount(currentModalTrackId)" style="padding:10px;background:rgba(0,255,255,0.2);border:1px solid #00ffff;color:#fff;border-radius:8px;cursor:pointer;font-size:0.85rem;text-decoration:none;text-align:center;display:flex;align-items:center;justify-content:center;">⬇ Download</a>
+                <button id="modalShareBtn" onclick="shareTrack()" style="padding:10px;background:rgba(100,100,255,0.2);border:1px solid #6666ff;color:#aaaaff;border-radius:8px;cursor:pointer;font-size:0.85rem;transition:all 0.3s;text-align:center;">🔗 Teilen</button>
+                <button id="modalDownloadBtn" onclick="downloadTrack()" style="padding:10px;background:rgba(0,255,255,0.2);border:1px solid #00ffff;color:#fff;border-radius:8px;cursor:pointer;font-size:0.85rem;transition:all 0.3s;text-align:center;">⬇ Download</button>
+            </div>
+
+            <!-- SHARE POPUP -->
+            <div id="sharePopup" style="display:none;margin-top:10px;background:rgba(0,0,0,0.8);border:1px solid #6666ff;border-radius:12px;padding:15px;">
+                <div style="font-family:'Orbitron',sans-serif;color:#aaaaff;font-size:0.72rem;letter-spacing:2px;margin-bottom:10px;">🔗 TRACK TEILEN</div>
+                <div style="display:flex;gap:8px;margin-bottom:10px;">
+                    <input id="shareUrl" type="text" readonly style="flex:1;background:#111;border:1px solid #6666ff44;border-radius:6px;color:#fff;font-size:0.78rem;padding:8px 10px;outline:none;">
+                    <button onclick="copyShareUrl()" style="background:rgba(100,100,255,0.3);border:1px solid #6666ff;color:#aaaaff;border-radius:6px;padding:8px 14px;cursor:pointer;font-size:0.78rem;white-space:nowrap;">📋 Kopieren</button>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button onclick="shareVia('whatsapp')" style="flex:1;padding:8px;background:rgba(37,211,102,0.2);border:1px solid #25d366;color:#25d366;border-radius:6px;cursor:pointer;font-size:0.78rem;">💬 WhatsApp</button>
+                    <button onclick="shareVia('telegram')" style="flex:1;padding:8px;background:rgba(0,136,204,0.2);border:1px solid #0088cc;color:#0088cc;border-radius:6px;cursor:pointer;font-size:0.78rem;">✈️ Telegram</button>
+                    <button onclick="shareVia('twitter')" style="flex:1;padding:8px;background:rgba(29,161,242,0.2);border:1px solid #1da1f2;color:#1da1f2;border-radius:6px;cursor:pointer;font-size:0.78rem;">🐦 Twitter</button>
+                    <button onclick="shareVia('copy')" style="flex:1;padding:8px;background:rgba(255,255,255,0.1);border:1px solid #555;color:#aaa;border-radius:6px;cursor:pointer;font-size:0.78rem;">🔗 Link</button>
+                </div>
             </div>
 
             <!-- COMMENTS SECTION -->
