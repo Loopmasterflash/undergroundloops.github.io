@@ -52,10 +52,12 @@
                     <span id="unreadBadge" class="unread-badge hidden">0</span>
                 </div>
                 <button id="loginBtn" class="login-btn">Login</button>
-                <div id="userMenu" class="user-menu hidden">
-                    <img id="userAvatar" class="user-avatar" src="" alt="Avatar" onclick="openProfile()">
-                    <span id="username" class="username" onclick="openProfile()"></span>
-                    <button id="logoutBtn" class="logout-btn-small">Logout</button>
+                <div id="userMenu" class="user-menu hidden" style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <img id="userAvatar" class="user-avatar" src="" alt="Avatar" onclick="openProfile()">
+                        <span id="username" class="username" onclick="openProfile()"></span>
+                    </div>
+                    <button id="logoutBtn" class="logout-btn-small" style="font-size:0.65rem;padding:3px 10px;">Logout</button>
                 </div>
             </div>
         </div>

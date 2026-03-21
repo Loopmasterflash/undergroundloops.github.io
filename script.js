@@ -1917,12 +1917,6 @@ async function showCreatePack() {
         return;
     }
 
-    // Email verifiziert?
-    if(!currentUser.emailVerified) {
-        alert('⚠️ Please verify your email first!\\n\\nCheck your inbox for a verification email.');
-        return;
-    }
-
     document.getElementById('packsContainer')?.classList.add('hidden');
     document.getElementById('createPackContainer')?.classList.remove('hidden');
 
