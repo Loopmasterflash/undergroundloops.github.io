@@ -136,7 +136,7 @@ function filterTracks() {
     if(acapSub) acapSub.style.display = currentPage === 'acapellas' ? 'flex' : 'none';
 
     if(currentPage === 'latest') {
-        pageFiltered = allTracks.slice(0, 12);
+        pageFiltered = allTracks.slice(0, 25);
     } else {
         const pageType = currentPage.replace(/s$/, '');
         pageFiltered = allTracks.filter(track => {
