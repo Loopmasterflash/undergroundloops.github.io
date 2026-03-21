@@ -1636,6 +1636,10 @@ function showSearchPage() {
     document.getElementById('profileContainer')?.classList.add('hidden');
     document.getElementById('messagesContainer')?.classList.add('hidden');
     document.getElementById('uploadContainer')?.classList.add('hidden');
+    document.getElementById('packsContainer')?.classList.add('hidden');
+    document.getElementById('packDetailContainer')?.classList.add('hidden');
+    document.getElementById('createPackContainer')?.classList.add('hidden');
+    document.getElementById('editPackContainer')?.classList.add('hidden');
     document.getElementById('searchContainer')?.classList.remove('hidden');
     
     // Nav Links deaktivieren
@@ -1668,6 +1672,9 @@ async function showPacksPage() {
     document.getElementById('searchContainer')?.classList.add('hidden');
     document.getElementById('packDetailContainer')?.classList.add('hidden');
     document.getElementById('createPackContainer')?.classList.add('hidden');
+    document.getElementById('packDetailContainer')?.classList.add('hidden');
+    document.getElementById('createPackContainer')?.classList.add('hidden');
+    document.getElementById('editPackContainer')?.classList.add('hidden');
     document.getElementById('packsContainer')?.classList.remove('hidden');
 
     document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
@@ -1758,6 +1765,7 @@ async function openPackDetail(pack) {
                 <div style="color:#00ffff;font-size:0.95rem;margin-bottom:8px;cursor:pointer;" onclick="showProfilePage('${pack.userId}')">${pack.artist || 'Unknown'}</div>
                 <div style="color:#888;font-size:0.85rem;margin-bottom:12px;">${pack.genre ? pack.genre.toUpperCase() : ''} • ${pack.trackCount || 0} Tracks</div>
                 ${pack.description ? `<p style="color:#ccc;font-size:0.9rem;line-height:1.7;margin-bottom:20px;">${pack.description}</p>` : ''}
+                ${(typeof currentUser !== 'undefined' && currentUser && currentUser.uid === pack.userId) ? `<button onclick="showEditPack('${pack.id}')" style="padding:12px 20px;background:rgba(255,165,0,0.2);border:2px solid #ffa500;color:#ffa500;border-radius:8px;cursor:pointer;font-family:'Orbitron',sans-serif;font-size:0.8rem;margin-right:10px;">&#9999; EDIT</button>` : ''}
                 <button onclick="downloadPack('${pack.id}')" id="packDownloadBtn" style="
                     padding:12px 28px;
                     background:linear-gradient(135deg,rgba(0,255,255,0.3),rgba(255,0,255,0.2));
@@ -2044,6 +2052,135 @@ function closeCreatePack() {
 }
 
 
+
+// ============================================
+// EDIT PACK
+// ============================================
+
+async function showEditPack(packId) {
+    const packDoc = await db.collection('packs').doc(packId).get();
+    if(!packDoc.exists) return;
+    const pack = { id: packDoc.id, ...packDoc.data() };
+
+    document.getElementById('packDetailContainer')?.classList.add('hidden');
+    document.getElementById('editPackContainer')?.classList.remove('hidden');
+
+    document.getElementById('editPackId').value = packId;
+    document.getElementById('editPackName').value = pack.name || '';
+    document.getElementById('editPackDescription').value = pack.description || '';
+    document.getElementById('editPackGenre').value = pack.genre || 'techno';
+
+    loadUserTracksForEdit(pack.trackIds || []);
+}
+
+async function loadUserTracksForEdit(selectedIds) {
+    const container = document.getElementById('editPackTrackSelector');
+    if(!container) return;
+    container.innerHTML = '<div style="text-align:center;color:#666;padding:20px;">Loading your tracks...</div>';
+
+    try {
+        const snap = await db.collection('tracks').where('userId', '==', currentUser.uid).get();
+        const tracks = [];
+        snap.forEach(doc => tracks.push({ id: doc.id, ...doc.data() }));
+
+        if(tracks.length === 0) {
+            container.innerHTML = '<div style="text-align:center;color:#666;padding:20px;">No tracks found.</div>';
+            return;
+        }
+
+        container.innerHTML = '';
+        tracks.forEach(track => {
+            const defaultImg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='50' height='50'%3E%3Crect fill='%23200020' width='50' height='50'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23ff00ff' font-size='20'%3E%3C/text%3E%3C/svg%3E";
+            const typeColor = track.type === 'loop' ? '#00ffff' : track.type === 'sample' ? '#ff00ff' : track.type === 'acapella' ? '#ffff00' : '#ff8800';
+            const isSelected = selectedIds.includes(track.id);
+
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px;background:' + (isSelected ? 'rgba(255,0,255,0.1)' : 'rgba(0,0,0,0.4)') + ';border:1px solid ' + (isSelected ? '#ff00ff' : '#ff00ff22') + ';border-radius:8px;margin-bottom:8px;cursor:pointer;transition:all 0.2s;';
+            row.dataset.trackId = track.id;
+
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.checked = isSelected;
+            cb.style.cssText = 'width:18px;height:18px;accent-color:#ff00ff;flex-shrink:0;cursor:pointer;';
+
+            const img = document.createElement('img');
+            img.src = track.coverImage || defaultImg;
+            img.style.cssText = 'width:38px;height:38px;border-radius:6px;object-fit:cover;flex-shrink:0;';
+
+            const info = document.createElement('div');
+            info.style.cssText = 'flex:1;min-width:0;';
+            info.innerHTML = '<div style="color:#fff;font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + track.title + '</div><div style="color:#666;font-size:0.7rem;">' + (track.genre || '') + ' ' + (track.bpm ? track.bpm + ' BPM' : '') + '</div>';
+
+            const badge = document.createElement('div');
+            badge.style.cssText = 'border:1px solid ' + typeColor + ';color:' + typeColor + ';padding:2px 8px;border-radius:20px;font-size:0.6rem;font-family:Orbitron,sans-serif;flex-shrink:0;';
+            badge.textContent = (track.type || 'loop').toUpperCase();
+
+            row.appendChild(cb);
+            row.appendChild(img);
+            row.appendChild(info);
+            row.appendChild(badge);
+
+            row.onclick = () => {
+                cb.checked = !cb.checked;
+                row.style.border = cb.checked ? '1px solid #ff00ff' : '1px solid #ff00ff22';
+                row.style.background = cb.checked ? 'rgba(255,0,255,0.1)' : 'rgba(0,0,0,0.4)';
+            };
+
+            container.appendChild(row);
+        });
+
+    } catch(e) {
+        container.innerHTML = '<div style="color:#ff4444;padding:20px;">Error: ' + e.message + '</div>';
+    }
+}
+
+async function submitEditPack() {
+    const packId = document.getElementById('editPackId').value;
+    const name = document.getElementById('editPackName').value.trim();
+    const description = document.getElementById('editPackDescription').value.trim();
+    const genre = document.getElementById('editPackGenre').value;
+
+    if(!name) { alert('Please enter a pack name!'); return; }
+
+    const selectedRows = document.querySelectorAll('#editPackTrackSelector [data-track-id]');
+    const selectedIds = [];
+    selectedRows.forEach(row => {
+        const cb = row.querySelector('input[type="checkbox"]');
+        if(cb && cb.checked) selectedIds.push(row.dataset.trackId);
+    });
+
+    if(selectedIds.length < 1) { alert('Please select at least 1 track!'); return; }
+
+    const btn = document.getElementById('submitEditPackBtn');
+    btn.textContent = 'Saving...';
+    btn.disabled = true;
+
+    try {
+        await db.collection('packs').doc(packId).update({
+            name, description, genre,
+            trackIds: selectedIds,
+            trackCount: selectedIds.length,
+            updatedAt: new Date().toISOString()
+        });
+
+        alert('Pack updated!');
+        btn.textContent = 'SAVE CHANGES';
+        btn.disabled = false;
+        document.getElementById('editPackContainer')?.classList.add('hidden');
+        showPacksPage();
+
+    } catch(e) {
+        alert('Error: ' + e.message);
+        btn.textContent = 'SAVE CHANGES';
+        btn.disabled = false;
+    }
+}
+
+function closeEditPack() {
+    document.getElementById('editPackContainer')?.classList.add('hidden');
+    showPacksPage();
+}
+
 // ============================================
 // BLOG
 // ============================================
@@ -2073,6 +2210,7 @@ function showMainPage() {
     document.getElementById('packsContainer')?.classList.add('hidden');
     document.getElementById('packDetailContainer')?.classList.add('hidden');
     document.getElementById('createPackContainer')?.classList.add('hidden');
+    document.getElementById('editPackContainer')?.classList.add('hidden');
     document.getElementById('searchContainer')?.classList.add('hidden');
     document.getElementById('mainContainer')?.classList.remove('hidden');
 }
