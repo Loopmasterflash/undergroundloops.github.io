@@ -21,6 +21,7 @@
                 <a href="#" class="nav-link" data-page="samples" style="padding:6px 10px;font-size:0.78rem;">Samples</a>
                 <a href="#" class="nav-link" data-page="tracks" style="padding:6px 10px;font-size:0.78rem;">Tracks</a>
                 <a href="#" class="nav-link" data-page="acapellas" style="padding:6px 10px;font-size:0.78rem;">Acapellas</a>
+                <a href="#" class="nav-link" data-page="packs" style="padding:6px 10px;font-size:0.78rem;">📦 Packs</a>
                 <a href="#" class="nav-link" data-page="forum" id="forumNavLink" style="padding:6px 10px;font-size:0.78rem;">Forum</a>
                 <div class="genre-dropdown">
                     <button class="genre-dropdown-btn" style="padding:6px 10px;font-size:0.78rem;">
@@ -485,6 +486,60 @@
                 </div>
                 <div id="modalCommentsSection" style="max-height:150px;overflow-y:auto;"></div>
             </div>
+        </div>
+    </div>
+
+
+    <!-- ===== PACKS PAGE ===== -->
+    <div class="container hidden" id="packsContainer">
+        <div style="max-width:1100px;margin:0 auto;padding:20px 0;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:25px;flex-wrap:wrap;gap:15px;">
+                <h1 style="font-family:'Orbitron',sans-serif;font-size:1.2rem;color:#ff00ff;letter-spacing:3px;text-shadow:0 0 20px rgba(255,0,255,0.6);">📦 SAMPLE PACKS</h1>
+                <button onclick="showCreatePack()" style="background:rgba(255,0,255,0.2);border:2px solid #ff00ff;color:#fff;padding:10px 20px;border-radius:8px;cursor:pointer;font-family:'Orbitron',sans-serif;font-size:0.7rem;letter-spacing:1px;">+ CREATE PACK</button>
+            </div>
+            <div id="packsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;"></div>
+        </div>
+    </div>
+
+    <!-- ===== PACK DETAIL PAGE ===== -->
+    <div class="container hidden" id="packDetailContainer">
+        <div style="max-width:900px;margin:0 auto;padding:20px 0;">
+            <button onclick="closePackDetail()" style="background:rgba(255,0,255,0.15);border:1px solid #ff00ff;color:#ff00ff;padding:8px 18px;border-radius:8px;cursor:pointer;font-family:'Orbitron',sans-serif;font-size:0.7rem;letter-spacing:1px;margin-bottom:25px;">← BACK TO PACKS</button>
+            <div id="packDetailContent"></div>
+        </div>
+    </div>
+
+    <!-- ===== CREATE PACK PAGE ===== -->
+    <div class="container hidden" id="createPackContainer">
+        <div style="max-width:700px;margin:0 auto;padding:20px 0;">
+            <button onclick="closeCreatePack()" style="background:rgba(255,0,255,0.15);border:1px solid #ff00ff;color:#ff00ff;padding:8px 18px;border-radius:8px;cursor:pointer;font-family:'Orbitron',sans-serif;font-size:0.7rem;letter-spacing:1px;margin-bottom:25px;">&#8592; BACK</button>
+            <h1 style="font-family:'Orbitron',sans-serif;font-size:1.2rem;color:#ff00ff;letter-spacing:3px;margin-bottom:25px;">&#128230; CREATE PACK</h1>
+            <div style="background:rgba(0,0,0,0.5);border:1px solid #ff00ff33;border-radius:16px;padding:25px;margin-bottom:20px;">
+                <div style="margin-bottom:18px;">
+                    <label style="color:#00ffff;font-family:'Orbitron',sans-serif;font-size:0.8rem;display:block;margin-bottom:8px;">PACK NAME *</label>
+                    <input id="packName" type="text" placeholder="e.g. Techno Drum Pack Vol.1" style="width:100%;padding:12px 16px;background:rgba(0,0,0,0.5);border:1px solid #ff00ff44;border-radius:8px;color:#fff;font-size:1rem;box-sizing:border-box;">
+                </div>
+                <div style="margin-bottom:18px;">
+                    <label style="color:#00ffff;font-family:'Orbitron',sans-serif;font-size:0.8rem;display:block;margin-bottom:8px;">GENRE</label>
+                    <select id="packGenre" style="width:100%;padding:12px 16px;background:rgba(0,0,0,0.5);border:1px solid #ff00ff44;border-radius:8px;color:#fff;font-size:1rem;box-sizing:border-box;">
+                        <option value="techno">Techno</option><option value="minimal">Minimal</option>
+                        <option value="industrial">Industrial</option><option value="goa">Goa</option>
+                        <option value="psytrance">Psytrance</option><option value="rap">Rap</option>
+                        <option value="hiphop">Hip Hop</option><option value="chillout">Chillout</option>
+                        <option value="drumandbass">Drum and Bass</option><option value="electronic">Electronic</option>
+                        <option value="house">House</option><option value="dubstep">Dubstep</option>
+                    </select>
+                </div>
+                <div style="margin-bottom:18px;">
+                    <label style="color:#00ffff;font-family:'Orbitron',sans-serif;font-size:0.8rem;display:block;margin-bottom:8px;">DESCRIPTION <span style="color:#555;">(optional)</span></label>
+                    <textarea id="packDescription" placeholder="Describe your pack..." style="width:100%;padding:12px 16px;background:rgba(0,0,0,0.5);border:1px solid #ff00ff44;border-radius:8px;color:#fff;font-size:0.9rem;min-height:80px;resize:vertical;box-sizing:border-box;"></textarea>
+                </div>
+            </div>
+            <div style="background:rgba(0,0,0,0.5);border:1px solid #ff00ff33;border-radius:16px;padding:25px;margin-bottom:25px;">
+                <h3 style="font-family:'Orbitron',sans-serif;color:#ff00ff;font-size:0.8rem;letter-spacing:2px;margin-bottom:15px;">SELECT YOUR TRACKS (min. 2)</h3>
+                <div id="packTrackSelector"></div>
+            </div>
+            <button id="submitPackBtn" onclick="submitCreatePack()" style="width:100%;padding:16px;background:linear-gradient(135deg,rgba(255,0,255,0.4),rgba(0,255,255,0.2));border:2px solid #ff00ff;color:#fff;border-radius:8px;cursor:pointer;font-size:1rem;font-family:'Orbitron',sans-serif;letter-spacing:2px;transition:all 0.3s;">&#128640; CREATE PACK</button>
         </div>
     </div>
 

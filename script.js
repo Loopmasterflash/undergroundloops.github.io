@@ -32,6 +32,7 @@ function initNavigation() {
             currentGenre = 'all';
             if(currentPage === 'blog') { showBlogPage(); }
             else if(currentPage === 'forum') { showForumPage(); }
+            else if(currentPage === 'packs') { showPacksPage(); }
             else { showMainPage(); filterTracks(); }
         });
     });
@@ -1649,6 +1650,406 @@ function closeSearchPage() {
     if(input) input.value = '';
 }
 
+
+// ============================================
+// PACKS SYSTEM
+// ============================================
+
+let allPacks = [];
+
+async function showPacksPage() {
+    // Alle anderen Seiten verstecken
+    document.getElementById('mainFlexWrapper').style.display = 'none';
+    document.getElementById('blogContainer')?.classList.add('hidden');
+    document.getElementById('forumContainer')?.classList.add('hidden');
+    document.getElementById('profileContainer')?.classList.add('hidden');
+    document.getElementById('messagesContainer')?.classList.add('hidden');
+    document.getElementById('uploadContainer')?.classList.add('hidden');
+    document.getElementById('searchContainer')?.classList.add('hidden');
+    document.getElementById('packDetailContainer')?.classList.add('hidden');
+    document.getElementById('createPackContainer')?.classList.add('hidden');
+    document.getElementById('packsContainer')?.classList.remove('hidden');
+
+    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+    document.querySelector('[data-page="packs"]')?.classList.add('active');
+
+    loadAllPacks();
+}
+
+async function loadAllPacks() {
+    const container = document.getElementById('packsGrid');
+    if(!container) return;
+    container.innerHTML = '<div style="text-align:center;color:#ff00ff;font-family:Orbitron,sans-serif;font-size:0.85rem;padding:40px;">⚡ Loading Packs...</div>';
+
+    try {
+        const snap = await db.collection('packs').orderBy('createdAt', 'desc').get();
+        allPacks = [];
+        snap.forEach(doc => allPacks.push({ id: doc.id, ...doc.data() }));
+
+        if(allPacks.length === 0) {
+            container.innerHTML = '<div style="text-align:center;color:#666;padding:60px;font-family:Orbitron,sans-serif;font-size:0.85rem;">📦 No packs yet. Be the first to create one!</div>';
+            return;
+        }
+
+        container.innerHTML = '';
+        allPacks.forEach(pack => container.appendChild(createPackCard(pack)));
+
+    } catch(e) {
+        container.innerHTML = `<div style="text-align:center;color:#ff4444;padding:40px;">❌ Error: ${e.message}</div>`;
+    }
+}
+
+function createPackCard(pack) {
+    const card = document.createElement('div');
+    const defaultImg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23200020' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23ff00ff' font-size='40'%3E📦%3C/text%3E%3C/svg%3E";
+
+    card.style.cssText = 'background:rgba(0,0,0,0.6);border:1px solid #ff00ff33;border-radius:12px;overflow:hidden;cursor:pointer;transition:all 0.3s;position:relative;';
+
+    card.innerHTML = `
+        <div style="position:relative;">
+            <img src="${pack.coverImage || defaultImg}" 
+                 onerror="this.src='${defaultImg}'"
+                 style="width:100%;aspect-ratio:1;object-fit:cover;display:block;">
+            <div style="position:absolute;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.3s;" class="pack-overlay">
+                <div style="width:55px;height:55px;background:rgba(255,0,255,0.9);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;">📦</div>
+            </div>
+            <div style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.85);border:1px solid #ff00ff;color:#ff00ff;padding:3px 10px;border-radius:20px;font-size:0.65rem;font-family:'Orbitron',sans-serif;">
+                ${pack.trackCount || 0} TRACKS
+            </div>
+        </div>
+        <div style="padding:12px;">
+            <div style="color:#fff;font-weight:bold;font-size:0.9rem;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${pack.name || 'Untitled Pack'}</div>
+            <div style="color:#00ffff;font-size:0.75rem;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;" onclick="event.stopPropagation();showProfilePage('${pack.userId}')">${pack.artist || 'Unknown'}</div>
+            <div style="color:#666;font-size:0.7rem;">${pack.genre ? pack.genre.toUpperCase() : ''}</div>
+        </div>`;
+
+    card.addEventListener('mouseenter', () => {
+        card.style.border = '1px solid #ff00ff';
+        card.style.boxShadow = '0 0 25px rgba(255,0,255,0.3)';
+        card.style.transform = 'translateY(-4px)';
+        card.querySelector('.pack-overlay').style.opacity = '1';
+    });
+    card.addEventListener('mouseleave', () => {
+        card.style.border = '1px solid #ff00ff33';
+        card.style.boxShadow = 'none';
+        card.style.transform = 'translateY(0)';
+        card.querySelector('.pack-overlay').style.opacity = '0';
+    });
+    card.addEventListener('click', () => openPackDetail(pack));
+
+    return card;
+}
+
+async function openPackDetail(pack) {
+    // Pack Detail Seite anzeigen
+    document.getElementById('packsContainer')?.classList.add('hidden');
+    document.getElementById('packDetailContainer')?.classList.remove('hidden');
+
+    const container = document.getElementById('packDetailContent');
+    const defaultImg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23200020' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23ff00ff' font-size='40'%3E📦%3C/text%3E%3C/svg%3E";
+
+    container.innerHTML = `
+        <div style="display:flex;gap:30px;align-items:flex-start;margin-bottom:30px;flex-wrap:wrap;">
+            <img src="${pack.coverImage || defaultImg}" 
+                 onerror="this.src='${defaultImg}'"
+                 style="width:200px;height:200px;object-fit:cover;border-radius:16px;border:2px solid #ff00ff;box-shadow:0 0 30px rgba(255,0,255,0.3);flex-shrink:0;">
+            <div style="flex:1;min-width:200px;">
+                <h1 style="font-family:'Orbitron',sans-serif;color:#fff;font-size:1.5rem;margin-bottom:8px;">${pack.name || 'Untitled Pack'}</h1>
+                <div style="color:#00ffff;font-size:0.95rem;margin-bottom:8px;cursor:pointer;" onclick="showProfilePage('${pack.userId}')">${pack.artist || 'Unknown'}</div>
+                <div style="color:#888;font-size:0.85rem;margin-bottom:12px;">${pack.genre ? pack.genre.toUpperCase() : ''} • ${pack.trackCount || 0} Tracks</div>
+                ${pack.description ? `<p style="color:#ccc;font-size:0.9rem;line-height:1.7;margin-bottom:20px;">${pack.description}</p>` : ''}
+                <button onclick="downloadPack('${pack.id}')" id="packDownloadBtn" style="
+                    padding:12px 28px;
+                    background:linear-gradient(135deg,rgba(0,255,255,0.3),rgba(255,0,255,0.2));
+                    border:2px solid #00ffff;color:#fff;border-radius:8px;
+                    cursor:pointer;font-family:'Orbitron',sans-serif;
+                    font-size:0.8rem;letter-spacing:1px;transition:all 0.3s;
+                ">⬇ DOWNLOAD ALL (ZIP)</button>
+            </div>
+        </div>
+        <h3 style="font-family:'Orbitron',sans-serif;color:#ff00ff;font-size:0.85rem;letter-spacing:2px;margin-bottom:16px;border-bottom:1px solid #ff00ff33;padding-bottom:8px;">🎵 TRACKS IN THIS PACK</h3>
+        <div id="packTracksList"><div style="text-align:center;color:#666;padding:20px;">Loading tracks...</div></div>
+    `;
+
+    // Tracks laden
+    try {
+        const trackIds = pack.trackIds || [];
+        if(trackIds.length === 0) {
+            document.getElementById('packTracksList').innerHTML = '<div style="text-align:center;color:#666;padding:20px;">No tracks in this pack yet.</div>';
+            return;
+        }
+
+        const tracks = [];
+        for(const tid of trackIds) {
+            const doc = await db.collection('tracks').doc(tid).get();
+            if(doc.exists) tracks.push({ id: doc.id, ...doc.data() });
+        }
+
+        renderPackTracks(tracks);
+    } catch(e) {
+        document.getElementById('packTracksList').innerHTML = `<div style="color:#ff4444;padding:20px;">Error: ${e.message}</div>`;
+    }
+}
+
+function renderPackTracks(tracks) {
+    const container = document.getElementById('packTracksList');
+    if(!tracks.length) {
+        container.innerHTML = '<div style="text-align:center;color:#666;padding:20px;">No tracks found.</div>';
+        return;
+    }
+
+    container.innerHTML = '';
+    tracks.forEach((track, idx) => {
+        const defaultImg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='50' height='50'%3E%3Crect fill='%23200020' width='50' height='50'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23ff00ff' font-size='20'%3E🎵%3C/text%3E%3C/svg%3E";
+        const typeColor = track.type === 'loop' ? '#00ffff' : track.type === 'sample' ? '#ff00ff' : track.type === 'acapella' ? '#ffff00' : '#ff8800';
+
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:14px;padding:12px;background:rgba(0,0,0,0.4);border:1px solid #ff00ff22;border-radius:10px;margin-bottom:8px;cursor:pointer;transition:all 0.3s;';
+        row.onmouseover = () => { row.style.border = '1px solid #ff00ff55'; row.style.background = 'rgba(255,0,255,0.05)'; };
+        row.onmouseout = () => { row.style.border = '1px solid #ff00ff22'; row.style.background = 'rgba(0,0,0,0.4)'; };
+
+        row.innerHTML = `
+            <div style="color:#555;font-family:'Orbitron',sans-serif;font-size:0.75rem;width:24px;flex-shrink:0;">${idx + 1}</div>
+            <img src="${track.coverImage || defaultImg}" onerror="this.src='${defaultImg}'" style="width:44px;height:44px;border-radius:6px;object-fit:cover;border:1px solid #ff00ff44;flex-shrink:0;">
+            <div style="flex:1;min-width:0;">
+                <div style="color:#fff;font-size:0.88rem;font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${track.title || 'Untitled'}</div>
+                <div style="color:#00ffff;font-size:0.75rem;">${track.artist || 'Unknown'}</div>
+            </div>
+            <div style="color:#666;font-size:0.7rem;flex-shrink:0;">${track.bpm ? track.bpm + ' BPM' : ''}</div>
+            <div style="background:rgba(0,0,0,0.6);border:1px solid ${typeColor};color:${typeColor};padding:2px 8px;border-radius:20px;font-size:0.6rem;font-family:'Orbitron',sans-serif;flex-shrink:0;">${(track.type || 'loop').toUpperCase()}</div>
+            <button style="background:rgba(255,0,255,0.2);border:1px solid #ff00ff;color:#ff00ff;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:0.85rem;flex-shrink:0;" title="Play">▶</button>
+        `;
+
+        row.querySelector('button').onclick = (e) => {
+            e.stopPropagation();
+            openPlayerModal(track);
+        };
+        row.onclick = () => openPlayerModal(track);
+
+        container.appendChild(row);
+    });
+}
+
+async function downloadPack(packId) {
+    const btn = document.getElementById('packDownloadBtn');
+    if(!btn) return;
+    btn.textContent = '⏳ Preparing ZIP...';
+    btn.disabled = true;
+
+    try {
+        const packDoc = await db.collection('packs').doc(packId).get();
+        const pack = packDoc.data();
+        const trackIds = pack.trackIds || [];
+
+        // Alle Audio-Dateien sammeln
+        const files = [];
+        for(const tid of trackIds) {
+            const doc = await db.collection('tracks').doc(tid).get();
+            if(!doc.exists) continue;
+            const t = doc.data();
+            if(t.audioFile) {
+                files.push({ url: t.audioFile, name: (t.artist || 'Unknown') + ' - ' + (t.title || 'Track') });
+            }
+        }
+
+        if(files.length === 0) {
+            alert('No audio files found in this pack.');
+            btn.textContent = '⬇ DOWNLOAD ALL (ZIP)';
+            btn.disabled = false;
+            return;
+        }
+
+        // JSZip laden und ZIP erstellen
+        btn.textContent = `⏳ Downloading ${files.length} files...`;
+
+        // JSZip dynamisch laden
+        if(typeof JSZip === 'undefined') {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+            document.head.appendChild(script);
+            await new Promise(resolve => script.onload = resolve);
+        }
+
+        const zip = new JSZip();
+
+        for(let i = 0; i < files.length; i++) {
+            btn.textContent = `⏳ ${i+1}/${files.length} files...`;
+            const response = await fetch(files[i].url);
+            const blob = await response.blob();
+            const ext = files[i].url.includes('.wav') ? '.wav' : '.mp3';
+            const filename = files[i].name.replace(/[^a-zA-Z0-9\-_. ]/g, '_') + ext;
+            zip.file(filename, blob);
+        }
+
+        btn.textContent = '⏳ Creating ZIP...';
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        const url = URL.createObjectURL(zipBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = (pack.name || 'pack').replace(/[^a-zA-Z0-9\-_. ]/g, '_') + '.zip';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        btn.textContent = '✅ Downloaded!';
+        btn.style.borderColor = '#00ff88';
+        setTimeout(() => {
+            btn.textContent = '⬇ DOWNLOAD ALL (ZIP)';
+            btn.style.borderColor = '#00ffff';
+            btn.disabled = false;
+        }, 3000);
+
+    } catch(e) {
+        console.error('Pack download error:', e);
+        btn.textContent = '❌ Error';
+        setTimeout(() => { btn.textContent = '⬇ DOWNLOAD ALL (ZIP)'; btn.disabled = false; }, 2000);
+    }
+}
+
+// ============================================
+// PACK ERSTELLEN
+// ============================================
+
+async function showCreatePack() {
+    if(typeof currentUser === 'undefined' || !currentUser) {
+        alert('Please login first!');
+        return;
+    }
+
+    // Email verifiziert?
+    if(!currentUser.emailVerified) {
+        alert('⚠️ Please verify your email first!\\n\\nCheck your inbox for a verification email.');
+        return;
+    }
+
+    document.getElementById('packsContainer')?.classList.add('hidden');
+    document.getElementById('createPackContainer')?.classList.remove('hidden');
+
+    // Eigene Tracks laden fuer Auswahl
+    loadUserTracksForPack();
+}
+
+async function loadUserTracksForPack() {
+    const container = document.getElementById('packTrackSelector');
+    if(!container) return;
+    container.innerHTML = '<div style="text-align:center;color:#666;padding:20px;">Loading your tracks...</div>';
+
+    try {
+        const snap = await db.collection('tracks').where('userId', '==', currentUser.uid).get();
+        const tracks = [];
+        snap.forEach(doc => tracks.push({ id: doc.id, ...doc.data() }));
+
+        if(tracks.length === 0) {
+            container.innerHTML = '<div style="text-align:center;color:#666;padding:20px;">You have no tracks yet. Upload some first!</div>';
+            return;
+        }
+
+        container.innerHTML = '';
+        tracks.forEach(track => {
+            const defaultImg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='50' height='50'%3E%3Crect fill='%23200020' width='50' height='50'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23ff00ff' font-size='20'%3E🎵%3C/text%3E%3C/svg%3E";
+            const typeColor = track.type === 'loop' ? '#00ffff' : track.type === 'sample' ? '#ff00ff' : track.type === 'acapella' ? '#ffff00' : '#ff8800';
+
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px;background:rgba(0,0,0,0.4);border:1px solid #ff00ff22;border-radius:8px;margin-bottom:8px;cursor:pointer;transition:all 0.2s;';
+            row.dataset.trackId = track.id;
+
+            row.innerHTML = `
+                <input type="checkbox" style="width:18px;height:18px;accent-color:#ff00ff;flex-shrink:0;cursor:pointer;">
+                <img src="${track.coverImage || defaultImg}" onerror="this.src='${defaultImg}'" style="width:38px;height:38px;border-radius:6px;object-fit:cover;flex-shrink:0;">
+                <div style="flex:1;min-width:0;">
+                    <div style="color:#fff;font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${track.title}</div>
+                    <div style="color:#666;font-size:0.7rem;">${track.genre ? track.genre.toUpperCase() : ''} ${track.bpm ? '• ' + track.bpm + ' BPM' : ''}</div>
+                </div>
+                <div style="border:1px solid ${typeColor};color:${typeColor};padding:2px 8px;border-radius:20px;font-size:0.6rem;font-family:'Orbitron',sans-serif;flex-shrink:0;">${(track.type || 'loop').toUpperCase()}</div>
+            `;
+
+            row.onclick = () => {
+                const cb = row.querySelector('input[type="checkbox"]');
+                cb.checked = !cb.checked;
+                row.style.border = cb.checked ? '1px solid #ff00ff' : '1px solid #ff00ff22';
+                row.style.background = cb.checked ? 'rgba(255,0,255,0.1)' : 'rgba(0,0,0,0.4)';
+            };
+
+            container.appendChild(row);
+        });
+
+    } catch(e) {
+        container.innerHTML = `<div style="color:#ff4444;padding:20px;">Error: ${e.message}</div>`;
+    }
+}
+
+async function submitCreatePack() {
+    const name = document.getElementById('packName')?.value.trim();
+    const description = document.getElementById('packDescription')?.value.trim();
+    const genre = document.getElementById('packGenre')?.value;
+
+    if(!name) { alert('Please enter a pack name!'); return; }
+
+    // Ausgewählte Tracks sammeln
+    const selectedRows = document.querySelectorAll('#packTrackSelector [data-track-id]');
+    const selectedIds = [];
+    selectedRows.forEach(row => {
+        const cb = row.querySelector('input[type="checkbox"]');
+        if(cb && cb.checked) selectedIds.push(row.dataset.trackId);
+    });
+
+    if(selectedIds.length < 2) {
+        alert('Please select at least 2 tracks for the pack!');
+        return;
+    }
+
+    const btn = document.getElementById('submitPackBtn');
+    btn.textContent = '⏳ Creating...';
+    btn.disabled = true;
+
+    try {
+        const userDoc = await db.collection('users').doc(currentUser.uid).get();
+        const userData = userDoc.data();
+
+        // Cover vom ersten Track nehmen falls kein eigenes
+        let coverImage = '';
+        const firstTrackDoc = await db.collection('tracks').doc(selectedIds[0]).get();
+        if(firstTrackDoc.exists) coverImage = firstTrackDoc.data().coverImage || '';
+
+        await db.collection('packs').add({
+            name,
+            description,
+            genre,
+            coverImage,
+            trackIds: selectedIds,
+            trackCount: selectedIds.length,
+            userId: currentUser.uid,
+            artist: userData.username || 'Unknown',
+            createdAt: new Date().toISOString()
+        });
+
+        alert('✅ Pack created successfully!');
+        btn.textContent = '🚀 CREATE PACK';
+        btn.disabled = false;
+
+        // Zurück zur Packs-Seite
+        document.getElementById('createPackContainer')?.classList.add('hidden');
+        showPacksPage();
+
+    } catch(e) {
+        alert('❌ Error: ' + e.message);
+        btn.textContent = '🚀 CREATE PACK';
+        btn.disabled = false;
+    }
+}
+
+function closePackDetail() {
+    document.getElementById('packDetailContainer')?.classList.add('hidden');
+    showPacksPage();
+}
+
+function closeCreatePack() {
+    document.getElementById('createPackContainer')?.classList.add('hidden');
+    showPacksPage();
+}
+
+
 // ============================================
 // BLOG
 // ============================================
@@ -1675,6 +2076,10 @@ function showMainPage() {
     document.getElementById('profileContainer')?.classList.add('hidden');
     document.getElementById('messagesContainer')?.classList.add('hidden');
     document.getElementById('uploadContainer')?.classList.add('hidden');
+    document.getElementById('packsContainer')?.classList.add('hidden');
+    document.getElementById('packDetailContainer')?.classList.add('hidden');
+    document.getElementById('createPackContainer')?.classList.add('hidden');
+    document.getElementById('searchContainer')?.classList.add('hidden');
     document.getElementById('mainContainer')?.classList.remove('hidden');
 }
 
