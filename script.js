@@ -6,6 +6,7 @@ let allTracks = [];
 let filteredTracks = [];
 let currentGenre = 'all';
 let currentPage = 'latest';
+let latestLimit = 25;
 
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
@@ -112,6 +113,12 @@ let currentAcapellaBpm = 'all';
 
 const KEYS = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 
+
+function setLatestLimit(limit) {
+    latestLimit = limit;
+    filterTracks();
+}
+
 function filterTracks() {
     // Alle anderen Seiten verstecken wenn Tracks/Loops/Samples angezeigt werden
     document.getElementById('packsContainer')?.classList.add('hidden');
@@ -136,7 +143,7 @@ function filterTracks() {
     if(acapSub) acapSub.style.display = currentPage === 'acapellas' ? 'flex' : 'none';
 
     if(currentPage === 'latest') {
-        pageFiltered = allTracks.slice(0, 25);
+        pageFiltered = allTracks.slice(0, latestLimit);
     } else {
         const pageType = currentPage.replace(/s$/, '');
         pageFiltered = allTracks.filter(track => {
@@ -206,16 +213,22 @@ function renderTracks() {
 
     container.innerHTML = `
         <div style="padding:10px 0 20px 0;">
-            <h2 style="
-                font-family:'Orbitron',sans-serif;
-                color:#ff00ff;
-                font-size:1.4rem;
-                letter-spacing:3px;
-                margin-bottom:25px;
-                text-shadow:0 0 20px rgba(255,0,255,0.5);
-                border-bottom:1px solid #ff00ff44;
-                padding-bottom:15px;
-            ">${title}</h2>
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:25px;border-bottom:1px solid #ff00ff44;padding-bottom:15px;">
+                <h2 style="
+                    font-family:'Orbitron',sans-serif;
+                    color:#ff00ff;
+                    font-size:1.4rem;
+                    letter-spacing:3px;
+                    text-shadow:0 0 20px rgba(255,0,255,0.5);
+                    margin:0;
+                ">${title}</h2>
+                ${currentPage === 'latest' ? `
+                <div style="display:flex;gap:6px;">
+                    <button onclick="setLatestLimit(25)" style="padding:5px 14px;font-family:'Orbitron',sans-serif;font-size:0.72rem;border-radius:6px;cursor:pointer;transition:all 0.2s;background:${latestLimit===25?'rgba(255,0,255,0.4)':'rgba(0,0,0,0.4)'};border:1px solid ${latestLimit===25?'#ff00ff':'#555'};color:${latestLimit===25?'#fff':'#aaa'};">25</button>
+                    <button onclick="setLatestLimit(50)" style="padding:5px 14px;font-family:'Orbitron',sans-serif;font-size:0.72rem;border-radius:6px;cursor:pointer;transition:all 0.2s;background:${latestLimit===50?'rgba(255,0,255,0.4)':'rgba(0,0,0,0.4)'};border:1px solid ${latestLimit===50?'#ff00ff':'#555'};color:${latestLimit===50?'#fff':'#aaa'};">50</button>
+                    <button onclick="setLatestLimit(100)" style="padding:5px 14px;font-family:'Orbitron',sans-serif;font-size:0.72rem;border-radius:6px;cursor:pointer;transition:all 0.2s;background:${latestLimit===100?'rgba(255,0,255,0.4)':'rgba(0,0,0,0.4)'};border:1px solid ${latestLimit===100?'#ff00ff':'#555'};color:${latestLimit===100?'#fff':'#aaa'};">100</button>
+                </div>` : ''}
+            </div>
             <div id="tracksGrid" style="
                 display:grid;
                 grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
