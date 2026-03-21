@@ -113,6 +113,14 @@ let currentAcapellaBpm = 'all';
 const KEYS = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 
 function filterTracks() {
+    // Alle anderen Seiten verstecken wenn Tracks/Loops/Samples angezeigt werden
+    document.getElementById('packsContainer')?.classList.add('hidden');
+    document.getElementById('packDetailContainer')?.classList.add('hidden');
+    document.getElementById('createPackContainer')?.classList.add('hidden');
+    document.getElementById('editPackContainer')?.classList.add('hidden');
+    document.getElementById('searchContainer')?.classList.add('hidden');
+    document.getElementById('mainFlexWrapper').style.display = 'flex';
+
     let pageFiltered;
 
     const loopsSub = document.getElementById('loopsSubmenu');
