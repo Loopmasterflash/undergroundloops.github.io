@@ -2193,6 +2193,10 @@ function showBlogPage() {
     document.getElementById('profileContainer')?.classList.add('hidden');
     document.getElementById('messagesContainer')?.classList.add('hidden');
     document.getElementById('uploadContainer')?.classList.add('hidden');
+    document.getElementById('packsContainer')?.classList.add('hidden');
+    document.getElementById('packDetailContainer')?.classList.add('hidden');
+    document.getElementById('createPackContainer')?.classList.add('hidden');
+    document.getElementById('editPackContainer')?.classList.add('hidden');
     document.getElementById('blogContainer')?.classList.remove('hidden');
     const newPostBtn = document.getElementById('newPostBtn');
     if(newPostBtn && typeof currentUser !== 'undefined' && currentUser) newPostBtn.style.display = currentUser.uid === ADMIN_UID ? 'block' : 'none';
@@ -2286,6 +2290,10 @@ function showForumPage() {
     document.getElementById('messagesContainer')?.classList.add('hidden');
     document.getElementById('blogContainer')?.classList.add('hidden');
     document.getElementById('uploadContainer')?.classList.add('hidden');
+    document.getElementById('packsContainer')?.classList.add('hidden');
+    document.getElementById('packDetailContainer')?.classList.add('hidden');
+    document.getElementById('createPackContainer')?.classList.add('hidden');
+    document.getElementById('editPackContainer')?.classList.add('hidden');
     document.getElementById('forumContainer')?.classList.remove('hidden');
     const btn = document.getElementById('newThreadBtn');
     if(btn) btn.style.display = (typeof currentUser !== 'undefined' && currentUser) ? 'block' : 'none';
