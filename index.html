@@ -62,7 +62,25 @@
             </div>
         </div>
         <!-- ===== SEARCH BAR - EIGENE ZEILE ===== -->
-        <div style="display:flex;align-items:center;justify-content:center;padding:10px 20px;border-top:1px solid #ff00ff22;">
+        <div style="display:flex;align-items:center;justify-content:center;padding:10px 20px;border-top:1px solid #ff00ff22;gap:12px;">
+            <button onclick="showTopCharts()" style="
+                background:rgba(0,0,0,0.5);
+                border:2px solid #ff00ff;
+                color:#ff00ff;
+                font-family:'Orbitron',sans-serif;
+                font-size:0.78rem;
+                font-weight:bold;
+                letter-spacing:2px;
+                padding:9px 18px;
+                border-radius:25px;
+                cursor:pointer;
+                white-space:nowrap;
+                flex-shrink:0;
+                transition:all 0.3s;
+                text-shadow:0 0 10px rgba(255,0,255,0.5);
+                box-shadow:0 0 10px rgba(255,0,255,0.2);
+            " onmouseover="this.style.background='rgba(255,0,255,0.2)';this.style.boxShadow='0 0 20px rgba(255,0,255,0.4)'"
+               onmouseout="this.style.background='rgba(0,0,0,0.5)';this.style.boxShadow='0 0 10px rgba(255,0,255,0.2)'">TOP 100</button>
             <div style="display:flex;align-items:center;background:rgba(0,0,0,0.5);border:1px solid #ff00ff55;border-radius:30px;overflow:hidden;transition:all 0.3s;max-width:600px;width:100%;" onmouseover="this.style.borderColor='#ff00ff'" onmouseout="this.style.borderColor='#ff00ff55'">
                 <select id="searchFilter" style="background:rgba(0,0,0,0.8);border:none;border-right:1px solid #ff00ff33;color:#aaa;font-family:'Orbitron',sans-serif;font-size:0.65rem;padding:10px 10px;cursor:pointer;outline:none;flex-shrink:0;">
                     <option value="all">All</option>
@@ -579,6 +597,22 @@
                 <div id="editPackTrackSelector"></div>
             </div>
             <button id="submitEditPackBtn" onclick="submitEditPack()" style="width:100%;padding:16px;background:linear-gradient(135deg,rgba(255,0,255,0.4),rgba(0,255,255,0.2));border:2px solid #ff00ff;color:#fff;border-radius:8px;cursor:pointer;font-size:1rem;font-family:'Orbitron',sans-serif;letter-spacing:2px;transition:all 0.3s;">&#128190; SAVE CHANGES</button>
+        </div>
+    </div>
+
+
+    <!-- ===== TOP CHARTS PAGE ===== -->
+    <div class="container hidden" id="topChartsContainer">
+        <div style="max-width:900px;margin:0 auto;padding:20px 0;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:25px;flex-wrap:wrap;gap:15px;">
+                <h1 style="font-family:'Orbitron',sans-serif;font-size:1.2rem;color:#ff00ff;letter-spacing:3px;text-shadow:0 0 20px rgba(255,0,255,0.6);">🏆 TOP 100</h1>
+                <div style="display:flex;gap:8px;">
+                    <button onclick="loadTopCharts('plays')" id="topPlaysBtn" style="padding:7px 16px;background:rgba(255,0,255,0.3);border:1px solid #ff00ff;color:#fff;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;font-size:0.7rem;">🎵 Most Played</button>
+                    <button onclick="loadTopCharts('likes')" id="topLikesBtn" style="padding:7px 16px;background:rgba(0,0,0,0.3);border:1px solid #555;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;font-size:0.7rem;">❤️ Most Liked</button>
+                </div>
+                <button onclick="closeTopCharts()" style="background:rgba(255,0,255,0.15);border:1px solid #ff00ff;color:#ff00ff;padding:8px 18px;border-radius:8px;cursor:pointer;font-family:'Orbitron',sans-serif;font-size:0.7rem;">← BACK</button>
+            </div>
+            <div id="topChartsContent"></div>
         </div>
     </div>
 

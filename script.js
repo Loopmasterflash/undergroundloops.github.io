@@ -126,6 +126,7 @@ function filterTracks() {
     document.getElementById('createPackContainer')?.classList.add('hidden');
     document.getElementById('editPackContainer')?.classList.add('hidden');
     document.getElementById('searchContainer')?.classList.add('hidden');
+    document.getElementById('topChartsContainer')?.classList.add('hidden');
     document.getElementById('mainFlexWrapper').style.display = 'flex';
 
     let pageFiltered;
@@ -2206,6 +2207,117 @@ function closeEditPack() {
     showPacksPage();
 }
 
+
+// ============================================
+// TOP CHARTS
+// ============================================
+
+let currentTopMode = 'plays';
+
+async function showTopCharts() {
+    document.getElementById('mainFlexWrapper').style.display = 'none';
+    document.getElementById('blogContainer')?.classList.add('hidden');
+    document.getElementById('forumContainer')?.classList.add('hidden');
+    document.getElementById('profileContainer')?.classList.add('hidden');
+    document.getElementById('messagesContainer')?.classList.add('hidden');
+    document.getElementById('uploadContainer')?.classList.add('hidden');
+    document.getElementById('packsContainer')?.classList.add('hidden');
+    document.getElementById('packDetailContainer')?.classList.add('hidden');
+    document.getElementById('createPackContainer')?.classList.add('hidden');
+    document.getElementById('editPackContainer')?.classList.add('hidden');
+    document.getElementById('searchContainer')?.classList.add('hidden');
+    document.getElementById('topChartsContainer')?.classList.remove('hidden');
+
+    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+    loadTopCharts('plays');
+}
+
+async function loadTopCharts(mode) {
+    currentTopMode = mode;
+    const container = document.getElementById('topChartsContent');
+    if(!container) return;
+
+    // Buttons aktualisieren
+    const playsBtn = document.getElementById('topPlaysBtn');
+    const likesBtn = document.getElementById('topLikesBtn');
+    if(playsBtn) {
+        playsBtn.style.background = mode === 'plays' ? 'rgba(255,0,255,0.3)' : 'rgba(0,0,0,0.3)';
+        playsBtn.style.border = mode === 'plays' ? '1px solid #ff00ff' : '1px solid #555';
+        playsBtn.style.color = mode === 'plays' ? '#fff' : '#aaa';
+    }
+    if(likesBtn) {
+        likesBtn.style.background = mode === 'likes' ? 'rgba(255,0,255,0.3)' : 'rgba(0,0,0,0.3)';
+        likesBtn.style.border = mode === 'likes' ? '1px solid #ff00ff' : '1px solid #555';
+        likesBtn.style.color = mode === 'likes' ? '#fff' : '#aaa';
+    }
+
+    container.innerHTML = '<div style="text-align:center;color:#ff00ff;font-family:Orbitron,sans-serif;font-size:0.85rem;padding:40px;">🏆 Loading Top 100...</div>';
+
+    try {
+        const snap = await db.collection('tracks').get();
+        let tracks = [];
+        snap.forEach(doc => tracks.push({ id: doc.id, ...doc.data() }));
+
+        // Sortieren nach plays oder likes
+        if(mode === 'plays') {
+            tracks.sort((a, b) => (b.plays || 0) - (a.plays || 0));
+        } else {
+            tracks.sort((a, b) => (b.likes || 0) - (a.likes || 0));
+        }
+
+        // Top 100
+        tracks = tracks.slice(0, 100);
+
+        if(tracks.length === 0) {
+            container.innerHTML = '<div style="text-align:center;color:#666;padding:60px;font-family:Orbitron,sans-serif;font-size:0.85rem;">No tracks yet!</div>';
+            return;
+        }
+
+        container.innerHTML = '';
+        tracks.forEach((track, idx) => {
+            const defaultImg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='50' height='50'%3E%3Crect fill='%23200020' width='50' height='50'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23ff00ff' font-size='20'%3E%3C/text%3E%3C/svg%3E";
+            const typeColor = track.type === 'loop' ? '#00ffff' : track.type === 'sample' ? '#ff00ff' : track.type === 'acapella' ? '#ffff00' : '#ff8800';
+            
+            // Top 3 bekommen goldene Farben
+            const rankColor = idx === 0 ? '#FFD700' : idx === 1 ? '#C0C0C0' : idx === 2 ? '#CD7F32' : '#555';
+            const rankSize = idx < 3 ? '1.2rem' : '0.85rem';
+
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex;align-items:center;gap:14px;padding:12px;background:rgba(0,0,0,0.4);border:1px solid #ff00ff22;border-radius:10px;margin-bottom:8px;cursor:pointer;transition:all 0.3s;';
+            row.onmouseover = () => { row.style.border = '1px solid #ff00ff55'; row.style.background = 'rgba(255,0,255,0.05)'; };
+            row.onmouseout = () => { row.style.border = '1px solid #ff00ff22'; row.style.background = 'rgba(0,0,0,0.4)'; };
+
+            row.innerHTML = `
+                <div style="color:${rankColor};font-family:'Orbitron',sans-serif;font-size:${rankSize};font-weight:bold;width:32px;text-align:center;flex-shrink:0;">${idx + 1}</div>
+                <img src="${track.coverImage || defaultImg}" onerror="this.src='${defaultImg}'" style="width:48px;height:48px;border-radius:8px;object-fit:cover;border:1px solid #ff00ff44;flex-shrink:0;">
+                <div style="flex:1;min-width:0;">
+                    <div style="color:#fff;font-size:0.9rem;font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${track.title || 'Untitled'}</div>
+                    <div style="color:#00ffff;font-size:0.75rem;cursor:pointer;" onclick="event.stopPropagation();showProfilePage('${track.userId}')">${track.artist || 'Unknown'}</div>
+                </div>
+                <div style="color:#666;font-size:0.7rem;flex-shrink:0;text-align:right;">
+                    <div style="color:#888;">${track.genre ? track.genre.toUpperCase() : ''}</div>
+                    <div style="color:#555;">${track.bpm ? track.bpm + ' BPM' : ''}</div>
+                </div>
+                <div style="border:1px solid ${typeColor};color:${typeColor};padding:2px 8px;border-radius:20px;font-size:0.6rem;font-family:'Orbitron',sans-serif;flex-shrink:0;">${(track.type || 'loop').toUpperCase()}</div>
+                <div style="color:#ff00ff;font-family:'Orbitron',sans-serif;font-size:0.75rem;flex-shrink:0;text-align:right;min-width:70px;">
+                    ${mode === 'plays' ? (track.plays || 0) + ' plays' : (track.likes || 0) + ' likes'}
+                </div>
+            `;
+
+            row.onclick = () => openPlayerModal(track);
+            container.appendChild(row);
+        });
+
+    } catch(e) {
+        container.innerHTML = '<div style="text-align:center;color:#ff4444;padding:40px;">Error: ' + e.message + '</div>';
+    }
+}
+
+function closeTopCharts() {
+    document.getElementById('topChartsContainer')?.classList.add('hidden');
+    showMainPage();
+}
+
 // ============================================
 // BLOG
 // ============================================
@@ -2241,6 +2353,7 @@ function showMainPage() {
     document.getElementById('createPackContainer')?.classList.add('hidden');
     document.getElementById('editPackContainer')?.classList.add('hidden');
     document.getElementById('searchContainer')?.classList.add('hidden');
+    document.getElementById('topChartsContainer')?.classList.add('hidden');
     document.getElementById('mainContainer')?.classList.remove('hidden');
 }
 
