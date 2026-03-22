@@ -786,6 +786,10 @@ function openPlayerModal(track) {
     document.getElementById('modalDownloadBtn').href = track.audioFile || '#';
     document.getElementById('modalLikeCount').textContent = track.likes || 0;
 
+    // Play count anzeigen
+    const playsEl = document.getElementById('modalPlayCount');
+    if(playsEl) playsEl.textContent = (track.plays || 0) + ' plays';
+
     // Minimieren Button
     if(!document.getElementById('minimizeBtn')) {
         const closeBtn = document.querySelector('#playerModal button[onclick="closePlayerModal()"]');

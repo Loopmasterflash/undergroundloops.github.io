@@ -435,6 +435,7 @@
     <div id="playerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(10px);" onclick="closePlayerModal(event)">
         <div style="background:linear-gradient(135deg,#0a0a0a,#1a0a2e);border:1px solid #ff00ff;border-radius:20px;padding:20px;max-width:900px;width:96%;box-shadow:0 0 60px rgba(255,0,255,0.3);position:relative;max-height:90vh;overflow-y:auto;" onclick="event.stopPropagation()">
             <button onclick="closePlayerModal()" style="position:absolute;top:15px;right:15px;background:none;border:none;color:#aaa;font-size:1.5rem;cursor:pointer;">✕</button>
+            <div id="modalPlayCount" style="position:absolute;top:18px;right:100px;color:#ff00ff;font-family:'Orbitron',sans-serif;font-size:0.75rem;letter-spacing:1px;text-shadow:0 0 10px rgba(255,0,255,0.5);">0 plays</div>
             <div style="display:flex;gap:20px;align-items:center;margin-bottom:25px;">
                 <img id="modalCover" src="" style="width:90px;height:90px;object-fit:cover;border-radius:10px;border:2px solid #ff00ff;box-shadow:0 0 20px rgba(255,0,255,0.4);flex-shrink:0;">
                 <div>
