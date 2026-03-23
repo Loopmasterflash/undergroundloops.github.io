@@ -606,9 +606,11 @@
         <div style="max-width:900px;margin:0 auto;padding:20px 0;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:25px;flex-wrap:wrap;gap:15px;">
                 <h1 style="font-family:'Orbitron',sans-serif;font-size:1.2rem;color:#ff00ff;letter-spacing:3px;text-shadow:0 0 20px rgba(255,0,255,0.6);">🏆 TOP 100</h1>
-                <div style="display:flex;gap:8px;">
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
                     <button onclick="loadTopCharts('plays')" id="topPlaysBtn" style="padding:7px 16px;background:rgba(255,0,255,0.3);border:1px solid #ff00ff;color:#fff;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;font-size:0.7rem;">🎵 Most Played</button>
                     <button onclick="loadTopCharts('likes')" id="topLikesBtn" style="padding:7px 16px;background:rgba(0,0,0,0.3);border:1px solid #555;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;font-size:0.7rem;">❤️ Most Liked</button>
+                    <button onclick="loadTopCharts('comments')" id="topCommentsBtn" style="padding:7px 16px;background:rgba(0,0,0,0.3);border:1px solid #555;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;font-size:0.7rem;">💬 Most Commented</button>
+                    <button onclick="loadTopCharts('downloads')" id="topDownloadsBtn" style="padding:7px 16px;background:rgba(0,0,0,0.3);border:1px solid #555;color:#aaa;border-radius:20px;cursor:pointer;font-family:'Orbitron',sans-serif;font-size:0.7rem;">⬇️ Most Downloaded</button>
                 </div>
                 <button onclick="closeTopCharts()" style="background:rgba(255,0,255,0.15);border:1px solid #ff00ff;color:#ff00ff;padding:8px 18px;border-radius:8px;cursor:pointer;font-family:'Orbitron',sans-serif;font-size:0.7rem;">← BACK</button>
             </div>

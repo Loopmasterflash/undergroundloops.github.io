@@ -1203,6 +1203,8 @@ async function submitWaveformComment(timestamp) {
             timestamp,
             createdAt: new Date().toISOString()
         });
+        // Comment Counter erhoehen
+        incrementCommentCount(currentModalTrackId);
         document.getElementById('waveformCommentInput')?.remove();
         loadWaveformComments(currentModalTrackId);
         loadModalComments(currentModalTrackId);
@@ -2238,18 +2240,14 @@ async function loadTopCharts(mode) {
     if(!container) return;
 
     // Buttons aktualisieren
-    const playsBtn = document.getElementById('topPlaysBtn');
-    const likesBtn = document.getElementById('topLikesBtn');
-    if(playsBtn) {
-        playsBtn.style.background = mode === 'plays' ? 'rgba(255,0,255,0.3)' : 'rgba(0,0,0,0.3)';
-        playsBtn.style.border = mode === 'plays' ? '1px solid #ff00ff' : '1px solid #555';
-        playsBtn.style.color = mode === 'plays' ? '#fff' : '#aaa';
-    }
-    if(likesBtn) {
-        likesBtn.style.background = mode === 'likes' ? 'rgba(255,0,255,0.3)' : 'rgba(0,0,0,0.3)';
-        likesBtn.style.border = mode === 'likes' ? '1px solid #ff00ff' : '1px solid #555';
-        likesBtn.style.color = mode === 'likes' ? '#fff' : '#aaa';
-    }
+    ['plays','likes','comments','downloads'].forEach(m => {
+        const btn = document.getElementById('top' + m.charAt(0).toUpperCase() + m.slice(1) + 'Btn');
+        if(btn) {
+            btn.style.background = mode === m ? 'rgba(255,0,255,0.3)' : 'rgba(0,0,0,0.3)';
+            btn.style.border = mode === m ? '1px solid #ff00ff' : '1px solid #555';
+            btn.style.color = mode === m ? '#fff' : '#aaa';
+        }
+    });
 
     container.innerHTML = '<div style="text-align:center;color:#ff00ff;font-family:Orbitron,sans-serif;font-size:0.85rem;padding:40px;">🏆 Loading Top 100...</div>';
 
@@ -2258,11 +2256,15 @@ async function loadTopCharts(mode) {
         let tracks = [];
         snap.forEach(doc => tracks.push({ id: doc.id, ...doc.data() }));
 
-        // Sortieren nach plays oder likes
+        // Sortieren je nach Modus
         if(mode === 'plays') {
             tracks.sort((a, b) => (b.plays || 0) - (a.plays || 0));
-        } else {
+        } else if(mode === 'likes') {
             tracks.sort((a, b) => (b.likes || 0) - (a.likes || 0));
+        } else if(mode === 'comments') {
+            tracks.sort((a, b) => (b.commentCount || 0) - (a.commentCount || 0));
+        } else if(mode === 'downloads') {
+            tracks.sort((a, b) => (b.downloads || 0) - (a.downloads || 0));
         }
 
         // Top 100
@@ -2300,7 +2302,10 @@ async function loadTopCharts(mode) {
                 </div>
                 <div style="border:1px solid ${typeColor};color:${typeColor};padding:2px 8px;border-radius:20px;font-size:0.6rem;font-family:'Orbitron',sans-serif;flex-shrink:0;">${(track.type || 'loop').toUpperCase()}</div>
                 <div style="color:#ff00ff;font-family:'Orbitron',sans-serif;font-size:0.75rem;flex-shrink:0;text-align:right;min-width:70px;">
-                    ${mode === 'plays' ? (track.plays || 0) + ' plays' : (track.likes || 0) + ' likes'}
+                    ${mode === 'plays' ? (track.plays || 0) + ' plays' :
+                      mode === 'likes' ? (track.likes || 0) + ' likes' :
+                      mode === 'comments' ? (track.commentCount || 0) + ' comments' :
+                      (track.downloads || 0) + ' downloads'}
                 </div>
             `;
 
@@ -2316,6 +2321,29 @@ async function loadTopCharts(mode) {
 function closeTopCharts() {
     document.getElementById('topChartsContainer')?.classList.add('hidden');
     showMainPage();
+}
+
+
+// ============================================
+// COUNTER FUNKTIONEN
+// ============================================
+
+async function incrementDownloadCount(trackId) {
+    if(!trackId) return;
+    try {
+        await db.collection('tracks').doc(trackId).update({
+            downloads: firebase.firestore.FieldValue.increment(1)
+        });
+    } catch(e) { console.warn('Download count error:', e); }
+}
+
+async function incrementCommentCount(trackId) {
+    if(!trackId) return;
+    try {
+        await db.collection('tracks').doc(trackId).update({
+            commentCount: firebase.firestore.FieldValue.increment(1)
+        });
+    } catch(e) { console.warn('Comment count error:', e); }
 }
 
 // ============================================
