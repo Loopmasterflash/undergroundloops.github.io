@@ -16,8 +16,6 @@ document.addEventListener('DOMContentLoaded', function() {
             initGenreDropdown();
             loadOnlineMembers();
             setInterval(loadOnlineMembers, 120000);
-            // Einmalig Comment Counts fixen
-            fixCommentCounts();
         } else {
             showError('Firebase connection failed');
         }
