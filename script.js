@@ -922,6 +922,8 @@ function startDirectAudioWithRealWaveform(track) {
             ? (currentAudio.currentTime / currentAudio.duration) 
             : 0;
         waveDrawFn = drawWaveformCanvas(container, peaks, prog, 110);
+        // Kommentare nochmal laden nach echter Waveform
+        setTimeout(() => loadWaveformComments(currentModalTrackId), 200);
     });
 }
 
