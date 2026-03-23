@@ -2348,37 +2348,6 @@ async function incrementCommentCount(trackId) {
 
 
 // ============================================
-// EINMALIGE FUNKTION - Comment Counts fixen
-// ============================================
-
-async function fixCommentCounts() {
-    console.log('Fixing comment counts...');
-    try {
-        // Alle Kommentare laden
-        const commentsSnap = await db.collection('comments').get();
-        
-        // Pro Track zaehlen
-        const counts = {};
-        commentsSnap.forEach(doc => {
-            const trackId = doc.data().trackId;
-            if(trackId) counts[trackId] = (counts[trackId] || 0) + 1;
-        });
-        
-        // Jeden Track updaten
-        const promises = Object.entries(counts).map(([trackId, count]) =>
-            db.collection('tracks').doc(trackId).update({ commentCount: count })
-        );
-        await Promise.all(promises);
-        
-        console.log('Comment counts fixed for', Object.keys(counts).length, 'tracks!');
-        alert('Comment counts updated!');
-    } catch(e) {
-        console.error('Fix error:', e);
-        alert('Error: ' + e.message);
-    }
-}
-
-// ============================================
 // BLOG
 // ============================================
 
