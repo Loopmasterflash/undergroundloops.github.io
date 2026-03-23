@@ -1212,7 +1212,13 @@ async function submitWaveformComment(timestamp) {
 }
 
 async function loadWaveformComments(trackId) {
-    if(!currentAudio || !currentAudio.duration) return;
+    // Warten bis Audio geladen ist
+    if(!currentAudio) return;
+    if(!currentAudio.duration || currentAudio.duration === 0) {
+        // Nochmal versuchen nach kurzer Wartezeit
+        setTimeout(() => loadWaveformComments(trackId), 500);
+        return;
+    }
     const container = document.getElementById('modalWaveform');
     container.querySelectorAll('.wave-comment-marker').forEach(m => m.remove());
 
