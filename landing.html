@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNDERGROUNDLOOPS - Free Loops, Samples & Tracks</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Russo+One&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #000;
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* ===== HERO SECTION ===== */
+        .hero {
+            min-height: 100vh;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .hero-bg {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: url('cyberpunk-bg.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            z-index: 0;
+        }
+
+        .hero-bg::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                135deg,
+                rgba(0,0,0,0.75) 0%,
+                rgba(10,0,20,0.65) 50%,
+                rgba(0,0,0,0.75) 100%
+            );
+        }
+
+        /* Cyberpunk Scanlines */
+        .hero-bg::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(255,0,255,0.03) 2px,
+                rgba(255,0,255,0.03) 4px
+            );
+            z-index: 1;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        /* Logo */
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(1.8rem, 5vw, 3.5rem);
+            font-weight: 900;
+            letter-spacing: 4px;
+            color: #fff;
+            text-shadow:
+                0 0 20px rgba(255,0,255,0.8),
+                0 0 40px rgba(255,0,255,0.4),
+                0 0 80px rgba(255,0,255,0.2);
+            margin-bottom: 8px;
+            animation: logoPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes logoPulse {
+            0%, 100% { text-shadow: 0 0 20px rgba(255,0,255,0.8), 0 0 40px rgba(255,0,255,0.4); }
+            50% { text-shadow: 0 0 30px rgba(255,0,255,1), 0 0 60px rgba(255,0,255,0.6), 0 0 100px rgba(255,0,255,0.3); }
+        }
+
+        .logo-line {
+            width: 200px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #ff00ff, transparent);
+            margin: 12px auto 20px;
+            animation: lineGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes lineGlow {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; box-shadow: 0 0 10px #ff00ff; }
+        }
+
+        /* Headline */
+        .headline {
+            font-size: clamp(1rem, 2.5vw, 1.4rem);
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 15px rgba(0,255,255,0.5);
+        }
+
+        .subline {
+            font-size: clamp(0.75rem, 1.8vw, 0.95rem);
+            color: #00ffff;
+            letter-spacing: 3px;
+            margin-bottom: 40px;
+            text-shadow: 0 0 10px rgba(0,255,255,0.6);
+        }
+
+        /* Feature Bullets */
+        .features {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-bottom: 40px;
+            text-align: left;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,0,255,0.2);
+            border-radius: 10px;
+            padding: 14px 18px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s;
+        }
+
+        .feature-item:hover {
+            border-color: rgba(255,0,255,0.6);
+            background: rgba(255,0,255,0.08);
+            transform: translateX(5px);
+        }
+
+        .feature-icon {
+            font-size: 1.3rem;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .feature-text {
+            font-size: 0.82rem;
+            color: #ddd;
+            line-height: 1.6;
+            letter-spacing: 0.5px;
+        }
+
+        .feature-text strong {
+            color: #fff;
+            font-weight: 700;
+        }
+
+        /* Description Text */
+        .description {
+            font-size: 0.82rem;
+            color: #aaa;
+            line-height: 1.9;
+            margin-bottom: 45px;
+            max-width: 650px;
+            margin-left: auto;
+            margin-right: auto;
+            letter-spacing: 0.5px;
+            font-family: sans-serif;
+        }
+
+        /* ENTER Button */
+        .enter-btn {
+            display: inline-block;
+            padding: 18px 50px;
+            background: linear-gradient(135deg, rgba(255,0,255,0.3), rgba(0,255,255,0.2));
+            border: 2px solid #ff00ff;
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: 4px;
+            text-decoration: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-shadow: 0 0 10px rgba(255,0,255,0.5);
+            box-shadow: 0 0 20px rgba(255,0,255,0.3), inset 0 0 20px rgba(255,0,255,0.05);
+            animation: btnPulse 2s ease-in-out infinite;
+        }
+
+        .enter-btn:hover {
+            background: linear-gradient(135deg, rgba(255,0,255,0.5), rgba(0,255,255,0.4));
+            box-shadow: 0 0 40px rgba(255,0,255,0.6), inset 0 0 30px rgba(255,0,255,0.1);
+            transform: translateY(-3px) scale(1.02);
+            letter-spacing: 6px;
+        }
+
+        @keyframes btnPulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(255,0,255,0.3), inset 0 0 20px rgba(255,0,255,0.05); }
+            50% { box-shadow: 0 0 35px rgba(255,0,255,0.5), inset 0 0 25px rgba(255,0,255,0.1); }
+        }
+
+        .scroll-hint {
+            margin-top: 30px;
+            color: #555;
+            font-size: 0.7rem;
+            letter-spacing: 2px;
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); opacity: 0.5; }
+            50% { transform: translateY(6px); opacity: 1; }
+        }
+
+        /* ===== INFO SECTION (AGB etc.) ===== */
+        .info-section {
+            position: relative;
+            z-index: 2;
+            background: rgba(0,0,0,0.92);
+            border-top: 1px solid #ff00ff33;
+            padding: 60px 20px;
+        }
+
+        .info-inner {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .info-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+            letter-spacing: 3px;
+            color: #ff00ff;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(255,0,255,0.4);
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ff00ff33;
+        }
+
+        .info-text {
+            font-family: sans-serif;
+            font-size: 0.85rem;
+            color: #888;
+            line-height: 1.9;
+            margin-bottom: 40px;
+        }
+
+        .info-text a {
+            color: #00ffff;
+            text-decoration: none;
+        }
+
+        .footer-bar {
+            text-align: center;
+            color: #333;
+            font-size: 0.7rem;
+            letter-spacing: 2px;
+            padding-top: 30px;
+            border-top: 1px solid #111;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="hero-bg"></div>
+
+    <!-- ===== HERO ===== -->
+    <section class="hero">
+        <div class="hero-content">
+
+            <div class="logo">UNDERGROUNDLOOPS</div>
+            <div class="logo-line"></div>
+
+            <h1 class="headline">Free Loops, Samples, Tracks &amp; Acapellas<br>for Electronic Music Producers</h1>
+            <p class="subline">The Underground Community for Producers, DJs and Artists</p>
+
+            <div class="features">
+                <div class="feature-item">
+                    <span class="feature-icon">🎵</span>
+                    <span class="feature-text"><strong>100% Free</strong> — Join, Upload &amp; Download. No subscriptions, no hidden fees.</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🔁</span>
+                    <span class="feature-text"><strong>Huge Library</strong> — WAV Loops, Samples, Tracks, Acapellas &amp; Sample Packs, growing every day.</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">👥</span>
+                    <span class="feature-text"><strong>Community</strong> — Share your music, get feedback and connect with producers worldwide.</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">💬</span>
+                    <span class="feature-text"><strong>Producer Forum</strong> — Discuss production tips, VST plugins, DAWs and more with fellow producers.</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🎧</span>
+                    <span class="feature-text"><strong>Underground Sound</strong> — Techno, Minimal, Psytrance, Drum &amp; Bass, Chillout and more.</span>
+                </div>
+            </div>
+
+            <p class="description">
+                Browse our ever-growing library of free underground electronic music loops and samples.
+                Fresh and original content uploaded daily by our community of producers.
+                Got your own loops sitting on your hard drive? Upload them, share them and let the world hear your sound!
+                Join our forum and connect with producers from around the world!
+            </p>
+
+            <a href="index.html" class="enter-btn">⚡ ENTER THE UNDERGROUND</a>
+
+            <p class="scroll-hint">▼ scroll down for legal info ▼</p>
+
+        </div>
+    </section>
+
+    <!-- ===== INFO / LEGAL ===== -->
+    <section class="info-section">
+        <div class="info-inner">
+
+            <h2 class="info-title">📋 TERMS OF SERVICE</h2>
+            <div class="info-text">
+                <p>By using UNDERGROUNDLOOPS you agree to the following terms:</p>
+                <br>
+                <p>✅ You may upload, download and share audio content for personal and commercial music production.</p>
+                <p>✅ All uploaded content must be your own original work or content you have the rights to distribute.</p>
+                <p>❌ No DJ mixes — maximum track length is 10 minutes.</p>
+                <p>❌ No copyrighted material without permission from the rights holder.</p>
+                <p>❌ No offensive, hateful or illegal content of any kind.</p>
+                <p>❌ No spam, fake accounts or automated uploads.</p>
+                <br>
+                <p>UNDERGROUNDLOOPS reserves the right to remove content that violates these terms without prior notice.</p>
+            </div>
+
+            <h2 class="info-title">🔒 PRIVACY POLICY</h2>
+            <div class="info-text">
+                <p>We collect only the information necessary to operate the platform:</p>
+                <br>
+                <p>• Email address (for account creation and login)</p>
+                <p>• Username and profile information you provide</p>
+                <p>• Upload history and activity on the platform</p>
+                <br>
+                <p>We do not sell your personal data to third parties. Your data is stored securely via Google Firebase.</p>
+                <p>You may request deletion of your account and all associated data at any time by contacting us.</p>
+            </div>
+
+            <h2 class="info-title">📬 IMPRINT / IMPRESSUM</h2>
+            <div class="info-text">
+                <p>UNDERGROUNDLOOPS</p>
+                <p>Operated by: <strong>Loopmasterflash</strong></p>
+                <p>Contact: <a href="mailto:contact@undergroundloops.com">contact@undergroundloops.com</a></p>
+                <br>
+                <p style="color:#555;font-size:0.78rem;">This platform is a non-commercial community project. All content is provided by community members.</p>
+            </div>
+
+            <div class="footer-bar">
+                © 2026 UNDERGROUNDLOOPS — ALL RIGHTS RESERVED
+            </div>
+
+        </div>
+    </section>
+
+</body>
+</html>
